@@ -1,0 +1,167 @@
+{
+  "version": "0.5.1",
+  "id": "signaldesk-web",
+  "owner": "Neel",
+  "purpose": "Operate the local deterministic SD-001 HTTP, feedback-intake, signal-inbox, and manual-triage slice inside one Next.js modular monolith.",
+  "execution_kind": "deterministic",
+  "inputs": [
+    {
+      "name": "capture-feedback-http-request",
+      "schema": "docs/contracts/SD-001.md#post-apiv1feedback",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "list-or-read-signals-http-request",
+      "schema": "docs/contracts/SD-001.md#endpoints",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "append-manual-triage-http-request",
+      "schema": "docs/contracts/SD-001.md#post-apiv1signalssignalidtriage-events",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "feedback-and-signal-http-response",
+      "schema": "docs/contracts/SD-001.md#post-apiv1feedback",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "signal-inbox-http-response",
+      "schema": "docs/contracts/SD-001.md#get-apiv1signals",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "triage-event-http-response",
+      "schema": "docs/contracts/SD-001.md#post-apiv1signalssignalidtriage-events",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    }
+  ],
+  "dependencies": {
+    "allowed": [
+      "Next.js local application runtime",
+      "Feedback Intake public application ports",
+      "Signal Inbox public application ports",
+      "SD-001 feedback-to-signal workflow",
+      "Prisma client through bounded repository adapters",
+      "PostgreSQL through Prisma"
+    ],
+    "forbidden": [
+      "Cross-context domain imports",
+      "Direct HTTP-to-Prisma access",
+      "Domain imports from HTTP or infrastructure",
+      "External network services",
+      "File or object storage and upload libraries",
+      "Probabilistic model inference",
+      "Production code imports from test modules",
+      "Unauthenticated local identity represented as verified identity"
+    ]
+  },
+  "side_effects": [
+    {
+      "effect": "Persist one accepted Feedback and exactly one linked Signal in a single local PostgreSQL transaction.",
+      "reversible": false,
+      "approval": "policy"
+    },
+    {
+      "effect": "Append an immutable TriageEvent after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
+    }
+  ],
+  "authority": {
+    "identity_mode": "none",
+    "credentials": [
+      "Local DATABASE_URL supplied by the operator environment and never stored in repository content"
+    ],
+    "tool_scopes": [
+      "Serve bounded local HTTP requests",
+      "Read and write the local SignalDesk PostgreSQL schema through Prisma"
+    ]
+  },
+  "data": {
+    "classification": "confidential",
+    "retention": "Local prototype retention is operator-controlled; SD-001 provides no public deletion endpoint, hosted retention guarantee, backup claim, or recovery claim.",
+    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence."
+  },
+  "failure_modes": [
+    {
+      "condition": "The body is not bounded UTF-8 JSON or violates a closed request schema.",
+      "signal": "A structured 400, 413, or 415 HTTP error code with bounded correlation ID.",
+      "response": "Reject before domain execution and do not persist content."
+    },
+    {
+      "condition": "Explicit content acknowledgement is absent or not true.",
+      "signal": "content_acknowledgement_required with HTTP 422.",
+      "response": "Reject before restricted-content evaluation or persistence."
+    },
+    {
+      "condition": "A configured high-confidence secret or regulated-data rule matches.",
+      "signal": "restricted_content_detected with HTTP 422 and non-sensitive rule identifiers.",
+      "response": "Fail closed without echoing, logging, sanitizing, or persisting the matched content."
+    },
+    {
+      "condition": "Feedback and Signal cannot both commit or the unique lineage constraint conflicts.",
+      "signal": "storage_unavailable or lineage_conflict with no success response.",
+      "response": "Roll back the entire transaction so no partial lineage is visible."
+    },
+    {
+      "condition": "A manual triage append uses a stale expected revision.",
+      "signal": "revision_conflict with HTTP 409.",
+      "response": "Preserve existing events and require the operator to reload before another explicit append."
+    },
+    {
+      "condition": "Restricted-content evaluation is unavailable or fails unexpectedly.",
+      "signal": "A structured internal failure with bounded correlation and no raw content.",
+      "response": "Fail the write closed; do not bypass detection or use a fallback."
+    }
+  ],
+  "telemetry": {
+    "traces": [
+      "Planned route-template spans without request or response content",
+      "Planned transaction outcome spans without database values"
+    ],
+    "metrics": [
+      "Planned request count, status class, latency, and aggregate rejection rule count"
+    ],
+    "logs": [
+      "Planned structured operational errors without submitted content, credentials, cookies, or authorization values"
+    ],
+    "correlation": "Use a validated or server-replaced bounded correlation ID for diagnostics only; never use it as a metric dimension or authority token."
+  },
+  "cost": {
+    "unit": "local HTTP request",
+    "budget": 0,
+    "meter": "No paid external service is allowed in SD-001; planned local request counters measure volume only."
+  },
+  "verification": {
+    "tests": [
+      "Planned Foundation contract, TypeScript, Prisma schema, and dependency-cruiser checks",
+      "Planned Component validation, detector, domain, and append-only triage checks",
+      "Planned Integration PostgreSQL atomicity, uniqueness, revision, and repository checks",
+      "Planned Workflow feedback-to-inbox-to-manual-triage check",
+      "Planned Stress input-bound, concurrency, failure-recovery, and telemetry-redaction checks"
+    ],
+    "evals": [
+      "Human public-contract and security-limitation review by Neel before merge",
+      "Independent evidence review that does not grant approval or promotion authority"
+    ],
+    "fitness_functions": [
+      "dependency-cruiser must fail closed on undeclared modules and forbidden dependency direction",
+      "Prisma schema must enforce unique Signal.feedbackId and unique TriageEvent signal sequence",
+      "HTTP contract fixtures must preserve closed schemas, bounds, acknowledgements, and explicit errors",
+      "Telemetry checks must prove submitted confidential content is absent from logs, traces, and metrics"
+    ]
+  },
+  "deployment": {
+    "artifact": "Planned immutable Next.js build artifact; no product artifact exists in SD-001A.",
+    "environment": "Local operator-controlled process with local PostgreSQL only; no hosted or production claim.",
+    "health_check": "Planned local health check proving process and database readiness without claiming workflow correctness."
+  },
+  "rollback": {
+    "trigger": "A contract, ordered validation level, lineage invariant, content-control, or confidential-telemetry check fails.",
+    "procedure": "Stop before advancing validation or merge, preserve append-only data, revert the separately reviewed implementation change, and use only a human-approved corrective migration when database repair is required.",
+    "owner": "Neel"
+  }
+}

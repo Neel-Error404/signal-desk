@@ -1,0 +1,37 @@
+{
+  "id": "SD-001",
+  "outcome_ids": [
+    ".elder/project-profile.json#/outcomes/success/0"
+  ],
+  "change_class": "public-contract",
+  "objective": "Implement the local deterministic feedback-intake to signal-inbox vertical slice defined by ADR-0002 while preserving one-to-one lineage and append-only manual triage.",
+  "scope": [
+    "Implement the TypeScript and Next.js modular-monolith boundaries defined by ADR-0002.",
+    "Implement Feedback Intake and Signal Inbox bounded contexts with public application ports.",
+    "Use Prisma and PostgreSQL to create one Feedback and one Signal atomically with a unique Signal.feedbackId lineage constraint.",
+    "Implement the versioned local HTTP contract in docs/contracts/SD-001.md.",
+    "Require bounded UTF-8 JSON, explicit content acknowledgement, and pre-persistence rejection of documented high-confidence secret and regulated-data patterns.",
+    "Implement append-only human-requested TriageEvent writes and revision-safe Signal inbox projections.",
+    "Enforce declared TypeScript dependency direction with dependency-cruiser.",
+    "Produce ordered Foundation, Component, Integration, Workflow, and Stress evidence without advancing past a failed level."
+  ],
+  "non_goals": [
+    "Authentication, authorization, verified identity, tenancy, or multi-user isolation.",
+    "Hosted, internet-facing, production, release, deployment, or autonomous-operation readiness.",
+    "Complete secret detection, complete regulated-data detection, or complete DLP.",
+    "File uploads, attachments, object storage, or attachment scanning.",
+    "Probabilistic inference, feedback grouping, deduplication, synthesis, issue prioritization, or model-based triage.",
+    "Billing, enterprise administration, background workers, external integrations, or application-user memory.",
+    "Agent authority to merge, release, deploy, promote learning, or approve architecture exceptions."
+  ],
+  "evidence_plan": [
+    "Foundation: validate governed JSON artifacts against the installed Elder schemas; validate TypeScript, Prisma schema, public contract fixtures, and fail-closed dependency-cruiser boundaries.",
+    "Component: prove each bounded context's validation, deterministic creation, error contracts, append-only triage, revision checks, and restricted-content rejection in isolation.",
+    "Integration: prove PostgreSQL transaction atomicity, unique one-feedback-to-one-signal lineage, Prisma repository behavior, and cross-context workflow contracts.",
+    "Workflow: exercise feedback submission through Signal Inbox visibility and a manual triage append using only the local product HTTP and user interface boundaries.",
+    "Stress: prove maximum-body enforcement, concurrent lineage and triage conflict behavior, database failure recovery, detector failure behavior, and absence of raw confidential content in logs and telemetry.",
+    "Human review: Neel reviews public-contract compatibility, security limitations, evidence, and the retained-authority boundary before any merge or later release decision."
+  ],
+  "owner": "Neel",
+  "status": "ready"
+}
