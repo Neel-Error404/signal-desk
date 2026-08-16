@@ -1,0 +1,311 @@
+{
+  "classes": [
+    {
+      "allowed_consequences": [
+        "pull-request"
+      ],
+      "allowed_operations": [
+        "modify"
+      ],
+      "certification_ttl_days": 30,
+      "controls": {
+        "forbidden_effects": [
+          "executable behavior",
+          "authority change",
+          "policy change",
+          "merge",
+          "deployment",
+          "maturity-mutation"
+        ],
+        "required_checks": [
+          "path classification",
+          "generated ownership check",
+          "link validation",
+          "reader review"
+        ],
+        "requires_pinned_tool_digest": false,
+        "requires_rule_allowlist": false,
+        "requires_tool_allowlist": true,
+        "semantic_equivalence": "none"
+      },
+      "description": "Correct non-executable, non-governed, project-owned documentation without changing generated or authority-bearing content.",
+      "id": "documentation-only-correction",
+      "incident_budget": {
+        "maximum_incidents": 0,
+        "maximum_rollbacks": 0,
+        "window_days": 30
+      },
+      "maximum_autonomy": "L2",
+      "parent_change_class": "documentation",
+      "risk": "low",
+      "scope": {
+        "allowed_path_globs": [
+          "**/*.md",
+          "**/*.txt",
+          "**/*.rst"
+        ],
+        "existing_files_unchanged": false,
+        "forbidden_path_globs": [
+          "AGENTS.md",
+          "**/AGENTS.md",
+          "ARCHITECTURE.md",
+          "**/ARCHITECTURE.md",
+          "protocol/**",
+          ".elder/**",
+          "**/adr/**",
+          "**/architecture/**",
+          "**/generated/**",
+          "**/*generated*.md",
+          "**/*policy*.md",
+          "**/prompts/**",
+          "**/runbooks/**"
+        ],
+        "generated_files_only": false,
+        "generator_inputs_unchanged": true,
+        "new_files_only": false,
+        "production_code_unchanged": true,
+        "requires_path_allowlist": true,
+        "test_support_unchanged": true
+      }
+    },
+    {
+      "allowed_consequences": [
+        "pull-request"
+      ],
+      "allowed_operations": [
+        "add",
+        "modify",
+        "delete"
+      ],
+      "certification_ttl_days": 30,
+      "controls": {
+        "forbidden_effects": [
+          "generator input change",
+          "project-owned overwrite",
+          "merge",
+          "deployment",
+          "maturity-mutation"
+        ],
+        "required_checks": [
+          "generator input digest",
+          "generator digest",
+          "output path allowlist",
+          "deterministic regeneration",
+          "ownership validation"
+        ],
+        "requires_pinned_tool_digest": true,
+        "requires_rule_allowlist": false,
+        "requires_tool_allowlist": true,
+        "semantic_equivalence": "generated-exact"
+      },
+      "description": "Regenerate exact allowlisted generated outputs from unchanged inputs with one pinned deterministic generator.",
+      "id": "deterministic-generated-regeneration",
+      "incident_budget": {
+        "maximum_incidents": 0,
+        "maximum_rollbacks": 0,
+        "window_days": 30
+      },
+      "maximum_autonomy": "L2",
+      "parent_change_class": "internal-code",
+      "risk": "low",
+      "scope": {
+        "allowed_path_globs": [
+          "<certification-output-allowlist>"
+        ],
+        "existing_files_unchanged": false,
+        "forbidden_path_globs": [
+          "<generator-inputs>",
+          "<project-owned-files>"
+        ],
+        "generated_files_only": true,
+        "generator_inputs_unchanged": true,
+        "new_files_only": false,
+        "production_code_unchanged": false,
+        "requires_path_allowlist": true,
+        "test_support_unchanged": true
+      }
+    },
+    {
+      "allowed_consequences": [
+        "pull-request"
+      ],
+      "allowed_operations": [
+        "modify"
+      ],
+      "certification_ttl_days": 30,
+      "controls": {
+        "forbidden_effects": [
+          "semantic change",
+          "configuration change",
+          "test baseline change",
+          "merge",
+          "deployment",
+          "maturity-mutation"
+        ],
+        "required_checks": [
+          "formatter digest",
+          "language adapter",
+          "semantic equivalence",
+          "ordered test ladder"
+        ],
+        "requires_pinned_tool_digest": true,
+        "requires_rule_allowlist": false,
+        "requires_tool_allowlist": true,
+        "semantic_equivalence": "language-adapter"
+      },
+      "description": "Apply one pinned formatter only where a language-specific adapter proves semantic equivalence.",
+      "id": "semantic-preserving-formatting",
+      "incident_budget": {
+        "maximum_incidents": 0,
+        "maximum_rollbacks": 0,
+        "window_days": 30
+      },
+      "maximum_autonomy": "L2",
+      "parent_change_class": "internal-code",
+      "risk": "low",
+      "scope": {
+        "allowed_path_globs": [
+          "<certification-language-paths>"
+        ],
+        "existing_files_unchanged": false,
+        "forbidden_path_globs": [
+          "protocol/**",
+          ".elder/**",
+          "**/fixtures/**",
+          "**/snapshots/**"
+        ],
+        "generated_files_only": false,
+        "generator_inputs_unchanged": true,
+        "new_files_only": false,
+        "production_code_unchanged": false,
+        "requires_path_allowlist": true,
+        "test_support_unchanged": true
+      }
+    },
+    {
+      "allowed_consequences": [
+        "pull-request"
+      ],
+      "allowed_operations": [
+        "modify"
+      ],
+      "certification_ttl_days": 30,
+      "controls": {
+        "forbidden_effects": [
+          "unapproved rule",
+          "semantic change",
+          "configuration change",
+          "merge",
+          "deployment",
+          "maturity-mutation"
+        ],
+        "required_checks": [
+          "linter digest",
+          "approved rule allowlist",
+          "semantic equivalence",
+          "ordered test ladder"
+        ],
+        "requires_pinned_tool_digest": true,
+        "requires_rule_allowlist": true,
+        "requires_tool_allowlist": true,
+        "semantic_equivalence": "language-adapter"
+      },
+      "description": "Apply only approved deterministic auto-fix rules from a pinned linter to exact allowlisted paths.",
+      "id": "deterministic-lint-fix",
+      "incident_budget": {
+        "maximum_incidents": 0,
+        "maximum_rollbacks": 0,
+        "window_days": 30
+      },
+      "maximum_autonomy": "L2",
+      "parent_change_class": "internal-code",
+      "risk": "moderate",
+      "scope": {
+        "allowed_path_globs": [
+          "<certification-language-paths>"
+        ],
+        "existing_files_unchanged": false,
+        "forbidden_path_globs": [
+          "protocol/**",
+          ".elder/**",
+          "**/fixtures/**",
+          "**/snapshots/**",
+          "**/migrations/**"
+        ],
+        "generated_files_only": false,
+        "generator_inputs_unchanged": true,
+        "new_files_only": false,
+        "production_code_unchanged": false,
+        "requires_path_allowlist": true,
+        "test_support_unchanged": true
+      }
+    },
+    {
+      "allowed_consequences": [
+        "pull-request"
+      ],
+      "allowed_operations": [
+        "add"
+      ],
+      "certification_ttl_days": 30,
+      "controls": {
+        "forbidden_effects": [
+          "production change",
+          "assertion weakening",
+          "test deletion",
+          "test skip",
+          "fixture change",
+          "baseline change",
+          "merge",
+          "deployment",
+          "maturity-mutation"
+        ],
+        "required_checks": [
+          "new-file verification",
+          "production diff check",
+          "existing test immutability",
+          "fixture and snapshot immutability",
+          "ordered test ladder"
+        ],
+        "requires_pinned_tool_digest": false,
+        "requires_rule_allowlist": false,
+        "requires_tool_allowlist": true,
+        "semantic_equivalence": "none"
+      },
+      "description": "Add new isolated test files without changing production code, existing tests, fixtures, snapshots, configuration, skips, assertions, or baselines.",
+      "id": "add-only-tests",
+      "incident_budget": {
+        "maximum_incidents": 0,
+        "maximum_rollbacks": 0,
+        "window_days": 30
+      },
+      "maximum_autonomy": "L2",
+      "parent_change_class": "internal-code",
+      "risk": "moderate",
+      "scope": {
+        "allowed_path_globs": [
+          "tests/**",
+          "**/tests/**"
+        ],
+        "existing_files_unchanged": true,
+        "forbidden_path_globs": [
+          "**/fixtures/**",
+          "**/snapshots/**",
+          "**/conftest.*",
+          "**/*config*",
+          "src/**",
+          "app/**",
+          "lib/**"
+        ],
+        "generated_files_only": false,
+        "generator_inputs_unchanged": true,
+        "new_files_only": true,
+        "production_code_unchanged": true,
+        "requires_path_allowlist": true,
+        "test_support_unchanged": true
+      }
+    }
+  ],
+  "id": "elder-initial-autonomy-classes-v1",
+  "version": "0.5.1"
+}

@@ -1,0 +1,397 @@
+{
+  "current_assessment": {
+    "blockers": [
+      "Hosted branch protection, merge queue, and branch-required checks are blocked by the current private-repository account plan.",
+      "No active canonical project authority source is configured for supervised pull-request authority.",
+      "A verified advisory L2 bundle exists for exact commit d8c8eb3f5412bf1fe062a6cee55e35dd45e46589, but canonical maturity remains L1 and no current qualifying L2 consumption, active canonical authority source, or active certification authorizes P5.2.",
+      "P5.3 mechanisms are verified, but no valid L3 qualification consumption, active L3-capable project class certification, or canonical canary authority exists.",
+      "External secret brokering is not configured.",
+      "OS or container isolation for untrusted agent tools is not implemented.",
+      "Hosted probabilistic evaluator execution, production calibration drift detection, and delayed quality services are not operational.",
+      "Hosted production telemetry, remote canary, and real rollback evidence are absent.",
+      "Hosted knowledge durability, tenant access control, encryption key management, backup and recovery evidence are absent.",
+      "Hosted multi-agent orchestration, external runtime identity, distributed scheduling, hosted checkpoints, production traffic shadowing, target-application adapters, and production self-learning are not operational."
+    ],
+    "evidence": [
+      "docs/evidence/2026-08-05-p3-factory-substrate.md",
+      "docs/evidence/2026-08-05-p3-1-meta-architecture.md",
+      "docs/evidence/2026-08-05-p4-0-assurance-constitution.md",
+      "docs/evidence/2026-08-05-p4-1-operational-assurance.md",
+      "docs/evidence/2026-08-05-p4-2-evaluation-harness.md",
+      "docs/evidence/2026-08-05-p4-3-correlated-telemetry.md",
+      "docs/evidence/2026-08-05-p4-4-governed-knowledge-runtime.md",
+      "docs/evidence/2026-08-05-p4-5a-multi-agent-entry-gate.md",
+      "docs/evidence/2026-08-05-p4-5b-bounded-multi-agent-runtime.md",
+      "docs/evidence/2026-08-05-p4-6-quarantined-learning-runtime.md",
+      "docs/evidence/2026-08-05-p4-7-hosted-production-qualification.md",
+      "docs/evidence/2026-08-06-p4-8a-hosted-activation.md",
+      "docs/evidence/2026-08-05-p5-0-autonomy-class-contracts.md",
+      "docs/evidence/2026-08-06-p5-1-p5-2-bounded-autonomy.md",
+      "docs/evidence/2026-08-06-p5-3-fail-closed-canary.md",
+      "docs/operational-readiness.md"
+    ],
+    "level": "L1",
+    "scope": "Elder local reference factory, P4.8A hosted Git and identity activation, and P5.0-P5.3 bounded-autonomy mechanisms through 2026-08-06"
+  },
+  "institutional_standard": {
+    "benchmarks": {
+      "L2": {
+        "allowed_consequences": [
+          "authenticated-work-intake",
+          "isolated-hosted-execution",
+          "reviewable-pull-request"
+        ],
+        "designation": "Hosted supervised delivery",
+        "human_role": "Humans review and approve pull requests, retain merge, release, deployment, certification-renewal, and maturity authority, and decide scope or architecture exceptions.",
+        "level": "L2",
+        "metrics": [
+          {
+            "comparison": "at-least",
+            "id": "observation-window",
+            "unit": "days",
+            "value": 30
+          },
+          {
+            "comparison": "at-least",
+            "id": "real-hosted-work-items",
+            "unit": "count",
+            "value": 20
+          },
+          {
+            "comparison": "at-least",
+            "id": "reviewable-pr-without-internal-inspection",
+            "unit": "basis-points",
+            "value": 9000
+          },
+          {
+            "comparison": "exactly",
+            "id": "identity-trace-test-provenance-coverage",
+            "unit": "basis-points",
+            "value": 10000
+          },
+          {
+            "comparison": "exactly",
+            "id": "authority-escapes",
+            "unit": "count",
+            "value": 0
+          },
+          {
+            "comparison": "exactly",
+            "id": "secret-exposures",
+            "unit": "count",
+            "value": 0
+          }
+        ],
+        "prohibited_consequences": [
+          "merge",
+          "release",
+          "deployment",
+          "maturity-mutation",
+          "automatic-certification-renewal"
+        ],
+        "required_controls": [
+          "external-workload-identity",
+          "scoped-secret-access",
+          "isolated-ephemeral-workspace",
+          "reproducible-build",
+          "hosted-ci",
+          "protected-base-branch",
+          "required-checks",
+          "signed-provenance",
+          "independent-evaluation",
+          "durable-owner-visible-trace"
+        ],
+        "required_exercises": [
+          "worker-crash-recovery",
+          "duplicate-intake-idempotency",
+          "broker-or-ci-outage",
+          "provider-response-uncertainty",
+          "backup-and-restore"
+        ],
+        "required_promotion_evidence": [
+          "current-signed-cumulative-l0-l2-bundle",
+          "exact-revision-hosted-work-history",
+          "required-check-enforcement",
+          "artifact-provenance",
+          "independent-review",
+          "human-ratification"
+        ],
+        "target_operating_model": "The factory turns authenticated bounded product work into exact reviewable pull requests through real hosted controls."
+      },
+      "L3": {
+        "allowed_consequences": [
+          "trusted-signal-intake",
+          "immutable-artifact-creation",
+          "bounded-canary",
+          "automatic-rollback"
+        ],
+        "designation": "Bounded production operation",
+        "human_role": "Humans define and certify classes, set project and production ceilings, retain scope expansion, full rollout, release, certification renewal, and maturity authority, and adjudicate incidents.",
+        "level": "L3",
+        "metrics": [
+          {
+            "comparison": "at-least",
+            "id": "observation-window",
+            "unit": "days",
+            "value": 30
+          },
+          {
+            "comparison": "at-least",
+            "id": "real-bounded-canaries",
+            "unit": "count",
+            "value": 20
+          },
+          {
+            "comparison": "at-least",
+            "id": "injected-rollback-exercises",
+            "unit": "count",
+            "value": 3
+          },
+          {
+            "comparison": "exactly",
+            "id": "threshold-breach-rollback-conformance",
+            "unit": "basis-points",
+            "value": 10000
+          },
+          {
+            "comparison": "exactly",
+            "id": "automatic-full-rollouts",
+            "unit": "count",
+            "value": 0
+          },
+          {
+            "comparison": "exactly",
+            "id": "authority-escapes",
+            "unit": "count",
+            "value": 0
+          }
+        ],
+        "prohibited_consequences": [
+          "automatic-full-rollout",
+          "uncertified-class-expansion",
+          "merge",
+          "maturity-mutation",
+          "automatic-certification-renewal"
+        ],
+        "required_controls": [
+          "external-workload-identity",
+          "secret-broker",
+          "class-certification",
+          "short-lived-production-lease",
+          "promotion-gate",
+          "immutable-artifact",
+          "central-trusted-telemetry",
+          "bounded-canary",
+          "automatic-rollback",
+          "incident-budget-and-suspension"
+        ],
+        "required_exercises": [
+          "real-threshold-breach",
+          "automatic-rollback",
+          "telemetry-loss",
+          "provider-response-uncertainty",
+          "restart-during-rollback",
+          "incident-budget-suspension"
+        ],
+        "required_promotion_evidence": [
+          "current-signed-cumulative-l0-l3-bundle",
+          "exact-class-certification",
+          "real-canary-history",
+          "trusted-observation-history",
+          "rollback-exercise",
+          "incident-and-suspension-evidence",
+          "human-ratification"
+        ],
+        "target_operating_model": "One explicitly certified reversible low-risk class can move from a trusted signal through immutable artifact, bounded canary, trusted observation, and automatic rollback."
+      }
+    },
+    "content_sha256": "b7a07645ad1d8ba8f8e71f39f8394f3247cd71a92768eef915f2149a7d400c77",
+    "dimensions": [
+      {
+        "id": "product-intake-planning",
+        "name": "Product Intake And Planning",
+        "question": "Can product intent become bounded, accountable, and reviewable work?"
+      },
+      {
+        "id": "worker-execution-isolation",
+        "name": "Worker Execution And Isolation",
+        "question": "Can workers execute with exact identity, scope, resources, and containment?"
+      },
+      {
+        "id": "security-supply-chain",
+        "name": "Security And Supply-Chain Integrity",
+        "question": "Can source, dependencies, builds, artifacts, provenance, and secrets be trusted?"
+      },
+      {
+        "id": "test-evidence-evaluation",
+        "name": "Testing, Evidence, And Evaluation",
+        "question": "Can every accepted result be independently reconstructed and evaluated?"
+      },
+      {
+        "id": "delivery-production-authority",
+        "name": "Delivery And Production Authority",
+        "question": "Are delivery and production consequences bounded by current explicit authority?"
+      },
+      {
+        "id": "reliability-recovery-incidents",
+        "name": "Reliability, Recovery, And Incidents",
+        "question": "Can accepted work survive failure, reconcile uncertainty, and suspend unsafe operation?"
+      },
+      {
+        "id": "owner-outcome-economics",
+        "name": "Owner Visibility, Outcomes, And Economics",
+        "question": "Can owners understand progress, intervention, quality, cost, and downstream outcomes?"
+      },
+      {
+        "id": "learning-long-term-quality",
+        "name": "Learning And Long-Term Quality",
+        "question": "Can improvements be measured, independently governed, reversed, and kept from degrading quality?"
+      }
+    ],
+    "effective_date": "2026-08-14",
+    "evidence_rules": {
+      "contradiction_free": true,
+      "cumulative": true,
+      "exact_environment": true,
+      "exact_revision": true,
+      "human_ratification": true,
+      "independent_evaluation": true,
+      "no_average_promotion": true,
+      "time_bound": true
+    },
+    "id": "elder-factory-maturity-standard",
+    "overall_level_rule": "minimum-mandatory-dimension",
+    "ratifying_adr": "ADR-0022",
+    "version": "1.0.0"
+  },
+  "levels": [
+    {
+      "claim": "A human can repeat the documented workflow from controlled inputs.",
+      "id": "L0",
+      "name": "Reproducible manual",
+      "prohibited_claims": [
+        "agent factory",
+        "autonomous",
+        "lights-out"
+      ],
+      "required_capabilities": [
+        "documented workflow",
+        "versioned source",
+        "repeatable verification"
+      ],
+      "required_evidence": [
+        "successful manual replay"
+      ]
+    },
+    {
+      "claim": "Agents assist bounded work while humans execute authority-bearing steps.",
+      "id": "L1",
+      "name": "Traceable assisted",
+      "prohibited_claims": [
+        "autonomous factory",
+        "lights-out"
+      ],
+      "required_capabilities": [
+        "typed work items",
+        "tool scopes",
+        "execution traces",
+        "human approval"
+      ],
+      "required_evidence": [
+        "trace linkage",
+        "human decision record"
+      ]
+    },
+    {
+      "claim": "For explicitly bounded work, agents may author changes in isolated hosted workspaces and create exact reviewable pull requests through enforced delivery controls while humans retain merge, release, deployment, certification-renewal, and maturity authority.",
+      "id": "L2",
+      "name": "Governed agent delivery",
+      "prohibited_claims": [
+        "autonomous merge",
+        "autonomous release",
+        "deployment authority",
+        "lights-out",
+        "self-learning production"
+      ],
+      "required_capabilities": [
+        "sandboxing",
+        "reproducible builds",
+        "CI",
+        "provenance",
+        "independent review"
+      ],
+      "required_evidence": [
+        "clean build",
+        "required checks",
+        "artifact provenance"
+      ]
+    },
+    {
+      "claim": "For one explicitly certified reversible low-risk class, the factory may move a trusted signal through immutable artifact creation, bounded canary, trusted observation, and automatic rollback while humans retain class definition, scope expansion, full rollout, release, certification-renewal, and maturity authority.",
+      "id": "L3",
+      "name": "Factory-mediated",
+      "prohibited_claims": [
+        "automatic full rollout",
+        "uncertified class expansion",
+        "unbounded autonomy",
+        "general lights-out"
+      ],
+      "required_capabilities": [
+        "workload identity",
+        "secret broker",
+        "promotion gates",
+        "canary",
+        "rollback",
+        "central telemetry"
+      ],
+      "required_evidence": [
+        "hosted workflow",
+        "canary observation",
+        "rollback exercise"
+      ]
+    },
+    {
+      "claim": "Certified reversible work classes may run end to end with humans supervising exceptions and consequences.",
+      "id": "L4",
+      "name": "Supervised almost-lights-out",
+      "prohibited_claims": [
+        "general autonomous software factory",
+        "self-ratifying policy"
+      ],
+      "required_capabilities": [
+        "class certification",
+        "independent evals",
+        "automatic suspension",
+        "incident budgets",
+        "delayed quality measurement"
+      ],
+      "required_evidence": [
+        "class-specific success history",
+        "suspension test",
+        "maintainability trend"
+      ]
+    },
+    {
+      "claim": "A narrowly certified reversible change class operates without synchronous human action.",
+      "id": "L5",
+      "name": "Bounded lights-off",
+      "prohibited_claims": [
+        "organization-wide autonomy",
+        "constitutional self-modification"
+      ],
+      "required_capabilities": [
+        "bounded authority",
+        "continuous evaluation",
+        "automatic rollback",
+        "revocation",
+        "human renewal"
+      ],
+      "required_evidence": [
+        "longitudinal outcome evidence",
+        "independent certification",
+        "revocation exercise"
+      ]
+    }
+  ],
+  "version": "0.5.1"
+}

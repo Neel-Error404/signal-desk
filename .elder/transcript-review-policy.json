@@ -1,0 +1,21 @@
+{
+  "id": "elder-workflow-transcript-review",
+  "maximum_failed_events": 0,
+  "require_elapsed_ms": true,
+  "require_monotonic_sequence": true,
+  "required_start_status": "running",
+  "secret_name_patterns": [
+    "TOKEN",
+    "SECRET",
+    "PASSWORD",
+    "CREDENTIAL",
+    "API_KEY",
+    "PRIVATE_KEY"
+  ],
+  "terminal_statuses": [
+    "complete",
+    "failed"
+  ],
+  "trace_format": "workflow-jsonl-v1",
+  "version": "0.5.1"
+}

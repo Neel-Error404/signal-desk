@@ -1,0 +1,27 @@
+{
+  "documents": [
+    {
+      "change_classes": [
+        "constitution"
+      ],
+      "content_sha256": "19cdf0a044f2232f5c637fbfdedb7a7bf39615720c0c1e596da712034bbba9c3",
+      "id": "ADR-0001",
+      "kind": "adr",
+      "notifies": [
+        "product-owner",
+        "architecture-owner",
+        "security-owner",
+        "release-owner",
+        "code-owner"
+      ],
+      "owners": [
+        "architecture-owner"
+      ],
+      "path": "docs/adr/0001-elder-foundation.md",
+      "status": "proposed",
+      "supersedes": [],
+      "title": "Adopt Elder Project Foundation"
+    }
+  ],
+  "version": "0.5.1"
+}

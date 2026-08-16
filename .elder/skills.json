@@ -1,0 +1,280 @@
+{
+  "skills": [
+    {
+      "capabilities": [
+        "intake",
+        "outcomes",
+        "scope",
+        "risk",
+        "authority"
+      ],
+      "description": "Use first when a project or task needs outcome framing, scope clarification, risk classification, authority boundaries, capability selection, and a governed intake packet.",
+      "id": "wayfinder",
+      "packs": [
+        "core"
+      ],
+      "path": "wayfinder/SKILL.md",
+      "priority": 1,
+      "requires": [],
+      "triggers": [
+        "new project",
+        "broad request",
+        "start implementation",
+        "define scope",
+        "project intake"
+      ]
+    },
+    {
+      "capabilities": [
+        "skill-routing",
+        "orchestration",
+        "dependency-resolution"
+      ],
+      "description": "Use at governed intake to deterministically rank repo-local skills from task language, selected capability packs, and declared skill dependencies.",
+      "id": "skill-router",
+      "packs": [
+        "agentic"
+      ],
+      "path": "skill-router/SKILL.md",
+      "priority": 1,
+      "requires": [
+        "wayfinder"
+      ],
+      "triggers": [
+        "route skills",
+        "which skill",
+        "select agent capability",
+        "dispatch workflow"
+      ]
+    },
+    {
+      "capabilities": [
+        "clarification",
+        "assumptions",
+        "risk",
+        "proof-gates"
+      ],
+      "description": "Use when a broad idea, project request, design, or plan needs structured Socratic challenge to expose assumptions, risks, decisions, and proof gates before execution.",
+      "id": "grill-me",
+      "packs": [
+        "core"
+      ],
+      "path": "grill-me/SKILL.md",
+      "priority": 2,
+      "requires": [
+        "wayfinder"
+      ],
+      "triggers": [
+        "grill me",
+        "challenge this idea",
+        "what are we missing",
+        "clarify assumptions"
+      ]
+    },
+    {
+      "capabilities": [
+        "repo-grounding",
+        "clarification",
+        "documentation",
+        "proof-boundary"
+      ],
+      "description": "Use when architecture, implementation, or governance decisions must be challenged against current repository documents, contracts, evidence, and operating instructions.",
+      "id": "grill-with-docs",
+      "packs": [
+        "core"
+      ],
+      "path": "grill-with-docs/SKILL.md",
+      "priority": 2,
+      "requires": [
+        "wayfinder"
+      ],
+      "triggers": [
+        "grill with docs",
+        "ground in repo",
+        "check current architecture",
+        "compare against docs"
+      ]
+    },
+    {
+      "capabilities": [
+        "architecture",
+        "invariants",
+        "contracts",
+        "dependency-graph"
+      ],
+      "description": "Use when defining or changing project architecture, boundaries, invariants, contracts, topology, nodes, edges, or dependency direction under Elder governance.",
+      "id": "architecture-governance",
+      "packs": [
+        "core",
+        "agentic",
+        "web-product",
+        "data",
+        "regulated"
+      ],
+      "path": "architecture-governance/SKILL.md",
+      "priority": 3,
+      "requires": [
+        "wayfinder",
+        "grill-with-docs"
+      ],
+      "triggers": [
+        "architecture design",
+        "system boundaries",
+        "nodes and edges",
+        "dependency graph"
+      ]
+    },
+    {
+      "capabilities": [
+        "testing",
+        "root-cause",
+        "verification-levels"
+      ],
+      "description": "Use when planning, executing, or reviewing verification in the required Foundation, Component, Integration, Workflow, and Stress sequence.",
+      "id": "test-ladder",
+      "packs": [
+        "core"
+      ],
+      "path": "test-ladder/SKILL.md",
+      "priority": 4,
+      "requires": [
+        "wayfinder"
+      ],
+      "triggers": [
+        "run tests",
+        "testing plan",
+        "verification level",
+        "test failure"
+      ]
+    },
+    {
+      "capabilities": [
+        "evidence",
+        "traces",
+        "claims",
+        "observability"
+      ],
+      "description": "Use when defining proof, operational claims, work-item traces, agent-run records, validation evidence, observability links, or completion gates.",
+      "id": "evidence-and-traces",
+      "packs": [
+        "core",
+        "agentic",
+        "web-product",
+        "data",
+        "regulated",
+        "learning"
+      ],
+      "path": "evidence-and-traces/SKILL.md",
+      "priority": 4,
+      "requires": [
+        "test-ladder"
+      ],
+      "triggers": [
+        "prove complete",
+        "validation evidence",
+        "execution trace",
+        "operational readiness"
+      ]
+    },
+    {
+      "capabilities": [
+        "skill-creation",
+        "skill-design",
+        "registry"
+      ],
+      "description": "Use when creating or revising concise repo-local skills with clear triggers, bounded authority, progressive disclosure, registry metadata, and validation.",
+      "id": "skill-creator",
+      "packs": [
+        "agentic"
+      ],
+      "path": "skill-creator/SKILL.md",
+      "priority": 4,
+      "requires": [
+        "wayfinder"
+      ],
+      "triggers": [
+        "create a skill",
+        "new repo skill",
+        "update skill",
+        "skill package"
+      ]
+    },
+    {
+      "capabilities": [
+        "git",
+        "worktrees",
+        "pull-requests",
+        "provenance"
+      ],
+      "description": "Use when decomposing work into branches, worktrees, commits, stacked pull requests, review units, release provenance, or rollback-safe change sequences.",
+      "id": "git-change-planning",
+      "packs": [
+        "core"
+      ],
+      "path": "git-change-planning/SKILL.md",
+      "priority": 5,
+      "requires": [
+        "wayfinder"
+      ],
+      "triggers": [
+        "git plan",
+        "branch strategy",
+        "stacked PR",
+        "commit protocol",
+        "release provenance"
+      ]
+    },
+    {
+      "capabilities": [
+        "learning",
+        "memory",
+        "replay",
+        "promotion"
+      ],
+      "description": "Use when converting traces, incidents, retrospectives, or experiments into candidate memory, skills, policies, evaluators, or architecture changes without unsafe self-promotion.",
+      "id": "learning-promotion",
+      "packs": [
+        "learning"
+      ],
+      "path": "learning-promotion/SKILL.md",
+      "priority": 6,
+      "requires": [
+        "evidence-and-traces",
+        "grill-with-docs"
+      ],
+      "triggers": [
+        "learn from traces",
+        "dreaming loop",
+        "promote memory",
+        "create policy from incident"
+      ]
+    },
+    {
+      "capabilities": [
+        "repository-learning",
+        "dreaming",
+        "mem0",
+        "luna",
+        "candidate-generation"
+      ],
+      "description": "Use Mem0 semantic recall and Azure Luna after evidence-bearing development work to produce one bounded repository-improvement candidate without direct trusted-state mutation.",
+      "id": "repository-dreaming",
+      "packs": [
+        "assurance"
+      ],
+      "path": "repository-dreaming/SKILL.md",
+      "priority": 6,
+      "requires": [
+        "evidence-and-traces",
+        "grill-with-docs"
+      ],
+      "triggers": [
+        "repository dreaming",
+        "dream about this work",
+        "learn from completed work",
+        "memory consolidation"
+      ]
+    }
+  ],
+  "version": "0.5.1"
+}

@@ -1,0 +1,72 @@
+{
+  "authority": {
+    "candidate_can_mutate_target": false,
+    "evaluator_can_approve": false,
+    "evaluator_can_promote": false,
+    "learning_agent_can_approve": false,
+    "observations_allow_side_effects": false,
+    "promoter_requires_approvals": true,
+    "promotion_packet_only": true
+  },
+  "candidate_kinds": [
+    "memory",
+    "skill",
+    "policy",
+    "evaluator",
+    "architecture"
+  ],
+  "id": "elder-quarantined-learning-v1",
+  "minimum_cases_by_mode": {
+    "counterfactual-replay": 2,
+    "shadow": 2
+  },
+  "observation_modes": [
+    "counterfactual-replay",
+    "shadow"
+  ],
+  "outcomes": [
+    "better",
+    "equivalent",
+    "worse"
+  ],
+  "promotion_requirements": {
+    "maximum_critical_regressions": 0,
+    "maximum_worse_cases": 0,
+    "minimum_better_cases": 1,
+    "require_independent_evaluator": true,
+    "required_approval_roles": {
+      "architecture": [
+        "human-owner",
+        "architecture-owner"
+      ],
+      "evaluator": [
+        "human-owner",
+        "architecture-owner"
+      ],
+      "memory": [
+        "human-owner"
+      ],
+      "policy": [
+        "human-owner",
+        "architecture-owner"
+      ],
+      "skill": [
+        "architecture-owner"
+      ]
+    },
+    "required_modes": [
+      "counterfactual-replay",
+      "shadow"
+    ]
+  },
+  "retention": {
+    "candidate_requires_expiry": true
+  },
+  "store": {
+    "adapter": "sqlite",
+    "authority": "local-reference-only",
+    "journal_mode": "WAL",
+    "synchronous": "FULL"
+  },
+  "version": "0.5.1"
+}

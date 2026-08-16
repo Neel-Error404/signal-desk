@@ -1,0 +1,62 @@
+{
+  "authority": {
+    "agent_can_self_promote": false,
+    "approval_must_be_independent": true,
+    "learning_can_modify_trusted": false
+  },
+  "candidate_writers": [
+    "human-owner",
+    "learning-agent",
+    "evaluator"
+  ],
+  "id": "elder-governed-memory-v1",
+  "kinds": [
+    "episodic",
+    "semantic",
+    "procedural"
+  ],
+  "retention": {
+    "candidate_requires_expiry": true,
+    "trusted_requires_review_at": true
+  },
+  "retrieval": {
+    "default_statuses": [
+      "trusted"
+    ],
+    "deterministic_order": "confidence-created-id",
+    "namespace_required": true
+  },
+  "states": [
+    "candidate",
+    "trusted",
+    "superseded",
+    "rejected",
+    "revoked"
+  ],
+  "transitions": [
+    {
+      "from": "candidate",
+      "requires_approval": true,
+      "to": "trusted"
+    },
+    {
+      "from": "candidate",
+      "requires_approval": true,
+      "to": "rejected"
+    },
+    {
+      "from": "trusted",
+      "requires_approval": true,
+      "to": "superseded"
+    },
+    {
+      "from": "trusted",
+      "requires_approval": true,
+      "to": "revoked"
+    }
+  ],
+  "trusted_promoters": [
+    "human-owner"
+  ],
+  "version": "0.5.1"
+}

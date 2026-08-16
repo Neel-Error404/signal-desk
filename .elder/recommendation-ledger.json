@@ -1,0 +1,1270 @@
+{
+  "recommendations": [
+    {
+      "architecture_layers": [
+        "kernel",
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "INV-008 and protocol operational-readiness validation",
+          "id": "operational-claim-gate",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "protocol/operational-maturity.json",
+          "id": "maturity-claim-model",
+          "kind": "deterministic",
+          "status": "implemented"
+        }
+      ],
+      "id": "SF-001",
+      "known_gaps": [
+        "Hosted production maturity has not been demonstrated."
+      ],
+      "operational_status": "implemented",
+      "principle": "Represent the factory as an evolving collection of verified capabilities, never as a solved general-autonomy product.",
+      "required_artifacts": [
+        "operational-readiness",
+        "operational-maturity",
+        "evidence-bundle"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Outcome"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "operator-instruction",
+        "locator": "conversation:2026-08-05-software-factory-realism",
+        "title": "Software factories are real but not solved"
+      },
+      "title": "Factory claims remain evidence-bound"
+    },
+    {
+      "architecture_layers": [
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "required factory-operations capability pack",
+          "id": "factory-operations-pack",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "operational maturity review before autonomy elevation",
+          "id": "autonomy-capability-gate",
+          "kind": "human",
+          "status": "specified"
+        }
+      ],
+      "id": "SF-002",
+      "known_gaps": [
+        "Protected branch governance, secret brokering, and production controls remain activation gates."
+      ],
+      "operational_status": "implemented",
+      "principle": "Higher autonomy depends on isolation, builds, delivery, identity, secrets, and developer experience that work without model judgment.",
+      "required_artifacts": [
+        "factory-operating-contract",
+        "operational-maturity",
+        "readiness-evidence"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Integration",
+        "Workflow",
+        "Stress"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "social-post",
+        "locator": "https://x.com/dexhorthy/status/2080697380379427275",
+        "title": "Build the factory pieces before selling the factory"
+      },
+      "title": "Non-agent substrate precedes higher autonomy"
+    },
+    {
+      "architecture_layers": [
+        "factory"
+      ],
+      "controls": [
+        {
+          "enforcement": "factory worktree lifecycle",
+          "id": "isolated-worktree",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "stack-adapter sandbox implementation",
+          "id": "os-container-sandbox",
+          "kind": "deterministic",
+          "status": "planned"
+        }
+      ],
+      "id": "SF-003",
+      "known_gaps": [
+        "Current isolation is process and worktree scoped, not an OS or container security boundary."
+      ],
+      "operational_status": "implemented",
+      "principle": "Concurrent or untrusted agent work executes in isolated, disposable environments with bounded resources and no ambient production credentials.",
+      "required_artifacts": [
+        "sandbox-policy",
+        "factory-substrate-contract",
+        "sandbox-test"
+      ],
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Stress"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "social-post",
+        "locator": "https://x.com/dexhorthy/status/2081797976675307652",
+        "title": "Sandboxing is a factory prerequisite"
+      },
+      "title": "Agent execution is isolated"
+    },
+    {
+      "architecture_layers": [
+        "kernel",
+        "factory"
+      ],
+      "controls": [
+        {
+          "enforcement": "project-profile topology enum and validation",
+          "id": "profile-topology",
+          "kind": "deterministic",
+          "status": "verified"
+        }
+      ],
+      "id": "SF-004",
+      "known_gaps": [
+        "Topology-specific stack adapters are not yet implemented."
+      ],
+      "operational_status": "verified",
+      "principle": "Choose single-repo, monorepo, multirepo, or federated topology from dependency, ownership, release, and agent-context needs.",
+      "required_artifacts": [
+        "project-profile",
+        "repository-topology",
+        "dependency-graph"
+      ],
+      "required_evidence": [
+        "Foundation"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "operator-instruction",
+        "locator": "conversation:2026-08-05-repository-topology",
+        "title": "Monorepo is a choice, not a universal default"
+      },
+      "title": "Repository topology is deliberate"
+    },
+    {
+      "architecture_layers": [
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "factory build and digest verification",
+          "id": "deterministic-artifact-build",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "hosted CI signed attestation",
+          "id": "hosted-provenance",
+          "kind": "deterministic",
+          "status": "implemented"
+        }
+      ],
+      "id": "SF-005",
+      "known_gaps": [
+        "Cross-platform runner diversity and GitHub-native persisted attestation remain unverified."
+      ],
+      "operational_status": "verified",
+      "principle": "A clean build from the same declared inputs produces the same artifact identity, with provenance that can be independently verified.",
+      "required_artifacts": [
+        "build-contract",
+        "artifact-provenance",
+        "verification-record"
+      ],
+      "required_evidence": [
+        "Integration",
+        "Stress"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "social-post",
+        "locator": "https://x.com/dexhorthy/status/2081059042584334696",
+        "title": "Reproducible builds are a factory prerequisite"
+      },
+      "title": "Builds are reproducible and content-addressed"
+    },
+    {
+      "architecture_layers": [
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "CI workflow and branch ruleset plan",
+          "id": "required-check-ladder",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "factory promotion and rollback engine",
+          "id": "digest-bound-promotion",
+          "kind": "deterministic",
+          "status": "verified"
+        }
+      ],
+      "id": "SF-006",
+      "known_gaps": [
+        "Hosted CI is active; branch rules and merge queue remain blocked by private-repository plan eligibility."
+      ],
+      "operational_status": "implemented",
+      "principle": "Required checks, provenance, promotion, canary observation, and rollback form one governed delivery path.",
+      "required_artifacts": [
+        "ci-contract",
+        "promotion-record",
+        "rollback-record",
+        "canary-observation"
+      ],
+      "required_evidence": [
+        "Integration",
+        "Workflow",
+        "Stress"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "operator-instruction",
+        "locator": "conversation:2026-08-05-factory-delivery",
+        "title": "Factory delivery requires hosted checks, promotion, and rollback"
+      },
+      "title": "CI/CD is the governed delivery path"
+    },
+    {
+      "architecture_layers": [
+        "factory"
+      ],
+      "controls": [
+        {
+          "enforcement": "allowlisted factory environment with secret-shaped name rejection",
+          "id": "secretless-local-environment",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "identity-provider and secret-broker adapter",
+          "id": "external-workload-trust",
+          "kind": "deterministic",
+          "status": "planned"
+        }
+      ],
+      "id": "SF-007",
+      "known_gaps": [
+        "GitHub OIDC workload identity is verified for P4.8A evidence; no external secret broker is configured."
+      ],
+      "operational_status": "implemented",
+      "principle": "Use short-lived workload identity and external secret brokering; never place long-lived production credentials inside agent sandboxes or repository truth.",
+      "required_artifacts": [
+        "identity-policy",
+        "secret-policy",
+        "trust-configuration",
+        "security-audit"
+      ],
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Stress"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "operator-instruction",
+        "locator": "conversation:2026-08-05-identity-secret-boundary",
+        "title": "Agents receive minimum scoped identity without ambient production secrets"
+      },
+      "title": "Identity and secrets are external trust boundaries"
+    },
+    {
+      "architecture_layers": [
+        "kernel",
+        "factory",
+        "project"
+      ],
+      "controls": [
+        {
+          "enforcement": "compiler-generated AGENTS.md, ownership, skills, and project graph",
+          "id": "generated-agent-contract",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "explicit protocol errors and ordered test ladder",
+          "id": "actionable-failure-contract",
+          "kind": "deterministic",
+          "status": "implemented"
+        }
+      ],
+      "id": "SF-008",
+      "known_gaps": [
+        "Time-to-context and agent-friction metrics are not collected."
+      ],
+      "operational_status": "implemented",
+      "principle": "Agents need deterministic setup, discoverable contracts, fast feedback, bounded tools, and actionable failures rather than undocumented organizational friction.",
+      "required_artifacts": [
+        "agents-contract",
+        "developer-experience-contract",
+        "golden-path",
+        "skill-registry"
+      ],
+      "required_evidence": [
+        "Component",
+        "Workflow"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "social-post",
+        "locator": "https://x.com/dexhorthy/status/2080697380379427275",
+        "title": "Remove corporate friction for agents"
+      },
+      "title": "Agent developer experience is an architecture concern"
+    },
+    {
+      "architecture_layers": [
+        "kernel",
+        "project"
+      ],
+      "controls": [
+        {
+          "enforcement": "compiler-owned concise ARCHITECTURE.md",
+          "id": "generated-architecture-contract",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "ADR and architecture-owner approval",
+          "id": "architecture-owner-amendment",
+          "kind": "human",
+          "status": "implemented"
+        }
+      ],
+      "id": "SLP-001",
+      "known_gaps": [
+        "Generated projects still need stack-specific architecture fitness adapters."
+      ],
+      "operational_status": "verified",
+      "principle": "ARCHITECTURE.md contains durable boundaries and dependency rules, while volatile implementation detail lives elsewhere.",
+      "required_artifacts": [
+        "architecture",
+        "invariants",
+        "adr"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Workflow"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "talk",
+        "locator": "https://www.youtube.com/watch?v=AMiyLItEtLA",
+        "title": "Fighting Slop with Slop"
+      },
+      "title": "Stable architecture invariants stay concise"
+    },
+    {
+      "architecture_layers": [
+        "kernel",
+        "project",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "hash-bound design registry with owners, status, change classes, notifications, and supersession validation",
+          "id": "design-doc-gate",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "owner approval and change notification",
+          "id": "design-owner-review",
+          "kind": "human",
+          "status": "specified"
+        }
+      ],
+      "id": "SLP-002",
+      "known_gaps": [
+        "Registry validation is operational; external notification delivery is not implemented."
+      ],
+      "operational_status": "implemented",
+      "principle": "Hard-to-reverse changes require versioned intent, alternatives, consequences, owners, and notification before implementation.",
+      "required_artifacts": [
+        "design-document",
+        "adr",
+        "change-notification"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Workflow"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "talk",
+        "locator": "https://www.youtube.com/watch?v=AMiyLItEtLA",
+        "title": "Fighting Slop with Slop"
+      },
+      "title": "Design writing is governed engineering output"
+    },
+    {
+      "architecture_layers": [
+        "project",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "component operating contract allowed and forbidden dependencies",
+          "id": "component-dependency-contract",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "language-specific dependency graph fitness function in CI",
+          "id": "stack-fitness-adapter",
+          "kind": "deterministic",
+          "status": "verified"
+        }
+      ],
+      "id": "SLP-003",
+      "known_gaps": [
+        "The first reusable adapter supports Python AST imports; other language adapters remain open."
+      ],
+      "operational_status": "verified",
+      "principle": "Dependency direction and forbidden coupling are represented as machine-readable constraints and fail delivery when violated.",
+      "required_artifacts": [
+        "component-operating-contract",
+        "dependency-graph",
+        "fitness-result"
+      ],
+      "required_evidence": [
+        "Component",
+        "Integration"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "talk",
+        "locator": "https://www.youtube.com/watch?v=AMiyLItEtLA",
+        "title": "Fighting Slop with Slop"
+      },
+      "title": "Architecture boundaries are executable"
+    },
+    {
+      "architecture_layers": [
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "independent workflow JSONL evaluator with identity separation, trace integrity, failure-budget, elapsed-time, and secret-field checks",
+          "id": "deterministic-transcript-review",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "separate evaluator result over immutable execution traces with calibration binding",
+          "id": "independent-transcript-review",
+          "kind": "probabilistic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "INV-002 and authority matrix",
+          "id": "no-self-promotion",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "digest-bound counterfactual replay, shadow observations, independent evaluation, accountable approvals, separate promotion, and journal replay",
+          "id": "quarantined-learning-runtime",
+          "kind": "deterministic",
+          "status": "verified"
+        }
+      ],
+      "id": "SLP-004",
+      "known_gaps": [
+        "Local quarantined replay, shadow evidence, and promotion packets are operational; live model-provider execution, hosted evaluator isolation, production traffic shadowing, and target-application adapters remain open."
+      ],
+      "operational_status": "implemented",
+      "principle": "Independent meta-agents inspect agent transcripts for unsupported assumptions, inefficient tool use, and candidate experiments, but cannot approve or promote changes.",
+      "required_artifacts": [
+        "agent-run",
+        "transcript-review",
+        "evaluation-comparison",
+        "learning-policy",
+        "learning-candidate",
+        "learning-promotion"
+      ],
+      "required_evidence": [
+        "Integration",
+        "Workflow",
+        "Outcome"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "talk",
+        "locator": "https://www.youtube.com/watch?v=AMiyLItEtLA",
+        "title": "Fighting Slop with Slop"
+      },
+      "title": "Meta-agents review traces, not authority"
+    },
+    {
+      "architecture_layers": [
+        "factory",
+        "project",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "agent-run and Workbench trace contracts",
+          "id": "append-only-product-trace",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "factory JSONL lifecycle trace",
+          "id": "append-only-factory-trace",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "typed Workbench, factory, and evaluation adapters with trace, cost, tool, and outcome correlation",
+          "id": "correlated-telemetry-normalizer",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "lease-bound local coordination with typed action, message, checkpoint, cancellation, and replay journals",
+          "id": "bounded-multi-agent-runtime-journal",
+          "kind": "deterministic",
+          "status": "verified"
+        }
+      ],
+      "id": "SLP-005",
+      "known_gaps": [
+        "Local correlation, normalization, and bounded runtime replay are operational; central collection, production retention, alerts, hosted exemplars, and distributed orchestration remain absent."
+      ],
+      "operational_status": "verified",
+      "principle": "Product and factory behavior is inspectable through correlated traces of decisions, model calls, tools, state transitions, cost, errors, and outcomes.",
+      "required_artifacts": [
+        "trace-contract",
+        "agent-run",
+        "factory-trace",
+        "telemetry-correlation",
+        "multi-agent-runtime-policy"
+      ],
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Workflow"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "talk",
+        "locator": "https://www.youtube.com/watch?v=AMiyLItEtLA",
+        "title": "Fighting Slop with Slop"
+      },
+      "title": "Execution traces explain runtime behavior"
+    },
+    {
+      "architecture_layers": [
+        "capability",
+        "project",
+        "factory"
+      ],
+      "controls": [
+        {
+          "enforcement": "tool, MCP, context, work-item, and component schemas",
+          "id": "typed-tool-contract",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "stack-adapter validation at every external boundary",
+          "id": "runtime-schema-validation",
+          "kind": "deterministic",
+          "status": "planned"
+        }
+      ],
+      "id": "SLP-006",
+      "known_gaps": [
+        "Typed contracts are not yet enforced by all runtime adapters."
+      ],
+      "operational_status": "implemented",
+      "principle": "Structured schemas, explicit errors, and validated tool contracts replace stringly typed control flow for governed actions.",
+      "required_artifacts": [
+        "tool-contract",
+        "component-operating-contract",
+        "error-contract"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "talk",
+        "locator": "https://www.youtube.com/watch?v=AMiyLItEtLA",
+        "title": "Fighting Slop with Slop"
+      },
+      "title": "Agent-facing tools use typed interfaces"
+    },
+    {
+      "architecture_layers": [
+        "adapter",
+        "project"
+      ],
+      "controls": [
+        {
+          "enforcement": "component operating contract inputs, outputs, and error contracts",
+          "id": "language-boundary-schema",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "stack-specific consumer and provider compatibility tests",
+          "id": "contract-compatibility-test",
+          "kind": "deterministic",
+          "status": "planned"
+        }
+      ],
+      "id": "SLP-007",
+      "known_gaps": [
+        "No cross-language reference adapter is implemented."
+      ],
+      "operational_status": "implemented",
+      "principle": "Components may use different languages internally, but exchanged data, side effects, and error behavior cross only versioned typed contracts.",
+      "required_artifacts": [
+        "component-operating-contract",
+        "schema-version",
+        "compatibility-result"
+      ],
+      "required_evidence": [
+        "Component",
+        "Integration"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "talk",
+        "locator": "https://www.youtube.com/watch?v=AMiyLItEtLA",
+        "title": "Fighting Slop with Slop"
+      },
+      "title": "Cross-language boundaries preserve types and failures"
+    },
+    {
+      "architecture_layers": [
+        "kernel",
+        "capability",
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "capability-specific secure development plan and control register",
+          "id": "secure-ai-practice-map",
+          "kind": "deterministic",
+          "status": "specified"
+        },
+        {
+          "enforcement": "security-owner review of model, data, tool, and deployment consequences",
+          "id": "ai-risk-owner-review",
+          "kind": "human",
+          "status": "specified"
+        }
+      ],
+      "id": "STD-001",
+      "known_gaps": [
+        "The NIST AI SSDF profile is not yet mapped control-by-control to Elder capability packs."
+      ],
+      "operational_status": "specified",
+      "principle": "Model, data, prompt, tool, and agent risks are governed inside the secure software lifecycle rather than treated as post-build review.",
+      "required_artifacts": [
+        "secure-development-plan",
+        "threat-model",
+        "supply-chain-register",
+        "incident-plan"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Outcome"
+      ],
+      "source": {
+        "authority": "primary",
+        "kind": "standard",
+        "locator": "https://csrc.nist.gov/pubs/sp/800/218/a/final",
+        "title": "NIST SP 800-218A Secure Software Development Practices for Generative AI and Dual-Use Foundation Models"
+      },
+      "title": "AI-specific secure development is part of the SDLC"
+    },
+    {
+      "architecture_layers": [
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "artifact digest and provenance verification before promotion",
+          "id": "provenance-verification",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "hosted build platform with isolated runs and inaccessible signing material",
+          "id": "isolated-signed-builder",
+          "kind": "deterministic",
+          "status": "implemented"
+        }
+      ],
+      "id": "STD-002",
+      "known_gaps": [
+        "Provider-bound independent Ed25519 provenance is implemented; GitHub-native persisted attestation remains plan-blocked."
+      ],
+      "operational_status": "implemented",
+      "principle": "Build provenance must be complete, authentic, tamper-resistant for the declared level, distributed with the artifact, and independently verified.",
+      "required_artifacts": [
+        "build-provenance",
+        "verification-policy",
+        "verification-record"
+      ],
+      "required_evidence": [
+        "Integration",
+        "Workflow",
+        "Stress"
+      ],
+      "source": {
+        "authority": "primary",
+        "kind": "standard",
+        "locator": "https://slsa.dev/spec/v1.2/",
+        "title": "SLSA v1.2 Build and Provenance Requirements"
+      },
+      "title": "Artifact provenance is verified, not merely produced"
+    },
+    {
+      "architecture_layers": [
+        "adapter",
+        "factory",
+        "project",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "telemetry adapter maps runtime events to the selected OpenTelemetry GenAI convention version",
+          "id": "genai-semantic-trace-adapter",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "work item, agent run, model call, tool call, artifact, deployment, and outcome correlation ids",
+          "id": "end-to-end-correlation",
+          "kind": "deterministic",
+          "status": "verified"
+        }
+      ],
+      "id": "STD-003",
+      "known_gaps": [
+        "The canonical local adapter is operational; OTLP export, a hosted collector, production retention, exemplars, alerts, and convention-drift automation remain open."
+      ],
+      "operational_status": "implemented",
+      "principle": "Model, agent, and tool spans use stable semantic fields so traces, metrics, logs, costs, errors, and outcomes can be correlated across runtimes.",
+      "required_artifacts": [
+        "telemetry-contract",
+        "semantic-convention-version",
+        "correlation-test"
+      ],
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Workflow"
+      ],
+      "source": {
+        "authority": "primary",
+        "kind": "standard",
+        "locator": "https://github.com/open-telemetry/semantic-conventions-genai",
+        "title": "OpenTelemetry Generative AI Semantic Conventions"
+      },
+      "title": "GenAI telemetry uses interoperable semantic conventions"
+    },
+    {
+      "architecture_layers": [
+        "capability",
+        "adapter",
+        "factory"
+      ],
+      "controls": [
+        {
+          "enforcement": "MCP adapter selects the required authorization flow by transport and resource boundary",
+          "id": "transport-aware-mcp-authorization",
+          "kind": "deterministic",
+          "status": "specified"
+        },
+        {
+          "enforcement": "declared tool scopes, credential mode, user consent, and denial behavior",
+          "id": "mcp-least-privilege-scope",
+          "kind": "deterministic",
+          "status": "implemented"
+        }
+      ],
+      "id": "STD-004",
+      "known_gaps": [
+        "No remote MCP authorization adapter or consent workflow is implemented."
+      ],
+      "operational_status": "specified",
+      "principle": "Remote MCP access uses explicit authorization, scoped consent, and protected-resource boundaries; tool discovery never implies permission.",
+      "required_artifacts": [
+        "mcp-registry",
+        "authorization-policy",
+        "consent-record",
+        "access-test"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Integration",
+        "Workflow",
+        "Stress"
+      ],
+      "source": {
+        "authority": "primary",
+        "kind": "standard",
+        "locator": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization",
+        "title": "Model Context Protocol Authorization Specification"
+      },
+      "title": "MCP authorization follows transport and consent boundaries"
+    },
+    {
+      "architecture_layers": [
+        "project",
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "dataset owner, provenance, sensitivity, split, threshold, and content digest validation",
+          "id": "hash-bound-evaluation-registry",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "rubric results require qualified held-out calibration for the same dataset revision, judge, and evaluator",
+          "id": "calibrated-rubric-judge",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "provider-neutral typed judge-result artifact with evidence and bounded score",
+          "id": "independent-model-judge-adapter",
+          "kind": "probabilistic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "accountable humans own reference labels, dataset changes, and release interpretation",
+          "id": "human-label-ownership",
+          "kind": "human",
+          "status": "specified"
+        }
+      ],
+      "id": "EVAL-001",
+      "known_gaps": [
+        "The local reference dataset is intentionally small; live provider adapters, larger representative corpora, multi-rater labels, and longitudinal outcome calibration remain open."
+      ],
+      "operational_status": "implemented",
+      "principle": "Quality claims use representative versioned cases, task-appropriate graders, held-out calibration, case-level evidence, and continuous comparison against a bound baseline.",
+      "required_artifacts": [
+        "evaluation-registry",
+        "evaluation-dataset",
+        "evaluator-contract",
+        "calibration-report",
+        "evaluation-report",
+        "comparison-report"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow",
+        "Outcome"
+      ],
+      "source": {
+        "authority": "primary",
+        "kind": "primary-guidance",
+        "locator": "https://platform.openai.com/api/docs/guides/evaluation-best-practices",
+        "title": "OpenAI Evaluation Best Practices"
+      },
+      "title": "Evaluation uses governed datasets and calibrated graders"
+    },
+    {
+      "architecture_layers": [
+        "project",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "evidence-cited independent rubric scoring",
+          "id": "judgment-rubric",
+          "kind": "probabilistic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "rubric cannot override invariant, security, authority, or evidence failures",
+          "id": "judgment-veto-boundary",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "rubric judges must meet accuracy, F1, abstention, identity, and dataset-revision thresholds",
+          "id": "judgment-calibration-gate",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "accountable human review for high-risk or externally visible changes",
+          "id": "human-taste-review",
+          "kind": "human",
+          "status": "specified"
+        }
+      ],
+      "id": "JDG-001",
+      "known_gaps": [
+        "A local single-judge calibration baseline exists; multi-rater human agreement and production judge drift monitoring remain open."
+      ],
+      "operational_status": "implemented",
+      "principle": "Correctness is necessary but insufficient; outcome fit, coherence, simplicity, changeability, operability, user trust, and evidence quality require calibrated judgment.",
+      "required_artifacts": [
+        "judgment-rubric",
+        "evaluation-record",
+        "human-decision-record"
+      ],
+      "required_evidence": [
+        "Workflow",
+        "Outcome"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "operator-instruction",
+        "locator": "conversation:2026-08-05-judgment-and-taste",
+        "title": "AI judgment and taste must be part of factory assurance"
+      },
+      "title": "Judgment and taste are explicit, evidence-cited, and subordinate to invariants"
+    },
+    {
+      "architecture_layers": [
+        "capability",
+        "adapter",
+        "project",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "transactional node, edge, memory, digest, source, authority, and audit validation",
+          "id": "provenance-bound-knowledge-store",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "independent human-owner approval artifact for every trusted-memory transition",
+          "id": "trusted-memory-promotion-gate",
+          "kind": "human",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "authority, status, freshness, deduplication, budget, and explicit-exclusion policy",
+          "id": "deterministic-context-assembler",
+          "kind": "deterministic",
+          "status": "verified"
+        }
+      ],
+      "id": "KNO-001",
+      "known_gaps": [
+        "The SQLite adapter is local-only; hosted access control, encryption, backups, recovery, vector retrieval, and multi-tenant isolation remain open."
+      ],
+      "operational_status": "implemented",
+      "principle": "Retrieved knowledge remains attributable to sources and actors, memory is scoped and lifecycle-governed, and context assembly cannot silently expand authority.",
+      "required_artifacts": [
+        "context-policy",
+        "memory-policy",
+        "knowledge-store",
+        "context-packet",
+        "memory-approval"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow",
+        "Stress"
+      ],
+      "source": {
+        "authority": "primary",
+        "kind": "standard-and-primary-guidance",
+        "locator": "https://www.w3.org/TR/prov-o/",
+        "title": "W3C PROV and reviewed agent-memory guidance"
+      },
+      "title": "Context and memory preserve provenance and authority"
+    },
+    {
+      "architecture_layers": [
+        "kernel",
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "Ed25519 trust anchors, canonical record signatures, payload digests, source-host restrictions, freshness, and expiry",
+          "id": "signed-hosted-evidence",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "qualification policy maps every L0-L5 capability and evidence requirement exactly once",
+          "id": "cumulative-maturity-gates",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "qualification reports remain advisory and accountable owners retain claim, release, and production authority",
+          "id": "accountable-hosted-claim",
+          "kind": "human",
+          "status": "implemented"
+        }
+      ],
+      "id": "OPS-002",
+      "known_gaps": [
+        "Exact-commit advisory L2 issuance is verified for d8c8eb3f5412bf1fe062a6cee55e35dd45e46589; canonical maturity remains L1 and protected branch governance remains plan-blocked."
+      ],
+      "operational_status": "implemented",
+      "principle": "A hosted operational maturity claim is cumulative and must be supported by current project, environment, artifact, payload, trust, and signer-bound evidence rather than configuration or self-authored assertions.",
+      "required_artifacts": [
+        "qualification-policy",
+        "hosted-evidence-bundle",
+        "qualification-report"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow",
+        "Stress",
+        "Outcome"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "elder-design-decision",
+        "locator": "docs/adr/0013-p4-7-hosted-production-qualification.md",
+        "title": "P4.7 hosted production qualification"
+      },
+      "title": "Hosted maturity claims require independent signed evidence"
+    },
+    {
+      "architecture_layers": [
+        "kernel",
+        "project",
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "minimum of hosted maturity, project ceiling, selected autonomy-class maximum, and active certification",
+          "id": "effective-autonomy-minimum",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "invalid qualification, expiry, suspension, revocation, contradiction, or budget exhaustion resolves authority to none",
+          "id": "autonomy-hard-stops",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "accountable humans issue, suspend, revoke, and renew certifications while evaluators remain independent",
+          "id": "human-autonomy-governance",
+          "kind": "human",
+          "status": "implemented"
+        }
+      ],
+      "id": "AUT-001",
+      "known_gaps": [
+        "The canonical repository has no valid hosted L2 qualification consumption or active certification, so no operational autonomy is activated."
+      ],
+      "operational_status": "implemented",
+      "principle": "A class certification can only consume current hosted maturity and must fail closed on invalid qualification, expiry, suspension, revocation, contradiction, or exhausted incident budget.",
+      "required_artifacts": [
+        "autonomy-policy",
+        "autonomy-class-registry",
+        "autonomy-certification",
+        "incident-budget",
+        "qualification-consumption",
+        "effective-autonomy-report"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow",
+        "Stress",
+        "Outcome"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "elder-design-decision",
+        "locator": "docs/adr/0014-p5-0-autonomy-class-contracts.md",
+        "title": "P5.0 autonomy-class contracts"
+      },
+      "title": "Autonomy is earned and consumed per reversible change class"
+    },
+    {
+      "architecture_layers": [
+        "kernel",
+        "project",
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "structured work-item matching, concrete certified paths and tools, required checks, semantic equivalence, forbidden-effect validation, and future-event rejection",
+          "id": "deterministic-autonomy-simulation",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "contiguous event sequence, previous-event digest binding, policy-specific lifecycle roles, lifecycle transitions, incident accounting, and suspension derivation",
+          "id": "hash-chained-certification-replay",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "canonical project authority registry, signed-bundle P4.7 re-evaluation, signed authority-source evidence bound to that registry, lifecycle replay, exact derived-report recomputation, short expiry, exact execution and packet reconstruction, signed workspace, file, test, evaluation, hosted controls, and repository URL prefix, and exact provider-response binding after complete validation",
+          "id": "supervised-pr-authority-lease",
+          "kind": "deterministic",
+          "status": "verified"
+        },
+        {
+          "enforcement": "PR packets and authority leases explicitly exclude merge, deployment, maturity mutation, and automatic renewal",
+          "id": "human-merge-and-release",
+          "kind": "human",
+          "status": "implemented"
+        }
+      ],
+      "id": "AUT-002",
+      "known_gaps": [
+        "Canonical P5.2 activation remains blocked on an active canonical project authority source, approved L2 qualification consumption, an active certification, and verified branch protection."
+      ],
+      "operational_status": "implemented",
+      "principle": "A certified agent may create one supervised pull request only after repository-owned canonical authority resolution, signed hosted L2 re-evaluation, independently signed complete governance-source evidence bound to that source, active lifecycle replay, trusted-source report recomputation, short-lived authority, exact execution binding, independently signed workspace, file, test, evaluation, hosted Git, repository URL prefix, and external-identity evidence, and an exact provider response bound to the authorized packet.",
+      "required_artifacts": [
+        "autonomy-authority-source",
+        "autonomy-work-item",
+        "autonomy-match-report",
+        "autonomy-simulation-report",
+        "autonomy-certification-event",
+        "autonomy-replay-report",
+        "autonomy-authority-evidence",
+        "autonomy-authority-lease",
+        "hosted-git-evidence",
+        "supervised-pr-execution",
+        "supervised-pr-packet",
+        "supervised-pr-response"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow",
+        "Stress",
+        "Outcome"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "elder-design-decision",
+        "locator": "docs/adr/0016-p5-2-supervised-autonomous-prs.md",
+        "title": "P5.1 simulation and P5.2 supervised autonomous pull requests"
+      },
+      "title": "Supervised pull-request authority is exact, temporary, and externally qualified"
+    },
+    {
+      "architecture_layers": [
+        "kernel",
+        "adapter",
+        "project",
+        "factory",
+        "assurance-learning"
+      ],
+      "controls": [
+        {
+          "enforcement": "canonical authority resolution, signed L3 qualification re-verification, explicitly canary-capable L3 class, active certification replay, exact report recomputation, exact signed canary-plan authority, and short-lived canary-only lease",
+          "id": "l3-canary-authority",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "independently signed provider controls with a reserved deployment identifier, immutable plan and packet, runtime-owned canonical durable one-shot plan and packet claim, non-future-dated lifecycle and authority revalidation, canonical accepted-response persistence, and exact response URL, deployment, artifact, rollback artifact, traffic, and start-time binding",
+          "id": "trusted-canary-provider-binding",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "fresh signed observations are accepted only for canonical observing state and are bound to the exact persisted accepted response and deployment, maximum duration uses evaluation time, claimed starts and accepted executions durably register and schedule their respective timeouts, watchdog installation failure rolls back immediately, restart sweep uses the runtime clock, terminally records expired authority, and isolates each due record, every rollback executor atomically claims canonical state only inside its requested-at-through-required-by runtime interval, deadline claims use runtime time, and the interval is rechecked before provider invocation, rollback packets are persisted with atomic claims, stale or failed claims are reclaimable only with the unchanged packet inside its original authorization window, and every start uncertainty, threshold, duration, or missing-telemetry deadline breach invokes the provider rollback adapter and accepts only an exact rollback response",
+          "id": "automatic-canary-rollback",
+          "kind": "deterministic",
+          "status": "implemented"
+        },
+        {
+          "enforcement": "canary leases, packets, responses, and observation reports explicitly deny promotion and full rollout",
+          "id": "human-production-promotion",
+          "kind": "human",
+          "status": "implemented"
+        }
+      ],
+      "id": "AUT-003",
+      "known_gaps": [
+        "Canonical P5.3 activation remains blocked until a valid L3 qualification is consumed with an active L3-capable class certification, verified branch protection, external identity, secret broker, central telemetry, and automatic rollback."
+      ],
+      "operational_status": "implemented",
+      "principle": "A canary may start only under current non-future-dated L3 authority, exact signed plan authority, runtime-owned one-shot plan and packet consumption, current governance revalidation, provider-reserved deployment identity, durable start-response and observation watchdogs, and exact signed provider evidence; every accepted response, deployment, observation, and rollback packet remains canonically persisted and digest-bound, watchdog installation failure and any start uncertainty, threshold, duration, or telemetry-deadline breach require recoverable rollback without renewing the original authorization window, and no canary result can authorize promotion or full rollout.",
+      "required_artifacts": [
+        "canary-plan",
+        "canary-simulation-report",
+        "canary-authority-evidence",
+        "canary-authority-lease",
+        "canary-provider-evidence",
+        "canary-execution-packet",
+        "canary-response",
+        "canary-observation",
+        "canary-observation-report",
+        "canary-rollback-packet",
+        "canary-rollback-response",
+        "canary-workflow-result"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow",
+        "Stress",
+        "Outcome"
+      ],
+      "source": {
+        "authority": "adopted",
+        "kind": "elder-design-decision",
+        "locator": "docs/adr/0018-p5-3-fail-closed-canary.md",
+        "title": "P5.3 fail-closed canary execution"
+      },
+      "title": "Canary execution is L3-only, bounded, observable, and non-promoting"
+    }
+  ],
+  "version": "0.5.1"
+}

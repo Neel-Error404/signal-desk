@@ -1,0 +1,32 @@
+{
+  "adapters": [
+    {
+      "adapter_point": "language-toolchain",
+      "contract": "architecture-boundary.schema.json",
+      "id": "python-ast-imports",
+      "implementation": "elder_protocol.boundaries",
+      "pack": "core",
+      "required_evidence": [
+        "Foundation"
+      ],
+      "status": "operational-local",
+      "technology": "Python"
+    },
+    {
+      "adapter_point": "repository-dreaming-engine",
+      "contract": "dreaming-request.schema.json",
+      "id": "mem0-azure-luna-dreaming",
+      "implementation": "elder_protocol.dreaming",
+      "pack": "assurance",
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "reference-only",
+      "technology": "Mem0 OSS, Qdrant, and Azure Luna"
+    }
+  ],
+  "version": "0.5.1"
+}

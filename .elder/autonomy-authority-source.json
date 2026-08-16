@@ -1,0 +1,16 @@
+{
+  "id": "elder-canonical-autonomy-authority-source-v1",
+  "projects": [
+    {
+      "autonomy_classes_sha256": "a46aab870743bea09ad14034e5ebe0cb09978f95d15b9f11801f9c58d483aaac",
+      "autonomy_policy_sha256": "1afa27d5f701cd6014e2ebd0573c398ba86c74a70ab9219200200076e7a7c753",
+      "change_classes_sha256": "d34e3e79b95f7d16abcd67e6b95c89ef68ac9f3f5bbff80e4829725ba0ffb6d6",
+      "maturity_model_sha256": "801e805c3d6893705716b1ead1eb1b44b96e006f0232912a4e4a287f5fb063a6",
+      "project_autonomy_ceiling": "L2",
+      "project_id": "signaldesk",
+      "qualification_policy_sha256": "e6c3da27fe0a188d55ca5a68a5eb28cbc492b580e2f8e0a78bf01fc50289927e",
+      "status": "active"
+    }
+  ],
+  "version": "0.5.1"
+}

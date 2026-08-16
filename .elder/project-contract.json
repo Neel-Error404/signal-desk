@@ -1,0 +1,1279 @@
+{
+  "authority_bindings": ".elder/authority-bindings.json",
+  "authority_matrix_version": "0.5.1",
+  "autonomy_authority_source": ".elder/autonomy-authority-source.json",
+  "autonomy_classes": ".elder/autonomy-classes.json",
+  "autonomy_policy": ".elder/autonomy-policy.json",
+  "capability_pack_contracts": ".elder/capability-packs.json",
+  "capability_packs": [
+    {
+      "adapter_points": [
+        "repository-topology",
+        "language-toolchain",
+        "deployment-target"
+      ],
+      "contract_status": "verified",
+      "id": "core",
+      "interfaces": [
+        "project-profile.schema.json",
+        "work-item.schema.json",
+        "evidence-bundle.schema.json",
+        "knowledge-graph.schema.json"
+      ],
+      "layer": "kernel",
+      "obligation_owner_role": "architecture-owner",
+      "provides": [
+        "outcomes",
+        "ontology",
+        "authority",
+        "architecture",
+        "git",
+        "testing",
+        "evidence"
+      ],
+      "required": true,
+      "required_artifacts": [
+        "project-profile",
+        "project-contract",
+        "agents-contract",
+        "architecture",
+        "testing-protocol",
+        "ownership",
+        "golden-path",
+        "trace-contract"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Workflow"
+      ],
+      "required_skills": [
+        "wayfinder",
+        "grill-me",
+        "grill-with-docs",
+        "architecture-governance",
+        "test-ladder",
+        "evidence-and-traces",
+        "git-change-planning"
+      ],
+      "requires": [],
+      "responsibilities": [
+        "Frame measurable outcomes and failure conditions.",
+        "Define authority, invariants, change classes, architecture boundaries, and evidence.",
+        "Govern Git, testing, artifact traceability, and operational claims."
+      ],
+      "runtime_status": "verified"
+    },
+    {
+      "adapter_points": [
+        "workspace-isolator",
+        "sandbox-runtime",
+        "repository-host",
+        "build-runner",
+        "ci-provider",
+        "identity-provider",
+        "secret-broker",
+        "artifact-store",
+        "deployment-platform",
+        "telemetry-backend"
+      ],
+      "contract_status": "verified",
+      "id": "factory-operations",
+      "interfaces": [
+        "factory-substrate.schema.json",
+        "component-operating-contract.schema.json",
+        "evidence-bundle.schema.json",
+        "telemetry-contract.schema.json",
+        "telemetry-event.schema.json",
+        "telemetry-report.schema.json",
+        "canary-provider-evidence.schema.json",
+        "canary-authority-evidence.schema.json",
+        "canary-execution-packet.schema.json",
+        "canary-response.schema.json",
+        "canary-observation.schema.json",
+        "canary-rollback-packet.schema.json",
+        "canary-rollback-response.schema.json"
+      ],
+      "layer": "factory",
+      "obligation_owner_role": "release-owner",
+      "provides": [
+        "isolated-workspaces",
+        "sandboxing",
+        "repository-topology",
+        "reproducible-builds",
+        "ci-cd",
+        "workload-identity",
+        "secret-brokering",
+        "agent-developer-experience",
+        "provenance",
+        "promotion",
+        "rollback",
+        "correlated-telemetry"
+      ],
+      "required": true,
+      "required_artifacts": [
+        "factory-operating-contract",
+        "sandbox-policy",
+        "repository-topology",
+        "build-contract",
+        "ci-contract",
+        "identity-policy",
+        "secret-policy",
+        "developer-experience-contract",
+        "provenance-policy",
+        "promotion-policy",
+        "rollback-plan",
+        "telemetry-contract",
+        "telemetry-report"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow",
+        "Stress"
+      ],
+      "required_skills": [
+        "git-change-planning",
+        "test-ladder",
+        "evidence-and-traces"
+      ],
+      "requires": [
+        "core"
+      ],
+      "responsibilities": [
+        "Provide deterministic isolation, build, delivery, identity, secret, provenance, promotion, and rollback boundaries.",
+        "Reduce organizational and environment friction through reproducible setup, discoverable contracts, and actionable failures.",
+        "Prevent higher autonomy from exceeding demonstrated factory substrate maturity."
+      ],
+      "runtime_status": "reference-only"
+    },
+    {
+      "adapter_points": [
+        "design-doc-registry",
+        "dependency-analyzer",
+        "transcript-reviewer",
+        "evaluation-runner",
+        "model-judge-adapter",
+        "calibration-store",
+        "human-review-service",
+        "telemetry-normalizer",
+        "telemetry-backend",
+        "knowledge-store",
+        "memory-store",
+        "context-assembler",
+        "repository-dreaming-engine",
+        "evidence-store",
+        "hosted-evidence-collector",
+        "trust-anchor-registry",
+        "autonomy-certifier",
+        "autonomy-state-registry"
+      ],
+      "contract_status": "verified",
+      "id": "assurance",
+      "interfaces": [
+        "recommendation-ledger.schema.json",
+        "component-operating-contract.schema.json",
+        "judgment-rubric.schema.json",
+        "operational-maturity.schema.json",
+        "design-registry.schema.json",
+        "architecture-boundary.schema.json",
+        "transcript-review-policy.schema.json",
+        "transcript-review.schema.json",
+        "evaluation-registry.schema.json",
+        "evaluation-dataset.schema.json",
+        "evaluator-contract.schema.json",
+        "evaluation-candidate.schema.json",
+        "judge-results.schema.json",
+        "evaluation-report.schema.json",
+        "calibration-report.schema.json",
+        "comparison-report.schema.json",
+        "telemetry-contract.schema.json",
+        "telemetry-event.schema.json",
+        "telemetry-report.schema.json",
+        "context-policy.schema.json",
+        "context-request.schema.json",
+        "context-packet.schema.json",
+        "memory-policy.schema.json",
+        "memory-record.schema.json",
+        "build-memory-ledger.schema.json",
+        "memory-approval.schema.json",
+        "knowledge-graph.schema.json",
+        "knowledge-query.schema.json",
+        "repository-dreaming-policy.schema.json",
+        "dreaming-request.schema.json",
+        "dreaming-execution.schema.json",
+        "session-activation.schema.json",
+        "qualification-policy.schema.json",
+        "hosted-evidence-bundle.schema.json",
+        "qualification-report.schema.json",
+        "autonomy-policy.schema.json",
+        "autonomy-class.schema.json",
+        "autonomy-certification.schema.json",
+        "incident-budget.schema.json",
+        "autonomy-suspension.schema.json",
+        "autonomy-revocation.schema.json",
+        "autonomy-renewal.schema.json",
+        "qualification-consumption.schema.json",
+        "effective-autonomy-report.schema.json",
+        "agent-run.schema.json",
+        "evidence-bundle.schema.json"
+      ],
+      "layer": "assurance-learning",
+      "obligation_owner_role": "architecture-owner",
+      "provides": [
+        "recommendation-traceability",
+        "design-governance",
+        "architecture-fitness",
+        "anti-slop-review",
+        "judgment-rubric",
+        "transcript-review",
+        "operational-maturity",
+        "design-registry-runtime",
+        "architecture-boundary-runtime",
+        "transcript-evaluation-runtime",
+        "evaluation-dataset-runtime",
+        "judge-calibration-runtime",
+        "candidate-comparison-runtime",
+        "correlated-telemetry-runtime",
+        "telemetry-budget-runtime",
+        "persistent-knowledge-runtime",
+        "governed-memory-runtime",
+        "context-assembly-runtime",
+        "repository-dreaming",
+        "hosted-qualification-runtime",
+        "bounded-autonomy-contracts"
+      ],
+      "required": true,
+      "required_artifacts": [
+        "recommendation-ledger",
+        "design-document-policy",
+        "architecture-boundary-policy",
+        "component-operating-contract",
+        "judgment-rubric",
+        "transcript-review-policy",
+        "transcript-review",
+        "design-registry",
+        "architecture-boundary-contract",
+        "evaluation-registry",
+        "evaluation-dataset",
+        "evaluator-contract",
+        "calibration-report",
+        "evaluation-report",
+        "comparison-report",
+        "operational-maturity",
+        "assurance-report",
+        "telemetry-contract",
+        "telemetry-report",
+        "context-policy",
+        "memory-policy",
+        "knowledge-store",
+        "context-packet",
+        "repository-dreaming-policy",
+        "dreaming-request",
+        "dreaming-execution",
+        "qualification-policy",
+        "hosted-evidence-bundle",
+        "qualification-report",
+        "autonomy-policy",
+        "autonomy-class-registry",
+        "autonomy-certification",
+        "incident-budget",
+        "qualification-consumption",
+        "effective-autonomy-report"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow",
+        "Outcome"
+      ],
+      "required_skills": [
+        "architecture-governance",
+        "grill-with-docs",
+        "test-ladder",
+        "evidence-and-traces",
+        "repository-dreaming"
+      ],
+      "requires": [
+        "core",
+        "factory-operations"
+      ],
+      "responsibilities": [
+        "Trace adopted recommendations to controls, artifacts, tests, evidence, status, and known gaps.",
+        "Keep design intent, architecture boundaries, execution traces, and judgment review independently inspectable.",
+        "Use probabilistic review to discover risks while deterministic controls and accountable humans retain authority."
+      ],
+      "runtime_status": "reference-only"
+    },
+    {
+      "adapter_points": [
+        "model-provider",
+        "agent-framework",
+        "tool-runtime",
+        "checkpoint-store",
+        "knowledge-store",
+        "memory-store",
+        "context-assembler"
+      ],
+      "contract_status": "implemented",
+      "id": "agentic",
+      "interfaces": [
+        "agent-run.schema.json",
+        "agent-action.schema.json",
+        "tool-contract.schema.json",
+        "mcp-registry.schema.json",
+        "context-packet.schema.json",
+        "memory-record.schema.json",
+        "build-memory-ledger.schema.json",
+        "memory-approval.schema.json",
+        "knowledge-graph.schema.json",
+        "knowledge-query.schema.json",
+        "telemetry-event.schema.json",
+        "delegation.schema.json",
+        "agent-message.schema.json",
+        "checkpoint.schema.json",
+        "approval-decision.schema.json",
+        "authority-bindings.schema.json",
+        "runtime-lease.schema.json",
+        "multi-agent-runtime-policy.schema.json"
+      ],
+      "layer": "capability",
+      "obligation_owner_role": "architecture-owner",
+      "provides": [
+        "harness",
+        "tools",
+        "skills",
+        "MCPs",
+        "memory",
+        "context-assembly",
+        "persistent-knowledge",
+        "agent-evals",
+        "execution-traces",
+        "model-telemetry",
+        "tool-telemetry"
+      ],
+      "required": false,
+      "required_artifacts": [
+        "agent-architecture",
+        "workflow-graph",
+        "tool-registry",
+        "mcp-registry",
+        "context-policy",
+        "memory-policy",
+        "agent-evaluation-plan",
+        "telemetry-contract",
+        "delegation-contract",
+        "delegation-policy",
+        "authority-bindings",
+        "multi-agent-runtime-policy"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow"
+      ],
+      "required_skills": [
+        "skill-router",
+        "skill-creator"
+      ],
+      "requires": [
+        "core"
+      ],
+      "responsibilities": [
+        "Define bounded agent roles, workflows, tools, context, traces, and human gates.",
+        "Separate deterministic controls from probabilistic decisions.",
+        "Constrain model and tool authority by declared contracts."
+      ],
+      "runtime_status": "reference-only"
+    },
+    {
+      "adapter_points": [
+        "frontend-framework",
+        "backend-framework",
+        "api-style",
+        "browser-runner"
+      ],
+      "contract_status": "specified",
+      "id": "web-product",
+      "interfaces": [
+        "evidence-bundle.schema.json"
+      ],
+      "layer": "capability",
+      "obligation_owner_role": "code-owner",
+      "provides": [
+        "frontend",
+        "backend",
+        "accessibility",
+        "browser-tests",
+        "product-analytics"
+      ],
+      "required": false,
+      "required_artifacts": [
+        "frontend-architecture",
+        "backend-contract",
+        "api-contract",
+        "accessibility-plan",
+        "browser-test-plan",
+        "product-analytics-plan"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Workflow"
+      ],
+      "required_skills": [],
+      "requires": [
+        "core"
+      ],
+      "responsibilities": [
+        "Define frontend, backend, API, accessibility, browser, and product-analytics boundaries.",
+        "Preserve typed contracts and explicit failure behavior across client and server.",
+        "Require user-visible workflow evidence."
+      ],
+      "runtime_status": "reference-only"
+    },
+    {
+      "adapter_points": [
+        "database",
+        "object-store",
+        "vector-store",
+        "migration-tool"
+      ],
+      "contract_status": "specified",
+      "id": "data",
+      "interfaces": [
+        "evidence-bundle.schema.json",
+        "knowledge-graph.schema.json"
+      ],
+      "layer": "capability",
+      "obligation_owner_role": "code-owner",
+      "provides": [
+        "data-contracts",
+        "lineage",
+        "quality",
+        "migration",
+        "retention"
+      ],
+      "required": false,
+      "required_artifacts": [
+        "data-contract",
+        "lineage-plan",
+        "quality-plan",
+        "migration-plan",
+        "retention-policy",
+        "recovery-plan"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Component",
+        "Integration",
+        "Stress"
+      ],
+      "required_skills": [],
+      "requires": [
+        "core"
+      ],
+      "responsibilities": [
+        "Define data ownership, lineage, quality, migrations, retention, and recovery.",
+        "Keep destructive changes approval-bound and rollback-capable.",
+        "Link derived data and claims to source evidence."
+      ],
+      "runtime_status": "specified"
+    },
+    {
+      "adapter_points": [
+        "evaluation-runner",
+        "replay-store",
+        "memory-store",
+        "promotion-service"
+      ],
+      "contract_status": "implemented",
+      "id": "learning",
+      "interfaces": [
+        "learning-policy.schema.json",
+        "learning-candidate.schema.json",
+        "learning-observation.schema.json",
+        "learning-evaluation.schema.json",
+        "learning-approval.schema.json",
+        "learning-promotion.schema.json",
+        "memory-record.schema.json",
+        "agent-run.schema.json",
+        "evidence-bundle.schema.json"
+      ],
+      "layer": "assurance-learning",
+      "obligation_owner_role": "architecture-owner",
+      "provides": [
+        "replay",
+        "candidate-memory",
+        "policy-evals",
+        "shadow-mode",
+        "promotion"
+      ],
+      "required": false,
+      "required_artifacts": [
+        "learning-policy",
+        "evaluation-plan",
+        "replay-plan",
+        "learning-candidate",
+        "shadow-plan",
+        "promotion-plan",
+        "rollback-plan"
+      ],
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Workflow",
+        "Stress",
+        "Outcome"
+      ],
+      "required_skills": [
+        "learning-promotion"
+      ],
+      "requires": [
+        "core",
+        "agentic"
+      ],
+      "responsibilities": [
+        "Turn traces into narrow learning candidates without direct trusted-state mutation.",
+        "Replay, evaluate, shadow, approve, canary, promote, and roll back candidates.",
+        "Keep evaluators and promotion authority independent from execution."
+      ],
+      "runtime_status": "reference-only"
+    },
+    {
+      "adapter_points": [
+        "research-source",
+        "publishing-channel",
+        "analytics-provider",
+        "crm"
+      ],
+      "contract_status": "specified",
+      "id": "go-to-market",
+      "interfaces": [
+        "evidence-bundle.schema.json"
+      ],
+      "layer": "capability",
+      "obligation_owner_role": "product-owner",
+      "provides": [
+        "audience",
+        "positioning",
+        "launch",
+        "content",
+        "feedback-routing",
+        "economics"
+      ],
+      "required": false,
+      "required_artifacts": [
+        "audience-hypothesis",
+        "positioning",
+        "claim-register",
+        "launch-plan",
+        "content-plan",
+        "feedback-route",
+        "economics-plan"
+      ],
+      "required_evidence": [
+        "Foundation",
+        "Workflow",
+        "Outcome"
+      ],
+      "required_skills": [],
+      "requires": [
+        "core"
+      ],
+      "responsibilities": [
+        "Define audience, positioning, proof-backed claims, launch assets, economics, and feedback routes.",
+        "Keep publishing and spending under accountable human authority.",
+        "Connect market evidence and product outcomes back to planning."
+      ],
+      "runtime_status": "reference-only"
+    }
+  ],
+  "change_classes": [
+    {
+      "id": "documentation",
+      "maximum_autonomy": "L3",
+      "required_approvals": [],
+      "required_evidence": [
+        "link validation",
+        "reader review"
+      ],
+      "risk": "low"
+    },
+    {
+      "id": "internal-code",
+      "maximum_autonomy": "L3",
+      "required_approvals": [
+        "code-owner"
+      ],
+      "required_evidence": [
+        "foundation tests",
+        "component tests",
+        "independent evaluation"
+      ],
+      "risk": "moderate"
+    },
+    {
+      "id": "public-contract",
+      "maximum_autonomy": "L2",
+      "required_approvals": [
+        "architecture-owner",
+        "code-owner"
+      ],
+      "required_evidence": [
+        "contract tests",
+        "compatibility analysis",
+        "migration plan"
+      ],
+      "risk": "high"
+    },
+    {
+      "id": "data-migration",
+      "maximum_autonomy": "L2",
+      "required_approvals": [
+        "architecture-owner",
+        "release-owner"
+      ],
+      "required_evidence": [
+        "backup proof",
+        "forward test",
+        "rollback test"
+      ],
+      "risk": "high"
+    },
+    {
+      "id": "infrastructure",
+      "maximum_autonomy": "L2",
+      "required_approvals": [
+        "security-owner",
+        "release-owner"
+      ],
+      "required_evidence": [
+        "plan",
+        "security review",
+        "canary",
+        "rollback test"
+      ],
+      "risk": "high"
+    },
+    {
+      "id": "production-policy",
+      "maximum_autonomy": "L1",
+      "required_approvals": [
+        "security-owner",
+        "architecture-owner",
+        "release-owner"
+      ],
+      "required_evidence": [
+        "policy diff",
+        "threat review",
+        "recovery exercise"
+      ],
+      "risk": "critical"
+    },
+    {
+      "id": "constitution",
+      "maximum_autonomy": "L1",
+      "required_approvals": [
+        "human-owner"
+      ],
+      "required_evidence": [
+        "ADR",
+        "impact analysis",
+        "updated validation"
+      ],
+      "risk": "critical"
+    }
+  ],
+  "context_policy": ".elder/context-policy.json",
+  "delegation_policy": ".elder/delegation-policy.json",
+  "design_registry": ".elder/design-registry.json",
+  "elder_protocol_version": "0.5.1",
+  "evaluation_dataset": ".elder/evaluation-dataset.json",
+  "evaluation_registry": ".elder/evaluation-registry.json",
+  "evaluator_contract": ".elder/evaluator-contract.json",
+  "generated_status": "draft-contract",
+  "interface_schemas": [
+    "tool-contract.schema.json",
+    "mcp-registry.schema.json",
+    "context-packet.schema.json",
+    "memory-record.schema.json",
+    "learning-candidate.schema.json",
+    "learning-policy.schema.json",
+    "qualification-policy.schema.json",
+    "autonomy-authority-source.schema.json",
+    "autonomy-policy.schema.json",
+    "autonomy-class.schema.json",
+    "component-operating-contract.schema.json",
+    "recommendation-ledger.schema.json",
+    "judgment-rubric.schema.json",
+    "operational-maturity.schema.json",
+    "design-registry.schema.json",
+    "architecture-boundary.schema.json",
+    "transcript-review-policy.schema.json",
+    "transcript-review.schema.json",
+    "evaluation-registry.schema.json",
+    "evaluation-dataset.schema.json",
+    "evaluator-contract.schema.json",
+    "evaluation-candidate.schema.json",
+    "judge-results.schema.json",
+    "evaluation-report.schema.json",
+    "calibration-report.schema.json",
+    "comparison-report.schema.json",
+    "telemetry-contract.schema.json",
+    "role-registry.schema.json",
+    "authority-bindings.schema.json",
+    "resolved-obligations.schema.json",
+    "delegation-policy.schema.json",
+    "multi-agent-runtime-policy.schema.json",
+    "authority-grant.schema.json",
+    "tool-grant.schema.json",
+    "budget.schema.json",
+    "deadline.schema.json",
+    "cancellation.schema.json",
+    "escalation.schema.json",
+    "stack-adapter.schema.json",
+    "stack-adapter-registry.schema.json"
+  ],
+  "invariants": [
+    {
+      "enforcement": "authority-matrix",
+      "exception_authority": "human-owner",
+      "id": "INV-001",
+      "owner": "architecture-owner",
+      "scope": "all projects",
+      "statement": "Agents cannot ratify constitutional changes.",
+      "status": "implemented",
+      "verification": "protocol validation and approval evidence"
+    },
+    {
+      "enforcement": "workflow separation",
+      "exception_authority": "none",
+      "id": "INV-002",
+      "owner": "release-owner",
+      "scope": "governed changes",
+      "statement": "The executor cannot be the sole evaluator or promoter of its governed change.",
+      "status": "specified",
+      "verification": "trace and approval evidence"
+    },
+    {
+      "enforcement": "external credential broker",
+      "exception_authority": "none",
+      "id": "INV-003",
+      "owner": "security-owner",
+      "scope": "production access",
+      "statement": "Production credentials remain outside agent sandboxes.",
+      "status": "planned",
+      "verification": "security audit and sandbox test"
+    },
+    {
+      "enforcement": "artifact digest and provenance check",
+      "exception_authority": "release-owner",
+      "id": "INV-004",
+      "owner": "release-owner",
+      "scope": "deployment",
+      "statement": "The same immutable artifact is promoted across environments.",
+      "status": "planned",
+      "verification": "promotion record"
+    },
+    {
+      "enforcement": "trace schema and delivery gates",
+      "exception_authority": "none",
+      "id": "INV-005",
+      "owner": "product-owner",
+      "scope": "governed changes",
+      "statement": "Every governed change is traceable from outcome through observed result.",
+      "status": "specified",
+      "verification": "complete trace linkage"
+    },
+    {
+      "enforcement": "quarantined learning workflow",
+      "exception_authority": "none",
+      "id": "INV-006",
+      "owner": "architecture-owner",
+      "scope": "learning",
+      "statement": "Learning cannot directly modify production, constitutional policy, or trusted evaluators.",
+      "status": "specified",
+      "verification": "promotion evidence"
+    },
+    {
+      "enforcement": "test workflow",
+      "exception_authority": "architecture-owner",
+      "id": "INV-007",
+      "owner": "architecture-owner",
+      "scope": "verification",
+      "statement": "Testing advances one level at a time and reruns a failed level after root-cause correction.",
+      "status": "implemented",
+      "verification": "ordered test evidence"
+    },
+    {
+      "enforcement": "readiness review",
+      "exception_authority": "none",
+      "id": "INV-008",
+      "owner": "product-owner",
+      "scope": "all claims",
+      "statement": "Operational claims require current executable evidence.",
+      "status": "implemented",
+      "verification": "evidence reference"
+    },
+    {
+      "enforcement": "dataset digest and calibration gate",
+      "exception_authority": "none",
+      "id": "INV-009",
+      "owner": "architecture-owner",
+      "scope": "evaluation",
+      "statement": "A probabilistic evaluator cannot score governed holdout cases until it qualifies against human reference labels for the same dataset revision.",
+      "status": "implemented",
+      "verification": "qualified calibration report"
+    },
+    {
+      "enforcement": "telemetry contract and event validation",
+      "exception_authority": "none",
+      "id": "INV-010",
+      "owner": "security-owner",
+      "scope": "telemetry",
+      "statement": "Telemetry cannot persist secrets by default or use high-cardinality correlation identifiers as metric dimensions.",
+      "status": "implemented",
+      "verification": "privacy, correlation, and cardinality tests"
+    },
+    {
+      "enforcement": "context policy, delegation binding, memory lifecycle, authority matrix, and persistent-store validation",
+      "exception_authority": "none",
+      "id": "INV-011",
+      "owner": "architecture-owner",
+      "scope": "context, memory, and knowledge",
+      "statement": "Retrieval, context assembly, and memory writes cannot expand authority; delegated context binds an immutable delegation and in-scope repository sources; trusted memory requires independent human approval and source provenance.",
+      "status": "implemented",
+      "verification": "delegated identity, scope, source, authority, provenance, lifecycle, expiry, and context-budget tests"
+    },
+    {
+      "enforcement": "resolved project authority and delegation validators",
+      "exception_authority": "none",
+      "id": "INV-012",
+      "owner": "architecture-owner",
+      "scope": "delegation",
+      "statement": "A parent run must explicitly claim delegation authority, every claimed action must be a subset of its resolved project role and identity grants, and delegated authority cannot exceed that validated parent authority, the child project role binding, or the declared authority ceiling.",
+      "status": "implemented",
+      "verification": "missing delegation claim, forged parent, and child authority subset fixtures"
+    },
+    {
+      "enforcement": "agent-run chain, tool, role, budget, deadline, and bidirectional normalized-scope validation",
+      "exception_authority": "none",
+      "id": "INV-013",
+      "owner": "security-owner",
+      "scope": "delegation",
+      "statement": "Tool grants do not imply approval or promotion authority, and a child cannot broaden delegated authority, tools, budget, deadline, expiry, or scope.",
+      "status": "implemented",
+      "verification": "invalid authority, tool, budget, deadline, and forbidden-scope fixtures"
+    },
+    {
+      "enforcement": "delegation, agent-run chain, and checkpoint binding validation",
+      "exception_authority": "none",
+      "id": "INV-014",
+      "owner": "architecture-owner",
+      "scope": "delegation lifecycle",
+      "statement": "Every delegation has an expiry or termination condition, every child run traces to exactly one parent delegation, and every checkpoint binds to that exact delegation and child run.",
+      "status": "implemented",
+      "verification": "parent-child and mismatched checkpoint fixtures"
+    },
+    {
+      "enforcement": "delegation policy and aggregate budget validation",
+      "exception_authority": "none",
+      "id": "INV-015",
+      "owner": "release-owner",
+      "scope": "delegated execution",
+      "statement": "Cancellation propagates to active child work and child budgets aggregate within the parent budget.",
+      "status": "implemented",
+      "verification": "cancellation and aggregate budget fixtures"
+    },
+    {
+      "enforcement": "fail-closed delegation and message validation",
+      "exception_authority": "none",
+      "id": "INV-016",
+      "owner": "security-owner",
+      "scope": "multi-agent communication",
+      "statement": "A failed authority check blocks execution, and messages cannot mutate governed state directly.",
+      "status": "implemented",
+      "verification": "invalid authority and message fixtures"
+    },
+    {
+      "enforcement": "assigned-identity lease and transactional SQLite journals",
+      "exception_authority": "none",
+      "id": "INV-017",
+      "owner": "security-owner",
+      "scope": "multi-agent runtime",
+      "statement": "A child runtime operation requires the active lease issued to its assigned identity, and action, message, checkpoint, and runtime-event sequences are append-only and contiguous.",
+      "status": "implemented",
+      "verification": "forged lease, sequence gap, duplicate record, and concurrent claim tests"
+    },
+    {
+      "enforcement": "deterministic replay verifier and runtime policy",
+      "exception_authority": "none",
+      "id": "INV-018",
+      "owner": "architecture-owner",
+      "scope": "multi-agent runtime replay and authority",
+      "statement": "Checkpoint and runtime-event digest chains must replay to the persisted lifecycle state; runtime coordination cannot approve, promote, or authenticate external identities.",
+      "status": "implemented",
+      "verification": "tampered event, broken checkpoint chain, cancellation, expiry, and replay-state tests"
+    },
+    {
+      "enforcement": "learning policy, observation validation, artifact-byte binding, and append-only journal replay",
+      "exception_authority": "none",
+      "id": "INV-019",
+      "owner": "architecture-owner",
+      "scope": "quarantined learning",
+      "statement": "Counterfactual replay and shadow learning are side-effect-free, digest-bound to immutable candidate artifacts, and cannot mutate governed targets.",
+      "status": "implemented",
+      "verification": "side-effect, artifact mutation, row mutation, event mutation, and replay tests"
+    },
+    {
+      "enforcement": "learning evaluation, approval, promotion, rollback, and identity-separation contracts",
+      "exception_authority": "none",
+      "id": "INV-020",
+      "owner": "architecture-owner",
+      "scope": "learning promotion",
+      "statement": "A learning candidate requires independent evaluation, kind-specific accountable approvals, and a separate promoter; promotion emits an immutable packet and never applies the target mutation.",
+      "status": "implemented",
+      "verification": "self-evaluation, missing evidence, missing approval, self-promotion, promotion packet, and rollback tests"
+    },
+    {
+      "enforcement": "qualification policy, active Ed25519 trust anchors, immutable bundle validation, and cumulative gate evaluation",
+      "exception_authority": "none",
+      "id": "INV-021",
+      "owner": "security-owner",
+      "scope": "hosted production qualification",
+      "statement": "A hosted maturity claim requires current independently signed evidence bound to one project, environment, artifact, trusted source, payload digest, and cumulative maturity gate.",
+      "status": "implemented",
+      "verification": "forged signature, payload mutation, payload deletion, stale evidence, trust, project, environment, artifact, and cumulative-gate tests"
+    },
+    {
+      "enforcement": "qualification policy authority constants and immutable report contract",
+      "exception_authority": "none",
+      "id": "INV-022",
+      "owner": "architecture-owner",
+      "scope": "qualification authority",
+      "statement": "Qualification is advisory and cannot mutate the canonical maturity assessment, promote an artifact, deploy a release, or substitute mechanism availability for hosted operational evidence.",
+      "status": "implemented",
+      "verification": "maturity immutability, authority, empty-trust, and non-claim tests"
+    },
+    {
+      "enforcement": "autonomy policy, pinned qualification consumption, class registry, and deterministic effective-autonomy calculation",
+      "exception_authority": "none",
+      "id": "INV-023",
+      "owner": "architecture-owner",
+      "scope": "bounded autonomy calculation",
+      "statement": "Effective autonomy is the minimum of verified hosted maturity, project autonomy ceiling, selected autonomy-class maximum, and active certification level; a certification can consume but cannot create, update, or reinterpret maturity.",
+      "status": "implemented",
+      "verification": "operand ordering, ceiling, digest pinning, and maturity-immutability tests"
+    },
+    {
+      "enforcement": "hard-stop policy and append-only governance records",
+      "exception_authority": "none",
+      "id": "INV-024",
+      "owner": "security-owner",
+      "scope": "autonomy suspension and revocation",
+      "statement": "Invalid qualification, expiry, suspension, revocation, contradiction, or exhausted incident budget resolves effective autonomy to no authority.",
+      "status": "implemented",
+      "verification": "invalid qualification, expiry, suspension, revocation, contradiction, and budget-exhaustion fixtures"
+    },
+    {
+      "enforcement": "simulation policy constants, structured work-item validation, hash-chained replay, and simulation reports",
+      "exception_authority": "none",
+      "id": "INV-025",
+      "owner": "release-owner",
+      "scope": "P5.1 simulation authority",
+      "statement": "P5.1 matching, simulation, certification replay, and incident accounting are deterministic and side-effect-free; they cannot mutate a workspace or create a pull request.",
+      "status": "implemented",
+      "verification": "scope, tool, check, equivalence, event-chain, incident-accounting, CLI, and determinism tests"
+    },
+    {
+      "enforcement": "canonical project authority registry, signed qualification re-verification, signed authority-source evidence, certification lifecycle replay, exact effective-autonomy, match, and simulation recomputation, short-lived lease, and fail-closed issuance",
+      "exception_authority": "none",
+      "id": "INV-026",
+      "owner": "security-owner",
+      "scope": "P5.2 authority lease",
+      "statement": "A P5.2 pull-request authority lease requires a repository-owned canonical project authority source, signed-bundle P4.7 re-evaluation, an independently signed complete governance-source statement bound to that source, an active certification lifecycle replay, exact trusted-source recomputation of every derived report, and current hard-stop checks.",
+      "status": "implemented",
+      "verification": "qualified lease, caller-selected policy or ceiling, forged authority statement, fabricated certification or report, foreign qualification, future lifecycle, scope mismatch, failed simulation, expiry, suspension, revocation, and budget-window tests"
+    },
+    {
+      "enforcement": "supervised execution, independently signed workspace, file-change, test, evaluation, hosted Git evidence, and repository URL prefix, authority-source and lease validation, packet reconstruction, current qualification re-verification, immutable PR packet contracts, and exact provider-response binding",
+      "exception_authority": "none",
+      "id": "INV-027",
+      "owner": "release-owner",
+      "scope": "P5.2 supervised pull requests",
+      "statement": "A supervised autonomous pull request requires a current reconstructed lease, exact source execution and packet binding, ordered test evidence, independent evaluation, verified hosted Git governance, and external identity; humans retain merge and release authority.",
+      "status": "implemented",
+      "verification": "fabricated packet or structural lease, expired lease, workspace, file, test, and evaluation drift, positive SHA-1 and SHA-256 Git object formats, diff binding, test ordering, evaluator separation, forged hosted-control evidence, provider packet-digest, repository, branch, revision, unrelated URL host or path, and diff mismatch, merge, deploy, and maturity-authority tests"
+    },
+    {
+      "enforcement": "context-policy graph-selection controls and context assembler validation",
+      "exception_authority": "none",
+      "id": "INV-028",
+      "owner": "architecture-owner",
+      "scope": "context and graph retrieval",
+      "statement": "Context assembly must never inject a wholesale knowledge or protocol graph; graph context is query-matched, source-bounded, authority-filtered, and capped by policy.",
+      "status": "implemented",
+      "verification": "wildcard, empty-term, and over-limit graph-context negative tests"
+    },
+    {
+      "enforcement": "L3-only canary simulation, exact signed canary-authority evidence, trusted-source lease reconstruction, current lifecycle and non-future-dated governance revalidation, signed provider evidence with a reserved deployment identifier, runtime-owned canonical durable plan, execution-id, and packet claim, immutable execution packet, accepted response, and rollback packet, durable start-response and deadline registration and scheduling, immediate watchdog-installation rollback, restart-safe runtime-clock due-work sweep with per-record isolation and terminal expiry state, atomic rollback claim for every executor with full runtime activation-window validation before claim and provider invocation, runtime-time deadline predicates, shorter claim timeout and unchanged-packet recovery inside the original authorization window, observing-state-only telemetry, fresh signed deployment observation, evaluation-time threshold checks, automatic rollback adapter invocation, exact rollback response binding, and explicit promotion denial",
+      "exception_authority": "none",
+      "id": "INV-029",
+      "owner": "security-owner",
+      "scope": "P5.3 fail-closed canary execution",
+      "statement": "P5.3 canary authority requires current non-future-dated L3 qualification and governance checks, canonical project authority, an active explicitly canary-capable L3 certification, exact signed plan authority, bounded traffic and duration, signed provider identity, secret, telemetry, immutable-artifact, promotion-gate, and rollback evidence, runtime-owned one-shot plan and packet consumption, current governance revalidation, provider-reserved deployment identity, durable start-response and observation watchdog registration, immediate rollback when watchdog installation fails, canonical accepted-response and rollback-packet persistence, runtime-clock recovery without caller-selected time, atomic claiming and full requested-at-through-required-by runtime validation for every rollback executor, exact response, deployment, and observation binding, terminal-state observation denial, and automatic recoverable rollback on any start uncertainty, threshold, duration, stale-telemetry, or missing-telemetry breach without early activation, renewing the original rollback authority, or allowing one expired record to block other due work; no canary result authorizes promotion or full rollout.",
+      "status": "implemented",
+      "verification": "L2 and non-canary-class denial, cross-plan authority rejection, fabricated lease or packet, alternate-store and caller-time API exclusion, sequential, concurrent, repackaged-plan, and direct rollback-executor replay, current suspension, future-dated governance checks and rollback packets, stale or forged provider evidence, malformed or failed start recovery, response target and deployment mismatch, caller-substituted accepted response, terminal-state observation rejection, unsigned or foreign observation, delayed and missing telemetry, watchdog-installation failure, pre-provider rollback expiry, early deadline-claim denial, durable claimed-start and exact-packet stale-rollback recovery, expired rollback non-renewal, expired-record sweep isolation, traffic and duration bounds, automatic rollback, healthy non-promotion, CLI, determinism, and canonical-readiness tests"
+    }
+  ],
+  "judgment_rubric": ".elder/judgment-rubric.json",
+  "learning_policy": ".elder/learning-policy.json",
+  "memory_policy": ".elder/memory-policy.json",
+  "meta_architecture_version": "0.5.1",
+  "migration_notes": [],
+  "multi_agent_runtime_policy": ".elder/multi-agent-runtime-policy.json",
+  "ontology_version": "0.5.1",
+  "operational_maturity": ".elder/operational-maturity.json",
+  "profile": {
+    "autonomy_ceiling": "L2",
+    "capability_packs": [
+      "core",
+      "web-product",
+      "data",
+      "agentic",
+      "assurance",
+      "learning",
+      "go-to-market"
+    ],
+    "constraints": [
+      "The initial product accepts customer feedback but must not accept credentials, regulated data, or proprietary source-code uploads.",
+      "Humans retain merge, release, deployment, learning-promotion, and architecture-exception authority.",
+      "The first milestone uses local or free-tier infrastructure and does not require autonomous production deployment.",
+      "The initial product is a single repository using TypeScript, Next.js, and PostgreSQL.",
+      "Billing, enterprise tenant administration, autonomous production deployment, model-weight fine-tuning, and application-user memory are initial non-goals."
+    ],
+    "data_sensitivity": "confidential",
+    "deployment_targets": [
+      "local",
+      "Vercel",
+      "hosted PostgreSQL"
+    ],
+    "identities": [
+      {
+        "id": "Neel",
+        "kind": "human"
+      },
+      {
+        "id": "signaldesk-evaluator",
+        "kind": "agent"
+      },
+      {
+        "id": "signaldesk-executor",
+        "kind": "agent"
+      },
+      {
+        "id": "signaldesk-intake-agent",
+        "kind": "agent"
+      },
+      {
+        "id": "signaldesk-learning-agent",
+        "kind": "agent"
+      },
+      {
+        "id": "signaldesk-planning-agent",
+        "kind": "agent"
+      }
+    ],
+    "knowledge_sources": [
+      {
+        "authority": "primary",
+        "id": "signaldesk-repository",
+        "location": ".",
+        "type": "repository"
+      }
+    ],
+    "languages": [
+      "TypeScript",
+      "SQL"
+    ],
+    "lifecycle": "prototype",
+    "mission": "Help B2B SaaS founders, product teams, and support teams turn customer feedback into traceable product signals, prioritized issues, completed fixes, and release communication.",
+    "name": "SignalDesk",
+    "outcomes": {
+      "failure": [
+        "SignalDesk loses source evidence or merges unrelated feedback without an owner-visible explanation.",
+        "Customer feedback or workspace data is exposed outside its authorized product boundary.",
+        "An agent merges, releases, deploys, promotes learning, or overrides architecture without the required human decision.",
+        "The product cannot reconstruct why a signal was prioritized, changed, rejected, fixed, or communicated."
+      ],
+      "success": [
+        "An authenticated team member can capture customer feedback and convert it into a traceable canonical signal through the product interface.",
+        "Repeated feedback can be grouped without losing its original sources, customer context, or evidence.",
+        "A product owner can promote a signal into a prioritized issue with an explicit rationale and accountable decision history.",
+        "A team can track an accepted issue through implementation, verification, completion, and customer-facing release communication.",
+        "The first product milestone passes its ordered tests and can be operated through the product interface without database or background-terminal inspection."
+      ]
+    },
+    "profile_status": "ratified",
+    "project_type": "software",
+    "protocol_version": "0.5.1",
+    "risk_tier": "moderate",
+    "role_bindings": [
+      {
+        "identity": "Neel",
+        "role": "architecture-owner"
+      },
+      {
+        "identity": "Neel",
+        "role": "code-owner"
+      },
+      {
+        "identity": "signaldesk-evaluator",
+        "role": "evaluator"
+      },
+      {
+        "identity": "signaldesk-executor",
+        "role": "executor"
+      },
+      {
+        "identity": "Neel",
+        "role": "human-owner"
+      },
+      {
+        "identity": "signaldesk-intake-agent",
+        "role": "intake-agent"
+      },
+      {
+        "identity": "signaldesk-learning-agent",
+        "role": "learning-agent"
+      },
+      {
+        "identity": "signaldesk-planning-agent",
+        "role": "planning-agent"
+      },
+      {
+        "identity": "Neel",
+        "role": "product-owner"
+      },
+      {
+        "identity": "Neel",
+        "role": "promoter"
+      },
+      {
+        "identity": "Neel",
+        "role": "release-owner"
+      },
+      {
+        "identity": "Neel",
+        "role": "security-owner"
+      }
+    ],
+    "skill_overrides": {
+      "forbidden": [],
+      "required": []
+    },
+    "slug": "signaldesk",
+    "topology": "single-repo"
+  },
+  "project_graph": ".elder/project-graph.json",
+  "protocol_graph_version": "0.5.1",
+  "qualification_policy": ".elder/qualification-policy.json",
+  "recommendation_ledger": ".elder/recommendation-ledger.json",
+  "requested_capability_packs": [
+    "core",
+    "web-product",
+    "data",
+    "agentic",
+    "assurance",
+    "learning",
+    "go-to-market"
+  ],
+  "resolved_capability_packs": [
+    "core",
+    "factory-operations",
+    "assurance",
+    "web-product",
+    "data",
+    "agentic",
+    "learning",
+    "go-to-market"
+  ],
+  "resolved_obligations": ".elder/resolved-obligations.json",
+  "role_registry": ".elder/role-registry.json",
+  "skills": [
+    "wayfinder",
+    "skill-router",
+    "grill-me",
+    "grill-with-docs",
+    "architecture-governance",
+    "test-ladder",
+    "evidence-and-traces",
+    "skill-creator",
+    "git-change-planning",
+    "learning-promotion",
+    "repository-dreaming"
+  ],
+  "stack_adapter_registry": ".elder/stack-adapter-registry.json",
+  "telemetry_contract": ".elder/telemetry-contract.json",
+  "trace_schemas": [
+    "work-item.schema.json",
+    "agent-run.schema.json",
+    "agent-action.schema.json",
+    "evidence-bundle.schema.json",
+    "knowledge-graph.schema.json",
+    "telemetry-event.schema.json",
+    "telemetry-report.schema.json",
+    "context-policy.schema.json",
+    "context-request.schema.json",
+    "memory-policy.schema.json",
+    "memory-approval.schema.json",
+    "learning-observation.schema.json",
+    "learning-evaluation.schema.json",
+    "learning-approval.schema.json",
+    "learning-promotion.schema.json",
+    "hosted-evidence-bundle.schema.json",
+    "qualification-report.schema.json",
+    "autonomy-certification.schema.json",
+    "incident-budget.schema.json",
+    "autonomy-suspension.schema.json",
+    "autonomy-revocation.schema.json",
+    "autonomy-renewal.schema.json",
+    "qualification-consumption.schema.json",
+    "effective-autonomy-report.schema.json",
+    "autonomy-work-item.schema.json",
+    "autonomy-match-report.schema.json",
+    "autonomy-simulation-report.schema.json",
+    "autonomy-certification-event.schema.json",
+    "autonomy-replay-report.schema.json",
+    "autonomy-authority-evidence.schema.json",
+    "autonomy-authority-lease.schema.json",
+    "hosted-git-evidence.schema.json",
+    "supervised-pr-execution.schema.json",
+    "supervised-pr-packet.schema.json",
+    "supervised-pr-response.schema.json",
+    "canary-plan.schema.json",
+    "canary-simulation-report.schema.json",
+    "canary-authority-lease.schema.json",
+    "canary-authority-evidence.schema.json",
+    "canary-provider-evidence.schema.json",
+    "canary-execution-packet.schema.json",
+    "canary-response.schema.json",
+    "canary-observation.schema.json",
+    "canary-observation-report.schema.json",
+    "canary-rollback-packet.schema.json",
+    "canary-rollback-response.schema.json",
+    "canary-workflow-result.schema.json",
+    "knowledge-query.schema.json",
+    "delegation.schema.json",
+    "agent-message.schema.json",
+    "checkpoint.schema.json",
+    "approval-decision.schema.json",
+    "runtime-lease.schema.json"
+  ],
+  "transcript_review_policy": ".elder/transcript-review-policy.json"
+}

@@ -1,0 +1,1457 @@
+{
+  "obligations": [
+    {
+      "artifact_type": "agent-architecture",
+      "evidence_refs": [],
+      "id": "agentic.agent-architecture",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "agent-evaluation-plan",
+      "evidence_refs": [],
+      "id": "agentic.agent-evaluation-plan",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "authority-bindings",
+      "evidence_refs": [],
+      "id": "agentic.authority-bindings",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "context-policy",
+      "evidence_refs": [],
+      "id": "agentic.context-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "delegation-contract",
+      "evidence_refs": [],
+      "id": "agentic.delegation-contract",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "delegation-policy",
+      "evidence_refs": [],
+      "id": "agentic.delegation-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "mcp-registry",
+      "evidence_refs": [],
+      "id": "agentic.mcp-registry",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "memory-policy",
+      "evidence_refs": [],
+      "id": "agentic.memory-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "multi-agent-runtime-policy",
+      "evidence_refs": [],
+      "id": "agentic.multi-agent-runtime-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "telemetry-contract",
+      "evidence_refs": [],
+      "id": "agentic.telemetry-contract",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "tool-registry",
+      "evidence_refs": [],
+      "id": "agentic.tool-registry",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "workflow-graph",
+      "evidence_refs": [],
+      "id": "agentic.workflow-graph",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "agentic",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "architecture-boundary-contract",
+      "evidence_refs": [],
+      "id": "assurance.architecture-boundary-contract",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "architecture-boundary-policy",
+      "evidence_refs": [],
+      "id": "assurance.architecture-boundary-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "assurance-report",
+      "evidence_refs": [],
+      "id": "assurance.assurance-report",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "autonomy-certification",
+      "evidence_refs": [],
+      "id": "assurance.autonomy-certification",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "autonomy-class-registry",
+      "evidence_refs": [],
+      "id": "assurance.autonomy-class-registry",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "autonomy-policy",
+      "evidence_refs": [],
+      "id": "assurance.autonomy-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "calibration-report",
+      "evidence_refs": [],
+      "id": "assurance.calibration-report",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "comparison-report",
+      "evidence_refs": [],
+      "id": "assurance.comparison-report",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "component-operating-contract",
+      "evidence_refs": [],
+      "id": "assurance.component-operating-contract",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "context-packet",
+      "evidence_refs": [],
+      "id": "assurance.context-packet",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "context-policy",
+      "evidence_refs": [],
+      "id": "assurance.context-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "design-document-policy",
+      "evidence_refs": [],
+      "id": "assurance.design-document-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "design-registry",
+      "evidence_refs": [],
+      "id": "assurance.design-registry",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "dreaming-execution",
+      "evidence_refs": [],
+      "id": "assurance.dreaming-execution",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "dreaming-request",
+      "evidence_refs": [],
+      "id": "assurance.dreaming-request",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "effective-autonomy-report",
+      "evidence_refs": [],
+      "id": "assurance.effective-autonomy-report",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "evaluation-dataset",
+      "evidence_refs": [],
+      "id": "assurance.evaluation-dataset",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "evaluation-registry",
+      "evidence_refs": [],
+      "id": "assurance.evaluation-registry",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "evaluation-report",
+      "evidence_refs": [],
+      "id": "assurance.evaluation-report",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "evaluator-contract",
+      "evidence_refs": [],
+      "id": "assurance.evaluator-contract",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "hosted-evidence-bundle",
+      "evidence_refs": [],
+      "id": "assurance.hosted-evidence-bundle",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "incident-budget",
+      "evidence_refs": [],
+      "id": "assurance.incident-budget",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "judgment-rubric",
+      "evidence_refs": [],
+      "id": "assurance.judgment-rubric",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "knowledge-store",
+      "evidence_refs": [],
+      "id": "assurance.knowledge-store",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "memory-policy",
+      "evidence_refs": [],
+      "id": "assurance.memory-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "operational-maturity",
+      "evidence_refs": [],
+      "id": "assurance.operational-maturity",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "qualification-consumption",
+      "evidence_refs": [],
+      "id": "assurance.qualification-consumption",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "qualification-policy",
+      "evidence_refs": [],
+      "id": "assurance.qualification-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "qualification-report",
+      "evidence_refs": [],
+      "id": "assurance.qualification-report",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "recommendation-ledger",
+      "evidence_refs": [],
+      "id": "assurance.recommendation-ledger",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "repository-dreaming-policy",
+      "evidence_refs": [],
+      "id": "assurance.repository-dreaming-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "telemetry-contract",
+      "evidence_refs": [],
+      "id": "assurance.telemetry-contract",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "telemetry-report",
+      "evidence_refs": [],
+      "id": "assurance.telemetry-report",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "transcript-review",
+      "evidence_refs": [],
+      "id": "assurance.transcript-review",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "transcript-review-policy",
+      "evidence_refs": [],
+      "id": "assurance.transcript-review-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "assurance",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "agents-contract",
+      "evidence_refs": [],
+      "id": "core.agents-contract",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "core",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "architecture",
+      "evidence_refs": [],
+      "id": "core.architecture",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "core",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "golden-path",
+      "evidence_refs": [],
+      "id": "core.golden-path",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "core",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "ownership",
+      "evidence_refs": [],
+      "id": "core.ownership",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "core",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "project-contract",
+      "evidence_refs": [],
+      "id": "core.project-contract",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "core",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "project-profile",
+      "evidence_refs": [],
+      "id": "core.project-profile",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "core",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "testing-protocol",
+      "evidence_refs": [],
+      "id": "core.testing-protocol",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "core",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "trace-contract",
+      "evidence_refs": [],
+      "id": "core.trace-contract",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "core",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "data-contract",
+      "evidence_refs": [],
+      "id": "data.data-contract",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "data",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "lineage-plan",
+      "evidence_refs": [],
+      "id": "data.lineage-plan",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "data",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "migration-plan",
+      "evidence_refs": [],
+      "id": "data.migration-plan",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "data",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "quality-plan",
+      "evidence_refs": [],
+      "id": "data.quality-plan",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "data",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "recovery-plan",
+      "evidence_refs": [],
+      "id": "data.recovery-plan",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "data",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "retention-policy",
+      "evidence_refs": [],
+      "id": "data.retention-policy",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "data",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "build-contract",
+      "evidence_refs": [],
+      "id": "factory-operations.build-contract",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "ci-contract",
+      "evidence_refs": [],
+      "id": "factory-operations.ci-contract",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "developer-experience-contract",
+      "evidence_refs": [],
+      "id": "factory-operations.developer-experience-contract",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "factory-operating-contract",
+      "evidence_refs": [],
+      "id": "factory-operations.factory-operating-contract",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "identity-policy",
+      "evidence_refs": [],
+      "id": "factory-operations.identity-policy",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "promotion-policy",
+      "evidence_refs": [],
+      "id": "factory-operations.promotion-policy",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "provenance-policy",
+      "evidence_refs": [],
+      "id": "factory-operations.provenance-policy",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "repository-topology",
+      "evidence_refs": [],
+      "id": "factory-operations.repository-topology",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "rollback-plan",
+      "evidence_refs": [],
+      "id": "factory-operations.rollback-plan",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "sandbox-policy",
+      "evidence_refs": [],
+      "id": "factory-operations.sandbox-policy",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "secret-policy",
+      "evidence_refs": [],
+      "id": "factory-operations.secret-policy",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "telemetry-contract",
+      "evidence_refs": [],
+      "id": "factory-operations.telemetry-contract",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "telemetry-report",
+      "evidence_refs": [],
+      "id": "factory-operations.telemetry-report",
+      "owner_identity": "Neel",
+      "owner_role": "release-owner",
+      "pack": "factory-operations",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "audience-hypothesis",
+      "evidence_refs": [],
+      "id": "go-to-market.audience-hypothesis",
+      "owner_identity": "Neel",
+      "owner_role": "product-owner",
+      "pack": "go-to-market",
+      "required_evidence": [
+        "Foundation",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "claim-register",
+      "evidence_refs": [],
+      "id": "go-to-market.claim-register",
+      "owner_identity": "Neel",
+      "owner_role": "product-owner",
+      "pack": "go-to-market",
+      "required_evidence": [
+        "Foundation",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "content-plan",
+      "evidence_refs": [],
+      "id": "go-to-market.content-plan",
+      "owner_identity": "Neel",
+      "owner_role": "product-owner",
+      "pack": "go-to-market",
+      "required_evidence": [
+        "Foundation",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "economics-plan",
+      "evidence_refs": [],
+      "id": "go-to-market.economics-plan",
+      "owner_identity": "Neel",
+      "owner_role": "product-owner",
+      "pack": "go-to-market",
+      "required_evidence": [
+        "Foundation",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "feedback-route",
+      "evidence_refs": [],
+      "id": "go-to-market.feedback-route",
+      "owner_identity": "Neel",
+      "owner_role": "product-owner",
+      "pack": "go-to-market",
+      "required_evidence": [
+        "Foundation",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "launch-plan",
+      "evidence_refs": [],
+      "id": "go-to-market.launch-plan",
+      "owner_identity": "Neel",
+      "owner_role": "product-owner",
+      "pack": "go-to-market",
+      "required_evidence": [
+        "Foundation",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "positioning",
+      "evidence_refs": [],
+      "id": "go-to-market.positioning",
+      "owner_identity": "Neel",
+      "owner_role": "product-owner",
+      "pack": "go-to-market",
+      "required_evidence": [
+        "Foundation",
+        "Outcome",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "evaluation-plan",
+      "evidence_refs": [],
+      "id": "learning.evaluation-plan",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "learning",
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Outcome",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "learning-candidate",
+      "evidence_refs": [],
+      "id": "learning.learning-candidate",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "learning",
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Outcome",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "learning-policy",
+      "evidence_refs": [],
+      "id": "learning.learning-policy",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "learning",
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Outcome",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "promotion-plan",
+      "evidence_refs": [],
+      "id": "learning.promotion-plan",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "learning",
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Outcome",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "replay-plan",
+      "evidence_refs": [],
+      "id": "learning.replay-plan",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "learning",
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Outcome",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "rollback-plan",
+      "evidence_refs": [],
+      "id": "learning.rollback-plan",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "learning",
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Outcome",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "shadow-plan",
+      "evidence_refs": [],
+      "id": "learning.shadow-plan",
+      "owner_identity": "Neel",
+      "owner_role": "architecture-owner",
+      "pack": "learning",
+      "required_evidence": [
+        "Component",
+        "Integration",
+        "Outcome",
+        "Stress",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "accessibility-plan",
+      "evidence_refs": [],
+      "id": "web-product.accessibility-plan",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "web-product",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "api-contract",
+      "evidence_refs": [],
+      "id": "web-product.api-contract",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "web-product",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "backend-contract",
+      "evidence_refs": [],
+      "id": "web-product.backend-contract",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "web-product",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "browser-test-plan",
+      "evidence_refs": [],
+      "id": "web-product.browser-test-plan",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "web-product",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "frontend-architecture",
+      "evidence_refs": [],
+      "id": "web-product.frontend-architecture",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "web-product",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    },
+    {
+      "artifact_type": "product-analytics-plan",
+      "evidence_refs": [],
+      "id": "web-product.product-analytics-plan",
+      "owner_identity": "Neel",
+      "owner_role": "code-owner",
+      "pack": "web-product",
+      "required_evidence": [
+        "Component",
+        "Foundation",
+        "Integration",
+        "Workflow"
+      ],
+      "status": "declared"
+    }
+  ],
+  "project_id": "signaldesk",
+  "source_profile_sha256": "799c7f7083bbc827b3cb55ae47b9025af8918143e78b1e7bb379bb10d18ad0ef",
+  "version": "0.5.1"
+}

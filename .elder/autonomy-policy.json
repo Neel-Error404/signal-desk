@@ -1,0 +1,163 @@
+{
+  "authority": {
+    "can_activate_certification": true,
+    "can_auto_renew": false,
+    "can_create_pr": true,
+    "can_deploy": false,
+    "can_execute_canary": true,
+    "can_issue_runtime_lease": true,
+    "can_merge": false,
+    "can_mutate_maturity": false,
+    "can_promote_canary": false
+  },
+  "canary": {
+    "governance_evidence_maximum_age_minutes": 2,
+    "lease_ttl_minutes": 15,
+    "maximum_duration_minutes": 60,
+    "maximum_rollback_minutes": 10,
+    "maximum_traffic_percent": 10,
+    "minimum_observation_window_minutes": 5,
+    "observation_maximum_age_minutes": 5,
+    "provider_evidence_maximum_age_minutes": 15,
+    "provider_evidence_required_controls": [
+      "external-identity",
+      "secret-broker",
+      "promotion-gate",
+      "central-telemetry",
+      "rollback-ready",
+      "immutable-artifact"
+    ],
+    "provider_evidence_required_signer_roles": [
+      "independent-verifier"
+    ],
+    "require_automatic_rollback": true,
+    "require_central_telemetry": true,
+    "require_external_identity": true,
+    "require_immutable_predecessor": true,
+    "require_promotion_gate": true,
+    "require_response_binding": true,
+    "require_secret_broker": true,
+    "required_effective_level": "L3",
+    "rollback_claim_timeout_minutes": 1,
+    "start_response_timeout_minutes": 1
+  },
+  "certification": {
+    "allowed_statuses": [
+      "candidate",
+      "active",
+      "suspended",
+      "revoked",
+      "expired"
+    ],
+    "renewal_roles": [
+      "human-owner",
+      "architecture-owner"
+    ],
+    "require_expiry": true,
+    "require_independent_evaluator": true,
+    "required_issuer_roles": [
+      "human-owner",
+      "architecture-owner",
+      "security-owner"
+    ],
+    "revocation_roles": [
+      "human-owner",
+      "security-owner",
+      "release-owner"
+    ],
+    "suspension_roles": [
+      "human-owner",
+      "security-owner",
+      "release-owner"
+    ]
+  },
+  "effective_autonomy": {
+    "calculation": "minimum",
+    "hard_stops": [
+      "invalid-qualification",
+      "expired",
+      "suspended",
+      "revoked",
+      "contradicted",
+      "incident-budget-exhausted"
+    ],
+    "no_authority_result": "none",
+    "operands": [
+      "verified_hosted_maturity",
+      "project_autonomy_ceiling",
+      "change_class_maximum",
+      "active_certification_level"
+    ]
+  },
+  "id": "elder-bounded-autonomy-v1",
+  "incident_budget": {
+    "allow_negative_remaining": false,
+    "require_window": true,
+    "suspend_when_exhausted": true
+  },
+  "levels": [
+    "L0",
+    "L1",
+    "L2",
+    "L3",
+    "L4",
+    "L5"
+  ],
+  "mode": "qualification-gated-supervised-pr",
+  "qualification_consumption": {
+    "approved_maturity_model_sha256": "801e805c3d6893705716b1ead1eb1b44b96e006f0232912a4e4a287f5fb063a6",
+    "approved_policy_sha256": "e6c3da27fe0a188d55ca5a68a5eb28cbc492b580e2f8e0a78bf01fc50289927e",
+    "approved_trust_anchor_set_sha256": "066478110bb67bc383eccc9d48ec92d67ee517d4dc0c9cf898ab32c402e97259",
+    "mode": "reverify-pinned-inputs",
+    "require_artifact_match": true,
+    "require_current_evidence": true,
+    "require_environment_match": true,
+    "require_no_newer_contradiction": true,
+    "require_no_revocation": true,
+    "require_no_suspension": true,
+    "require_project_match": true,
+    "require_qualified": true
+  },
+  "simulation": {
+    "can_create_pr": false,
+    "can_mutate_workspace": false,
+    "deterministic_replay": true,
+    "mode": "side-effect-free",
+    "require_all_checks_pass": true,
+    "require_certified_scope": true,
+    "require_certified_tool": true,
+    "require_exact_class_match": true
+  },
+  "supervised_pr": {
+    "authority_evidence_maximum_age_minutes": 30,
+    "authority_evidence_required_signer_roles": [
+      "independent-verifier"
+    ],
+    "lease_ttl_minutes": 30,
+    "provider_evidence_maximum_age_minutes": 30,
+    "provider_evidence_required_controls": [
+      "remote-present",
+      "protected-base-branch",
+      "required-checks",
+      "signed-provenance",
+      "external-identity",
+      "isolated-workspace",
+      "ordered-tests",
+      "independent-evaluation"
+    ],
+    "provider_evidence_required_signer_roles": [
+      "independent-verifier"
+    ],
+    "require_evidence_packet": true,
+    "require_external_identity": true,
+    "require_hosted_git_governance": true,
+    "require_human_merge": true,
+    "require_human_release": true,
+    "require_independent_evaluation": true,
+    "require_isolated_workspace": true,
+    "require_ordered_test_ladder": true,
+    "require_response_binding": true,
+    "required_effective_level": "L2"
+  },
+  "version": "0.5.1"
+}

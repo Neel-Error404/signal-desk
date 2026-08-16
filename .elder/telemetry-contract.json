@@ -1,0 +1,70 @@
+{
+  "authority": {
+    "budget_owner": "human-owner",
+    "can_approve": false,
+    "can_promote": false,
+    "mode": "advisory-only"
+  },
+  "budgets": {
+    "maximum_error_rate": 0.05,
+    "maximum_p95_latency_ms": 30000,
+    "maximum_total_cost_usd": 5.0,
+    "minimum_correlation_completeness": 1.0
+  },
+  "correlation_fields": [
+    "project_id",
+    "work_item_id",
+    "agent_run_id",
+    "run_id",
+    "artifact_digest",
+    "deployment_id",
+    "evaluation_id",
+    "outcome_id"
+  ],
+  "id": "elder-correlated-telemetry-v1",
+  "metric_policy": {
+    "forbidden_dimensions": [
+      "trace_id",
+      "span_id",
+      "parent_span_id",
+      "run_id",
+      "agent_run_id",
+      "work_item_id",
+      "artifact_digest",
+      "deployment_id",
+      "evaluation_id",
+      "outcome_id",
+      "event_id"
+    ],
+    "maximum_cardinality_per_metric": 2000
+  },
+  "privacy": {
+    "persist_outputs": false,
+    "persist_prompts": false,
+    "sensitive_attribute_patterns": [
+      "TOKEN",
+      "SECRET",
+      "PASSWORD",
+      "CREDENTIAL",
+      "API_KEY",
+      "PRIVATE_KEY",
+      "AUTHORIZATION",
+      "COOKIE"
+    ],
+    "untrusted_trace_context": "validate-or-replace"
+  },
+  "scopes": [
+    "product",
+    "model",
+    "tool",
+    "factory",
+    "cost",
+    "outcome"
+  ],
+  "semantic_conventions": {
+    "genai": "OpenTelemetry Semantic Conventions for Generative AI, repository snapshot reviewed 2026-08-05",
+    "genai_status": "mixed",
+    "trace_context": "W3C Trace Context Level 1"
+  },
+  "version": "0.5.1"
+}

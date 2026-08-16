@@ -1,0 +1,37 @@
+{
+  "content_sha256": "71794e3168c3bb26d713d8424b7aee13fb9bd655422bf28b8b28d4fc1236115d",
+  "files": {
+    ".elder/capsule/README.md": {
+      "sha256": "80878ac147ef20bdd5aa6e5534a4e6ec2738db0173b66882155cffbae2561b7b",
+      "size": 701
+    },
+    ".elder/capsule/START_PROJECT_PROMPT.md": {
+      "sha256": "9c11adffb435983139f0f3d34bfabb1235fab0726b5227e574ce2ba3cdccf99b",
+      "size": 4528
+    },
+    ".elder/capsule/bootstrap.ps1": {
+      "sha256": "cf032e2b3e2c3d58e9b629b9c661b4ecaef80fd2ac7d24c50c252cce8ccbc7d5",
+      "size": 4655
+    },
+    ".elder/capsule/elder_protocol-0.5.1-py3-none-any.whl": {
+      "sha256": "38749fd5f777e9b55e0d824fe5741556619e003901b27166439878f66347864b",
+      "size": 2619175
+    },
+    ".elder/capsule/intake-answers.example.json": {
+      "sha256": "ba4d755fbb9dd7c9110d9dec133b2382f12343f151907a039b46bc41d3de6f0e",
+      "size": 1147
+    },
+    ".elder/runtime/.gitignore": {
+      "sha256": "240a3e0d37d2e86b614063f5347eb02d4f99ca6c254de6b82871ff8d95532a7d",
+      "size": 14
+    },
+    "elder.ps1": {
+      "sha256": "4c0011461a26de41ad058bd9614f09ed3ba2d0b341f6e78909c82e82acfcfeee",
+      "size": 368
+    }
+  },
+  "format_version": 1,
+  "protocol_version": "0.5.1",
+  "source_commit": "9448b38074ff5d6943f58ca95d9f68745c8acfd2",
+  "wheel": ".elder/capsule/elder_protocol-0.5.1-py3-none-any.whl"
+}

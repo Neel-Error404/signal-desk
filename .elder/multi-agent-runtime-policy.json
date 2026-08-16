@@ -1,0 +1,65 @@
+{
+  "authority": {
+    "can_approve": false,
+    "can_promote": false,
+    "checkpoints_mutate_governed_state": false,
+    "external_identity_authenticated": false,
+    "messages_mutate_governed_state": false
+  },
+  "dispatch": {
+    "claim_mode": "assigned-identity-only",
+    "claim_order": [
+      "submitted_at",
+      "delegation_id"
+    ],
+    "maximum_lease_seconds": 900,
+    "reclaim_expired_leases": true
+  },
+  "enforcement": {
+    "aggregate_parent_budget": true,
+    "bind_cancellation_and_escalation_journals": true,
+    "bind_complete_lease_transitions": true,
+    "bind_context_packet_on_submit": true,
+    "bind_repository_source_content": true,
+    "enforce_checkpoint_frequency": true,
+    "enforce_child_lease": true,
+    "enforce_full_lease_interval": true,
+    "enforce_operation_authority_grants": true,
+    "enforce_parent_lifecycle": true,
+    "fail_closed_on_expiry": true,
+    "propagate_cancellation": true,
+    "transactional_consistent_reads": true,
+    "validate_project_authority_on_submit": true,
+    "verify_journal_row_digests": true
+  },
+  "id": "local-bounded-multi-agent-runtime",
+  "replay": {
+    "counterfactual_execution": false,
+    "mode": "deterministic-state-reconstruction",
+    "verify_append_only_sequences": true,
+    "verify_checkpoint_hash_chain": true,
+    "verify_event_hash_chain": true
+  },
+  "sequencing": {
+    "actions": "contiguous-per-child-run",
+    "checkpoints": "contiguous-digest-chain",
+    "messages": "contiguous-per-child-run",
+    "runtime_events": "global-contiguous-digest-chain"
+  },
+  "store": {
+    "adapter": "sqlite",
+    "append_only_records": [
+      "actions",
+      "messages",
+      "checkpoints",
+      "cancellations",
+      "escalations",
+      "runtime-events"
+    ],
+    "authority": "local-reference-only",
+    "foreign_keys": true,
+    "journal_mode": "WAL",
+    "synchronous": "FULL"
+  },
+  "version": "0.5.1"
+}

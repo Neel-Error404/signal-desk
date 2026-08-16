@@ -1,0 +1,141 @@
+{
+  "autonomy_ceiling": "L2",
+  "capability_packs": [
+    "core",
+    "web-product",
+    "data",
+    "agentic",
+    "assurance",
+    "learning",
+    "go-to-market"
+  ],
+  "constraints": [
+    "The initial product accepts customer feedback but must not accept credentials, regulated data, or proprietary source-code uploads.",
+    "Humans retain merge, release, deployment, learning-promotion, and architecture-exception authority.",
+    "The first milestone uses local or free-tier infrastructure and does not require autonomous production deployment.",
+    "The initial product is a single repository using TypeScript, Next.js, and PostgreSQL.",
+    "Billing, enterprise tenant administration, autonomous production deployment, model-weight fine-tuning, and application-user memory are initial non-goals."
+  ],
+  "data_sensitivity": "confidential",
+  "deployment_targets": [
+    "local",
+    "Vercel",
+    "hosted PostgreSQL"
+  ],
+  "identities": [
+    {
+      "id": "Neel",
+      "kind": "human"
+    },
+    {
+      "id": "signaldesk-evaluator",
+      "kind": "agent"
+    },
+    {
+      "id": "signaldesk-executor",
+      "kind": "agent"
+    },
+    {
+      "id": "signaldesk-intake-agent",
+      "kind": "agent"
+    },
+    {
+      "id": "signaldesk-learning-agent",
+      "kind": "agent"
+    },
+    {
+      "id": "signaldesk-planning-agent",
+      "kind": "agent"
+    }
+  ],
+  "knowledge_sources": [
+    {
+      "authority": "primary",
+      "id": "signaldesk-repository",
+      "location": ".",
+      "type": "repository"
+    }
+  ],
+  "languages": [
+    "TypeScript",
+    "SQL"
+  ],
+  "lifecycle": "prototype",
+  "mission": "Help B2B SaaS founders, product teams, and support teams turn customer feedback into traceable product signals, prioritized issues, completed fixes, and release communication.",
+  "name": "SignalDesk",
+  "outcomes": {
+    "failure": [
+      "SignalDesk loses source evidence or merges unrelated feedback without an owner-visible explanation.",
+      "Customer feedback or workspace data is exposed outside its authorized product boundary.",
+      "An agent merges, releases, deploys, promotes learning, or overrides architecture without the required human decision.",
+      "The product cannot reconstruct why a signal was prioritized, changed, rejected, fixed, or communicated."
+    ],
+    "success": [
+      "An authenticated team member can capture customer feedback and convert it into a traceable canonical signal through the product interface.",
+      "Repeated feedback can be grouped without losing its original sources, customer context, or evidence.",
+      "A product owner can promote a signal into a prioritized issue with an explicit rationale and accountable decision history.",
+      "A team can track an accepted issue through implementation, verification, completion, and customer-facing release communication.",
+      "The first product milestone passes its ordered tests and can be operated through the product interface without database or background-terminal inspection."
+    ]
+  },
+  "profile_status": "ratified",
+  "project_type": "software",
+  "protocol_version": "0.5.1",
+  "risk_tier": "moderate",
+  "role_bindings": [
+    {
+      "identity": "Neel",
+      "role": "architecture-owner"
+    },
+    {
+      "identity": "Neel",
+      "role": "code-owner"
+    },
+    {
+      "identity": "signaldesk-evaluator",
+      "role": "evaluator"
+    },
+    {
+      "identity": "signaldesk-executor",
+      "role": "executor"
+    },
+    {
+      "identity": "Neel",
+      "role": "human-owner"
+    },
+    {
+      "identity": "signaldesk-intake-agent",
+      "role": "intake-agent"
+    },
+    {
+      "identity": "signaldesk-learning-agent",
+      "role": "learning-agent"
+    },
+    {
+      "identity": "signaldesk-planning-agent",
+      "role": "planning-agent"
+    },
+    {
+      "identity": "Neel",
+      "role": "product-owner"
+    },
+    {
+      "identity": "Neel",
+      "role": "promoter"
+    },
+    {
+      "identity": "Neel",
+      "role": "release-owner"
+    },
+    {
+      "identity": "Neel",
+      "role": "security-owner"
+    }
+  ],
+  "skill_overrides": {
+    "forbidden": [],
+    "required": []
+  },
+  "slug": "signaldesk",
+  "topology": "single-repo"
+}

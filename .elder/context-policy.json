@@ -1,0 +1,44 @@
+{
+  "allowed_authorities": [
+    "primary",
+    "secondary",
+    "historical"
+  ],
+  "allowed_graph_statuses": [
+    "active"
+  ],
+  "allowed_memory_statuses": [
+    "trusted"
+  ],
+  "assembly": {
+    "allow_wholesale_graph_context": false,
+    "budget_behavior": "exclude-optional-fail-required",
+    "deduplicate_by": "content_sha256",
+    "deterministic_order": "authority-kind-id",
+    "graph_selection": "query-matched-only",
+    "maximum_graph_sources": 20,
+    "token_estimate": "ceil-utf8-characters-divided-by-four"
+  },
+  "authority": {
+    "can_expand_authority": false,
+    "can_promote_memory": false,
+    "mode": "read-only-assembly"
+  },
+  "authority_order": [
+    "primary",
+    "secondary",
+    "historical",
+    "candidate"
+  ],
+  "budgets": {
+    "default_token_budget": 12000,
+    "maximum_source_characters": 24000,
+    "maximum_sources": 40
+  },
+  "freshness": {
+    "default_maximum_age_days": null,
+    "fail_required_stale_sources": true
+  },
+  "id": "elder-governed-context-v1",
+  "version": "0.5.1"
+}

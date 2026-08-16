@@ -1,0 +1,61 @@
+{
+  "authority_ceilings": {
+    "delegate-bounded": [
+      "read",
+      "propose",
+      "modify",
+      "execute",
+      "delegate",
+      "message",
+      "checkpoint",
+      "cancel",
+      "escalate"
+    ],
+    "execute-bounded": [
+      "read",
+      "propose",
+      "modify",
+      "execute",
+      "message",
+      "checkpoint"
+    ],
+    "modify-only": [
+      "read",
+      "propose",
+      "modify"
+    ],
+    "propose-only": [
+      "read",
+      "propose"
+    ],
+    "read-only": [
+      "read"
+    ]
+  },
+  "cancellation": {
+    "propagate_to_active_children": true
+  },
+  "forbidden_delegated_actions": [
+    "approve",
+    "promote"
+  ],
+  "id": "elder-bounded-delegation-v1",
+  "message_effect": "none",
+  "rules": [
+    "A parent run must explicitly claim delegation authority, and every claimed action must remain within its resolved project role and identity authority.",
+    "Delegated authority cannot exceed validated parent authority.",
+    "Tool grants do not imply approval authority.",
+    "A child run cannot exceed delegated authority, tools, budget, deadline, expiry, or scope.",
+    "Delegated and child scopes cannot contain or enter a forbidden scope.",
+    "Delegation requires an expiry and termination condition.",
+    "Every child run traces to exactly one parent delegation.",
+    "Every checkpoint binds to its exact project, delegation, and child run.",
+    "Delegated context binds the immutable delegation digest and repository sources remain in delegated scope.",
+    "Cancellation propagates to active child work.",
+    "An executor cannot become the sole evaluator or promoter.",
+    "Budgets aggregate across parent and child runs.",
+    "A failed authority check blocks execution.",
+    "Messages cannot mutate governed state directly."
+  ],
+  "version": "0.5.1"
+}

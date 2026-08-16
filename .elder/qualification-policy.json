@@ -1,0 +1,845 @@
+{
+  "bundle": {
+    "allowed_environments": [
+      "production"
+    ],
+    "maximum_age_days": 30,
+    "maximum_records": 500,
+    "maximum_total_bytes": 52428800,
+    "reject_symlinks": true,
+    "require_https_source": true
+  },
+  "gates": [
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l0-capability-documented-workflow",
+      "level": "L0",
+      "maximum_age_days": 90,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "documented workflow",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l0-capability-versioned-source",
+      "level": "L0",
+      "maximum_age_days": 90,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "versioned source",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l0-capability-repeatable-verification",
+      "level": "L0",
+      "maximum_age_days": 90,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "repeatable verification",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l0-evidence-successful-manual-replay",
+      "level": "L0",
+      "maximum_age_days": 90,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "successful manual replay",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l1-capability-typed-work-items",
+      "level": "L1",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "typed work items",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l1-capability-tool-scopes",
+      "level": "L1",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "tool scopes",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l1-capability-execution-traces",
+      "level": "L1",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "execution traces",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l1-capability-human-approval",
+      "level": "L1",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "human approval",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l1-evidence-trace-linkage",
+      "level": "L1",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "trace linkage",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l1-evidence-human-decision-record",
+      "level": "L1",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "human decision record",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l2-capability-sandboxing",
+      "level": "L2",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "sandboxing",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l2-capability-reproducible-builds",
+      "level": "L2",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "reproducible builds",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l2-capability-ci",
+      "level": "L2",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "CI",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l2-capability-provenance",
+      "level": "L2",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "provenance",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l2-capability-independent-review",
+      "level": "L2",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "independent review",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l2-evidence-clean-build",
+      "level": "L2",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "clean build",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l2-evidence-required-checks",
+      "level": "L2",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "required checks",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l2-evidence-artifact-provenance",
+      "level": "L2",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "artifact provenance",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l3-capability-workload-identity",
+      "level": "L3",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "workload identity",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l3-capability-secret-broker",
+      "level": "L3",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "secret broker",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l3-capability-promotion-gates",
+      "level": "L3",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "promotion gates",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l3-capability-canary",
+      "level": "L3",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "canary",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l3-capability-rollback",
+      "level": "L3",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "rollback",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l3-capability-central-telemetry",
+      "level": "L3",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "central telemetry",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l3-evidence-hosted-workflow",
+      "level": "L3",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "hosted workflow",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l3-evidence-canary-observation",
+      "level": "L3",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "canary observation",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l3-evidence-rollback-exercise",
+      "level": "L3",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "rollback exercise",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l4-capability-class-certification",
+      "level": "L4",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "class certification",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l4-capability-independent-evals",
+      "level": "L4",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "independent evals",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l4-capability-automatic-suspension",
+      "level": "L4",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "automatic suspension",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l4-capability-incident-budgets",
+      "level": "L4",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "incident budgets",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l4-capability-delayed-quality-measurement",
+      "level": "L4",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "delayed quality measurement",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l4-evidence-class-specific-success-history",
+      "level": "L4",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "class-specific success history",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l4-evidence-suspension-test",
+      "level": "L4",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "suspension test",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l4-evidence-maintainability-trend",
+      "level": "L4",
+      "maximum_age_days": 30,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "maintainability trend",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l5-capability-bounded-authority",
+      "level": "L5",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "bounded authority",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l5-capability-continuous-evaluation",
+      "level": "L5",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "continuous evaluation",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l5-capability-automatic-rollback",
+      "level": "L5",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "automatic rollback",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l5-capability-revocation",
+      "level": "L5",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "revocation",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "capability-attestation"
+      ],
+      "id": "l5-capability-human-renewal",
+      "level": "L5",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "human renewal",
+      "requirement_kind": "capability"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l5-evidence-longitudinal-outcome-evidence",
+      "level": "L5",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "longitudinal outcome evidence",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l5-evidence-independent-certification",
+      "level": "L5",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "independent certification",
+      "requirement_kind": "evidence"
+    },
+    {
+      "environments": [
+        "production"
+      ],
+      "evidence_types": [
+        "evidence-attestation"
+      ],
+      "id": "l5-evidence-revocation-exercise",
+      "level": "L5",
+      "maximum_age_days": 14,
+      "minimum_records": 1,
+      "require_independent_verifier": true,
+      "required_signer_roles": [
+        "independent-verifier"
+      ],
+      "requirement": "revocation exercise",
+      "requirement_kind": "evidence"
+    }
+  ],
+  "id": "elder-hosted-production-qualification-v1",
+  "qualification": {
+    "advisory_only": true,
+    "can_deploy": false,
+    "can_mutate_maturity": false,
+    "can_promote": false,
+    "cumulative": true,
+    "fail_on_contradiction": true,
+    "fail_on_untrusted_record": true
+  },
+  "trust": {
+    "algorithms": [
+      "ed25519"
+    ],
+    "anchors": [
+      {
+        "algorithm": "ed25519",
+        "id": "p4-8a-operator-verifier-v1",
+        "providers": [
+          "elder-governance",
+          "github-actions"
+        ],
+        "public_key_base64": "QFI7UC1DE85T6RCoRHM3JXQM+TUEPv/1twjYHlptZ5Q=",
+        "roles": [
+          "accountable-operator",
+          "independent-verifier"
+        ],
+        "source_hosts": [
+          "github.com"
+        ],
+        "status": "active",
+        "subject_identity": "operator:Neel-Error404:elder-protocol:p4.8a-independent-verifier",
+        "valid_from": "2026-08-06T00:00:00+00:00",
+        "valid_until": "2027-08-06T00:00:00+00:00"
+      },
+      {
+        "algorithm": "ed25519",
+        "id": "p4-8a-independent-reviewer-v1",
+        "providers": [
+          "elder-governance"
+        ],
+        "public_key_base64": "2rGo9ceoB7twf542Zaph1H4OdBfl9AWF6NbAO2grOig=",
+        "roles": [
+          "independent-reviewer"
+        ],
+        "source_hosts": [
+          "github.com"
+        ],
+        "status": "active",
+        "subject_identity": "codex-agent:019fd598-e0e5-7e83-a33b-6bee1bd8ff37:p4.8a-reviewer",
+        "valid_from": "2026-08-06T00:00:00+00:00",
+        "valid_until": "2027-08-06T00:00:00+00:00"
+      }
+    ],
+    "require_signature": true
+  },
+  "version": "0.5.1"
+}

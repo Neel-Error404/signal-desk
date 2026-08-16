@@ -1,0 +1,2693 @@
+{
+  "content_sha256": "27ca9dcddc5d10ce445e31725cb1e344754d01b5ba5e13661b3a711950841d2c",
+  "grants": [
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:approval-decision",
+      "identity": "Neel",
+      "resource": "approval-decision",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "code-owner:approval-decision",
+      "identity": "Neel",
+      "resource": "approval-decision",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:approval-decision",
+      "identity": "signaldesk-evaluator",
+      "resource": "approval-decision",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:approval-decision",
+      "identity": "signaldesk-executor",
+      "resource": "approval-decision",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:approval-decision",
+      "identity": "Neel",
+      "resource": "approval-decision",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "product-owner:approval-decision",
+      "identity": "Neel",
+      "resource": "approval-decision",
+      "role": "product-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:approval-decision",
+      "identity": "Neel",
+      "resource": "approval-decision",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "release-owner:approval-decision",
+      "identity": "Neel",
+      "resource": "approval-decision",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "security-owner:approval-decision",
+      "identity": "Neel",
+      "resource": "approval-decision",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "delegate",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:authority-grant",
+      "identity": "Neel",
+      "resource": "authority-grant",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "delegate",
+        "propose",
+        "read"
+      ],
+      "id": "code-owner:authority-grant",
+      "identity": "Neel",
+      "resource": "authority-grant",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:authority-grant",
+      "identity": "signaldesk-evaluator",
+      "resource": "authority-grant",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:authority-grant",
+      "identity": "signaldesk-executor",
+      "resource": "authority-grant",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "delegate",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:authority-grant",
+      "identity": "Neel",
+      "resource": "authority-grant",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:authority-grant",
+      "identity": "signaldesk-planning-agent",
+      "resource": "authority-grant",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "propose",
+        "read"
+      ],
+      "id": "security-owner:authority-grant",
+      "identity": "Neel",
+      "resource": "authority-grant",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:autonomy-authority-evidence",
+      "identity": "Neel",
+      "resource": "autonomy-authority-evidence",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:autonomy-authority-evidence",
+      "identity": "signaldesk-evaluator",
+      "resource": "autonomy-authority-evidence",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:autonomy-authority-evidence",
+      "identity": "signaldesk-executor",
+      "resource": "autonomy-authority-evidence",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:autonomy-authority-evidence",
+      "identity": "Neel",
+      "resource": "autonomy-authority-evidence",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:autonomy-authority-evidence",
+      "identity": "Neel",
+      "resource": "autonomy-authority-evidence",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "release-owner:autonomy-authority-evidence",
+      "identity": "Neel",
+      "resource": "autonomy-authority-evidence",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "security-owner:autonomy-authority-evidence",
+      "identity": "Neel",
+      "resource": "autonomy-authority-evidence",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "certify",
+        "read"
+      ],
+      "id": "architecture-owner:autonomy-authority-lease",
+      "identity": "Neel",
+      "resource": "autonomy-authority-lease",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:autonomy-authority-lease",
+      "identity": "signaldesk-evaluator",
+      "resource": "autonomy-authority-lease",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "execute",
+        "read"
+      ],
+      "id": "executor:autonomy-authority-lease",
+      "identity": "signaldesk-executor",
+      "resource": "autonomy-authority-lease",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "certify",
+        "read"
+      ],
+      "id": "human-owner:autonomy-authority-lease",
+      "identity": "Neel",
+      "resource": "autonomy-authority-lease",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:autonomy-authority-lease",
+      "identity": "Neel",
+      "resource": "autonomy-authority-lease",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "read",
+        "revoke",
+        "suspend"
+      ],
+      "id": "release-owner:autonomy-authority-lease",
+      "identity": "Neel",
+      "resource": "autonomy-authority-lease",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read",
+        "revoke",
+        "suspend"
+      ],
+      "id": "security-owner:autonomy-authority-lease",
+      "identity": "Neel",
+      "resource": "autonomy-authority-lease",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:autonomy-authority-source",
+      "identity": "Neel",
+      "resource": "autonomy-authority-source",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:autonomy-authority-source",
+      "identity": "signaldesk-evaluator",
+      "resource": "autonomy-authority-source",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:autonomy-authority-source",
+      "identity": "signaldesk-executor",
+      "resource": "autonomy-authority-source",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:autonomy-authority-source",
+      "identity": "Neel",
+      "resource": "autonomy-authority-source",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "release-owner:autonomy-authority-source",
+      "identity": "Neel",
+      "resource": "autonomy-authority-source",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "security-owner:autonomy-authority-source",
+      "identity": "Neel",
+      "resource": "autonomy-authority-source",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "certify",
+        "read"
+      ],
+      "id": "architecture-owner:autonomy-certification",
+      "identity": "Neel",
+      "resource": "autonomy-certification",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:autonomy-certification",
+      "identity": "signaldesk-evaluator",
+      "resource": "autonomy-certification",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:autonomy-certification",
+      "identity": "signaldesk-executor",
+      "resource": "autonomy-certification",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "certify",
+        "read"
+      ],
+      "id": "human-owner:autonomy-certification",
+      "identity": "Neel",
+      "resource": "autonomy-certification",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:autonomy-certification",
+      "identity": "Neel",
+      "resource": "autonomy-certification",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "read",
+        "revoke",
+        "suspend"
+      ],
+      "id": "release-owner:autonomy-certification",
+      "identity": "Neel",
+      "resource": "autonomy-certification",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "certify",
+        "read",
+        "revoke",
+        "suspend"
+      ],
+      "id": "security-owner:autonomy-certification",
+      "identity": "Neel",
+      "resource": "autonomy-certification",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:autonomy-class",
+      "identity": "Neel",
+      "resource": "autonomy-class",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "code-owner:autonomy-class",
+      "identity": "Neel",
+      "resource": "autonomy-class",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:autonomy-class",
+      "identity": "signaldesk-evaluator",
+      "resource": "autonomy-class",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:autonomy-class",
+      "identity": "signaldesk-executor",
+      "resource": "autonomy-class",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:autonomy-class",
+      "identity": "Neel",
+      "resource": "autonomy-class",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:autonomy-class",
+      "identity": "signaldesk-planning-agent",
+      "resource": "autonomy-class",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "release-owner:autonomy-class",
+      "identity": "Neel",
+      "resource": "autonomy-class",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "security-owner:autonomy-class",
+      "identity": "Neel",
+      "resource": "autonomy-class",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read",
+        "renew"
+      ],
+      "id": "architecture-owner:autonomy-governance-record",
+      "identity": "Neel",
+      "resource": "autonomy-governance-record",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:autonomy-governance-record",
+      "identity": "signaldesk-evaluator",
+      "resource": "autonomy-governance-record",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:autonomy-governance-record",
+      "identity": "signaldesk-executor",
+      "resource": "autonomy-governance-record",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "read",
+        "renew",
+        "revoke",
+        "suspend"
+      ],
+      "id": "human-owner:autonomy-governance-record",
+      "identity": "Neel",
+      "resource": "autonomy-governance-record",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read",
+        "revoke",
+        "suspend"
+      ],
+      "id": "release-owner:autonomy-governance-record",
+      "identity": "Neel",
+      "resource": "autonomy-governance-record",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read",
+        "revoke",
+        "suspend"
+      ],
+      "id": "security-owner:autonomy-governance-record",
+      "identity": "Neel",
+      "resource": "autonomy-governance-record",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:autonomy-policy",
+      "identity": "Neel",
+      "resource": "autonomy-policy",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:autonomy-policy",
+      "identity": "signaldesk-evaluator",
+      "resource": "autonomy-policy",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:autonomy-policy",
+      "identity": "signaldesk-executor",
+      "resource": "autonomy-policy",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:autonomy-policy",
+      "identity": "Neel",
+      "resource": "autonomy-policy",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:autonomy-policy",
+      "identity": "signaldesk-planning-agent",
+      "resource": "autonomy-policy",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "release-owner:autonomy-policy",
+      "identity": "Neel",
+      "resource": "autonomy-policy",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "security-owner:autonomy-policy",
+      "identity": "Neel",
+      "resource": "autonomy-policy",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:autonomy-simulation",
+      "identity": "Neel",
+      "resource": "autonomy-simulation",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:autonomy-simulation",
+      "identity": "signaldesk-evaluator",
+      "resource": "autonomy-simulation",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "executor:autonomy-simulation",
+      "identity": "signaldesk-executor",
+      "resource": "autonomy-simulation",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:autonomy-simulation",
+      "identity": "Neel",
+      "resource": "autonomy-simulation",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:autonomy-simulation",
+      "identity": "signaldesk-planning-agent",
+      "resource": "autonomy-simulation",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "release-owner:autonomy-simulation",
+      "identity": "Neel",
+      "resource": "autonomy-simulation",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "security-owner:autonomy-simulation",
+      "identity": "Neel",
+      "resource": "autonomy-simulation",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "architecture-owner:canary-execution",
+      "identity": "Neel",
+      "resource": "canary-execution",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:canary-execution",
+      "identity": "signaldesk-evaluator",
+      "resource": "canary-execution",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:canary-execution",
+      "identity": "signaldesk-executor",
+      "resource": "canary-execution",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "read"
+      ],
+      "id": "human-owner:canary-execution",
+      "identity": "Neel",
+      "resource": "canary-execution",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "read"
+      ],
+      "id": "promoter:canary-execution",
+      "identity": "Neel",
+      "resource": "canary-execution",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "read"
+      ],
+      "id": "release-owner:canary-execution",
+      "identity": "Neel",
+      "resource": "canary-execution",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "read"
+      ],
+      "id": "security-owner:canary-execution",
+      "identity": "Neel",
+      "resource": "canary-execution",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "architecture-owner:canary-observation",
+      "identity": "Neel",
+      "resource": "canary-observation",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:canary-observation",
+      "identity": "signaldesk-evaluator",
+      "resource": "canary-observation",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:canary-observation",
+      "identity": "signaldesk-executor",
+      "resource": "canary-observation",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "human-owner:canary-observation",
+      "identity": "Neel",
+      "resource": "canary-observation",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:canary-observation",
+      "identity": "Neel",
+      "resource": "canary-observation",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "read"
+      ],
+      "id": "release-owner:canary-observation",
+      "identity": "Neel",
+      "resource": "canary-observation",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "security-owner:canary-observation",
+      "identity": "Neel",
+      "resource": "canary-observation",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:candidate-memory",
+      "identity": "Neel",
+      "resource": "candidate-memory",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:candidate-memory",
+      "identity": "signaldesk-evaluator",
+      "resource": "candidate-memory",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "promote",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:candidate-memory",
+      "identity": "Neel",
+      "resource": "candidate-memory",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:candidate-memory",
+      "identity": "signaldesk-learning-agent",
+      "resource": "candidate-memory",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:checkpoint",
+      "identity": "Neel",
+      "resource": "checkpoint",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "code-owner:checkpoint",
+      "identity": "Neel",
+      "resource": "checkpoint",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "checkpoint",
+        "read"
+      ],
+      "id": "evaluator:checkpoint",
+      "identity": "signaldesk-evaluator",
+      "resource": "checkpoint",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "checkpoint",
+        "read"
+      ],
+      "id": "executor:checkpoint",
+      "identity": "signaldesk-executor",
+      "resource": "checkpoint",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "checkpoint",
+        "read"
+      ],
+      "id": "human-owner:checkpoint",
+      "identity": "Neel",
+      "resource": "checkpoint",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "planning-agent:checkpoint",
+      "identity": "signaldesk-planning-agent",
+      "resource": "checkpoint",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:constitution",
+      "identity": "Neel",
+      "resource": "constitution",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:constitution",
+      "identity": "signaldesk-evaluator",
+      "resource": "constitution",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:constitution",
+      "identity": "signaldesk-executor",
+      "resource": "constitution",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "promote",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:constitution",
+      "identity": "Neel",
+      "resource": "constitution",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:constitution",
+      "identity": "signaldesk-learning-agent",
+      "resource": "constitution",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:constitution",
+      "identity": "signaldesk-planning-agent",
+      "resource": "constitution",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:context-packet",
+      "identity": "signaldesk-evaluator",
+      "resource": "context-packet",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "execute",
+        "read"
+      ],
+      "id": "executor:context-packet",
+      "identity": "signaldesk-executor",
+      "resource": "context-packet",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:context-packet",
+      "identity": "Neel",
+      "resource": "context-packet",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "read"
+      ],
+      "id": "planning-agent:context-packet",
+      "identity": "signaldesk-planning-agent",
+      "resource": "context-packet",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:context-policy",
+      "identity": "Neel",
+      "resource": "context-policy",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:context-policy",
+      "identity": "signaldesk-evaluator",
+      "resource": "context-policy",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:context-policy",
+      "identity": "signaldesk-executor",
+      "resource": "context-policy",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "promote",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:context-policy",
+      "identity": "Neel",
+      "resource": "context-policy",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:context-policy",
+      "identity": "signaldesk-learning-agent",
+      "resource": "context-policy",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:context-policy",
+      "identity": "signaldesk-planning-agent",
+      "resource": "context-policy",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "security-owner:context-policy",
+      "identity": "Neel",
+      "resource": "context-policy",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "delegate",
+        "escalate",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:delegation",
+      "identity": "Neel",
+      "resource": "delegation",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "delegate",
+        "escalate",
+        "propose",
+        "read"
+      ],
+      "id": "code-owner:delegation",
+      "identity": "Neel",
+      "resource": "delegation",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "checkpoint",
+        "escalate",
+        "message",
+        "read"
+      ],
+      "id": "evaluator:delegation",
+      "identity": "signaldesk-evaluator",
+      "resource": "delegation",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "cancel",
+        "checkpoint",
+        "delegate",
+        "escalate",
+        "message",
+        "propose",
+        "read"
+      ],
+      "id": "executor:delegation",
+      "identity": "signaldesk-executor",
+      "resource": "delegation",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "delegate",
+        "escalate",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:delegation",
+      "identity": "Neel",
+      "resource": "delegation",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "escalate",
+        "message",
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:delegation",
+      "identity": "signaldesk-learning-agent",
+      "resource": "delegation",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "delegate",
+        "escalate",
+        "message",
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:delegation",
+      "identity": "signaldesk-planning-agent",
+      "resource": "delegation",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "escalate",
+        "propose",
+        "read"
+      ],
+      "id": "product-owner:delegation",
+      "identity": "Neel",
+      "resource": "delegation",
+      "role": "product-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:delegation",
+      "identity": "Neel",
+      "resource": "delegation",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "escalate",
+        "propose",
+        "read"
+      ],
+      "id": "release-owner:delegation",
+      "identity": "Neel",
+      "resource": "delegation",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "escalate",
+        "propose",
+        "read"
+      ],
+      "id": "security-owner:delegation",
+      "identity": "Neel",
+      "resource": "delegation",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:design-doc",
+      "identity": "Neel",
+      "resource": "design-doc",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "code-owner:design-doc",
+      "identity": "Neel",
+      "resource": "design-doc",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:design-doc",
+      "identity": "signaldesk-evaluator",
+      "resource": "design-doc",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "promote",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:design-doc",
+      "identity": "Neel",
+      "resource": "design-doc",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "intake-agent:design-doc",
+      "identity": "signaldesk-intake-agent",
+      "resource": "design-doc",
+      "role": "intake-agent"
+    },
+    {
+      "actions": [
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:design-doc",
+      "identity": "signaldesk-planning-agent",
+      "resource": "design-doc",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "product-owner:design-doc",
+      "identity": "Neel",
+      "resource": "design-doc",
+      "role": "product-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:evaluation-dataset",
+      "identity": "Neel",
+      "resource": "evaluation-dataset",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:evaluation-dataset",
+      "identity": "signaldesk-evaluator",
+      "resource": "evaluation-dataset",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "promote",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:evaluation-dataset",
+      "identity": "Neel",
+      "resource": "evaluation-dataset",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:evaluation-dataset",
+      "identity": "signaldesk-learning-agent",
+      "resource": "evaluation-dataset",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:evaluation-dataset",
+      "identity": "signaldesk-planning-agent",
+      "resource": "evaluation-dataset",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:evaluation-policy",
+      "identity": "Neel",
+      "resource": "evaluation-policy",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:evaluation-policy",
+      "identity": "signaldesk-evaluator",
+      "resource": "evaluation-policy",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "promote",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:evaluation-policy",
+      "identity": "Neel",
+      "resource": "evaluation-policy",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:evaluation-policy",
+      "identity": "signaldesk-learning-agent",
+      "resource": "evaluation-policy",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:evaluation-policy",
+      "identity": "signaldesk-planning-agent",
+      "resource": "evaluation-policy",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:evaluation-report",
+      "identity": "Neel",
+      "resource": "evaluation-report",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:evaluation-report",
+      "identity": "signaldesk-evaluator",
+      "resource": "evaluation-report",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:evaluation-report",
+      "identity": "Neel",
+      "resource": "evaluation-report",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "product-owner:evaluation-report",
+      "identity": "Neel",
+      "resource": "evaluation-report",
+      "role": "product-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:evaluation-report",
+      "identity": "Neel",
+      "resource": "evaluation-report",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "architecture-owner:hosted-evidence",
+      "identity": "Neel",
+      "resource": "hosted-evidence",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:hosted-evidence",
+      "identity": "signaldesk-evaluator",
+      "resource": "hosted-evidence",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "human-owner:hosted-evidence",
+      "identity": "Neel",
+      "resource": "hosted-evidence",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:hosted-evidence",
+      "identity": "Neel",
+      "resource": "hosted-evidence",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "release-owner:hosted-evidence",
+      "identity": "Neel",
+      "resource": "hosted-evidence",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "security-owner:hosted-evidence",
+      "identity": "Neel",
+      "resource": "hosted-evidence",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:implementation",
+      "identity": "Neel",
+      "resource": "implementation",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "code-owner:implementation",
+      "identity": "Neel",
+      "resource": "implementation",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:implementation",
+      "identity": "signaldesk-evaluator",
+      "resource": "implementation",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "execute",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "executor:implementation",
+      "identity": "signaldesk-executor",
+      "resource": "implementation",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "execute",
+        "modify",
+        "promote",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:implementation",
+      "identity": "Neel",
+      "resource": "implementation",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:knowledge-graph",
+      "identity": "Neel",
+      "resource": "knowledge-graph",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:knowledge-graph",
+      "identity": "signaldesk-evaluator",
+      "resource": "knowledge-graph",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "executor:knowledge-graph",
+      "identity": "signaldesk-executor",
+      "resource": "knowledge-graph",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:knowledge-graph",
+      "identity": "Neel",
+      "resource": "knowledge-graph",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:knowledge-graph",
+      "identity": "signaldesk-learning-agent",
+      "resource": "knowledge-graph",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:knowledge-graph",
+      "identity": "signaldesk-planning-agent",
+      "resource": "knowledge-graph",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:learning-candidate",
+      "identity": "Neel",
+      "resource": "learning-candidate",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:learning-candidate",
+      "identity": "signaldesk-evaluator",
+      "resource": "learning-candidate",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:learning-candidate",
+      "identity": "Neel",
+      "resource": "learning-candidate",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:learning-candidate",
+      "identity": "signaldesk-learning-agent",
+      "resource": "learning-candidate",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:learning-candidate",
+      "identity": "Neel",
+      "resource": "learning-candidate",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:learning-evaluation",
+      "identity": "Neel",
+      "resource": "learning-evaluation",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:learning-evaluation",
+      "identity": "signaldesk-evaluator",
+      "resource": "learning-evaluation",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:learning-evaluation",
+      "identity": "Neel",
+      "resource": "learning-evaluation",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "learning-agent:learning-evaluation",
+      "identity": "signaldesk-learning-agent",
+      "resource": "learning-evaluation",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:learning-evaluation",
+      "identity": "Neel",
+      "resource": "learning-evaluation",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:learning-promotion",
+      "identity": "Neel",
+      "resource": "learning-promotion",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:learning-promotion",
+      "identity": "signaldesk-evaluator",
+      "resource": "learning-promotion",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:learning-promotion",
+      "identity": "Neel",
+      "resource": "learning-promotion",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "learning-agent:learning-promotion",
+      "identity": "signaldesk-learning-agent",
+      "resource": "learning-promotion",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "execute",
+        "promote",
+        "read"
+      ],
+      "id": "promoter:learning-promotion",
+      "identity": "Neel",
+      "resource": "learning-promotion",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "architecture-owner:message",
+      "identity": "Neel",
+      "resource": "message",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "code-owner:message",
+      "identity": "Neel",
+      "resource": "message",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "message",
+        "read"
+      ],
+      "id": "evaluator:message",
+      "identity": "signaldesk-evaluator",
+      "resource": "message",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "message",
+        "read"
+      ],
+      "id": "executor:message",
+      "identity": "signaldesk-executor",
+      "resource": "message",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "message",
+        "read"
+      ],
+      "id": "human-owner:message",
+      "identity": "Neel",
+      "resource": "message",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "message",
+        "read"
+      ],
+      "id": "learning-agent:message",
+      "identity": "signaldesk-learning-agent",
+      "resource": "message",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "message",
+        "read"
+      ],
+      "id": "planning-agent:message",
+      "identity": "signaldesk-planning-agent",
+      "resource": "message",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "product-owner:message",
+      "identity": "Neel",
+      "resource": "message",
+      "role": "product-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "release-owner:message",
+      "identity": "Neel",
+      "resource": "message",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "security-owner:message",
+      "identity": "Neel",
+      "resource": "message",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:obligation",
+      "identity": "Neel",
+      "resource": "obligation",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "code-owner:obligation",
+      "identity": "Neel",
+      "resource": "obligation",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:obligation",
+      "identity": "signaldesk-evaluator",
+      "resource": "obligation",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:obligation",
+      "identity": "signaldesk-executor",
+      "resource": "obligation",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:obligation",
+      "identity": "Neel",
+      "resource": "obligation",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:obligation",
+      "identity": "signaldesk-planning-agent",
+      "resource": "obligation",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "product-owner:obligation",
+      "identity": "Neel",
+      "resource": "obligation",
+      "role": "product-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "release-owner:obligation",
+      "identity": "Neel",
+      "resource": "obligation",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "security-owner:obligation",
+      "identity": "Neel",
+      "resource": "obligation",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:production",
+      "identity": "Neel",
+      "resource": "production",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "promote",
+        "read"
+      ],
+      "id": "promoter:production",
+      "identity": "Neel",
+      "resource": "production",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "read"
+      ],
+      "id": "release-owner:production",
+      "identity": "Neel",
+      "resource": "production",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "security-owner:production",
+      "identity": "Neel",
+      "resource": "production",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:qualification-report",
+      "identity": "Neel",
+      "resource": "qualification-report",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:qualification-report",
+      "identity": "signaldesk-evaluator",
+      "resource": "qualification-report",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:qualification-report",
+      "identity": "Neel",
+      "resource": "qualification-report",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "product-owner:qualification-report",
+      "identity": "Neel",
+      "resource": "qualification-report",
+      "role": "product-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:qualification-report",
+      "identity": "Neel",
+      "resource": "qualification-report",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "release-owner:qualification-report",
+      "identity": "Neel",
+      "resource": "qualification-report",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "security-owner:qualification-report",
+      "identity": "Neel",
+      "resource": "qualification-report",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:supervised-pr-packet",
+      "identity": "Neel",
+      "resource": "supervised-pr-packet",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "code-owner:supervised-pr-packet",
+      "identity": "Neel",
+      "resource": "supervised-pr-packet",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:supervised-pr-packet",
+      "identity": "signaldesk-evaluator",
+      "resource": "supervised-pr-packet",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "executor:supervised-pr-packet",
+      "identity": "signaldesk-executor",
+      "resource": "supervised-pr-packet",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:supervised-pr-packet",
+      "identity": "Neel",
+      "resource": "supervised-pr-packet",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:supervised-pr-packet",
+      "identity": "Neel",
+      "resource": "supervised-pr-packet",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "release-owner:supervised-pr-packet",
+      "identity": "Neel",
+      "resource": "supervised-pr-packet",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "security-owner:supervised-pr-packet",
+      "identity": "Neel",
+      "resource": "supervised-pr-packet",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "architecture-owner:supervised-pr-response",
+      "identity": "Neel",
+      "resource": "supervised-pr-response",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "code-owner:supervised-pr-response",
+      "identity": "Neel",
+      "resource": "supervised-pr-response",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:supervised-pr-response",
+      "identity": "signaldesk-evaluator",
+      "resource": "supervised-pr-response",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:supervised-pr-response",
+      "identity": "signaldesk-executor",
+      "resource": "supervised-pr-response",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "human-owner:supervised-pr-response",
+      "identity": "Neel",
+      "resource": "supervised-pr-response",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:supervised-pr-response",
+      "identity": "Neel",
+      "resource": "supervised-pr-response",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "release-owner:supervised-pr-response",
+      "identity": "Neel",
+      "resource": "supervised-pr-response",
+      "role": "release-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "security-owner:supervised-pr-response",
+      "identity": "Neel",
+      "resource": "supervised-pr-response",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:telemetry-contract",
+      "identity": "Neel",
+      "resource": "telemetry-contract",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:telemetry-contract",
+      "identity": "signaldesk-evaluator",
+      "resource": "telemetry-contract",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "promote",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:telemetry-contract",
+      "identity": "Neel",
+      "resource": "telemetry-contract",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:telemetry-contract",
+      "identity": "signaldesk-learning-agent",
+      "resource": "telemetry-contract",
+      "role": "learning-agent"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:telemetry-contract",
+      "identity": "signaldesk-planning-agent",
+      "resource": "telemetry-contract",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "security-owner:telemetry-contract",
+      "identity": "Neel",
+      "resource": "telemetry-contract",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:telemetry-event",
+      "identity": "signaldesk-evaluator",
+      "resource": "telemetry-event",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "execute",
+        "read"
+      ],
+      "id": "executor:telemetry-event",
+      "identity": "signaldesk-executor",
+      "resource": "telemetry-event",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "human-owner:telemetry-event",
+      "identity": "Neel",
+      "resource": "telemetry-event",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:telemetry-event",
+      "identity": "Neel",
+      "resource": "telemetry-event",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "security-owner:telemetry-event",
+      "identity": "Neel",
+      "resource": "telemetry-event",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "architecture-owner:telemetry-report",
+      "identity": "Neel",
+      "resource": "telemetry-report",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "execute",
+        "propose",
+        "read"
+      ],
+      "id": "evaluator:telemetry-report",
+      "identity": "signaldesk-evaluator",
+      "resource": "telemetry-report",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "human-owner:telemetry-report",
+      "identity": "Neel",
+      "resource": "telemetry-report",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "read"
+      ],
+      "id": "product-owner:telemetry-report",
+      "identity": "Neel",
+      "resource": "telemetry-report",
+      "role": "product-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "promoter:telemetry-report",
+      "identity": "Neel",
+      "resource": "telemetry-report",
+      "role": "promoter"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:tool-grant",
+      "identity": "Neel",
+      "resource": "tool-grant",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "code-owner:tool-grant",
+      "identity": "Neel",
+      "resource": "tool-grant",
+      "role": "code-owner"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "evaluator:tool-grant",
+      "identity": "signaldesk-evaluator",
+      "resource": "tool-grant",
+      "role": "evaluator"
+    },
+    {
+      "actions": [
+        "read"
+      ],
+      "id": "executor:tool-grant",
+      "identity": "signaldesk-executor",
+      "resource": "tool-grant",
+      "role": "executor"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "delegate",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:tool-grant",
+      "identity": "Neel",
+      "resource": "tool-grant",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "planning-agent:tool-grant",
+      "identity": "signaldesk-planning-agent",
+      "resource": "tool-grant",
+      "role": "planning-agent"
+    },
+    {
+      "actions": [
+        "approve",
+        "cancel",
+        "modify",
+        "propose",
+        "read"
+      ],
+      "id": "security-owner:tool-grant",
+      "identity": "Neel",
+      "resource": "tool-grant",
+      "role": "security-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "propose",
+        "read"
+      ],
+      "id": "architecture-owner:trusted-memory",
+      "identity": "Neel",
+      "resource": "trusted-memory",
+      "role": "architecture-owner"
+    },
+    {
+      "actions": [
+        "approve",
+        "modify",
+        "promote",
+        "propose",
+        "read"
+      ],
+      "id": "human-owner:trusted-memory",
+      "identity": "Neel",
+      "resource": "trusted-memory",
+      "role": "human-owner"
+    },
+    {
+      "actions": [
+        "propose",
+        "read"
+      ],
+      "id": "learning-agent:trusted-memory",
+      "identity": "signaldesk-learning-agent",
+      "resource": "trusted-memory",
+      "role": "learning-agent"
+    }
+  ],
+  "identities": [
+    {
+      "id": "Neel",
+      "kind": "human"
+    },
+    {
+      "id": "signaldesk-evaluator",
+      "kind": "agent"
+    },
+    {
+      "id": "signaldesk-executor",
+      "kind": "agent"
+    },
+    {
+      "id": "signaldesk-intake-agent",
+      "kind": "agent"
+    },
+    {
+      "id": "signaldesk-learning-agent",
+      "kind": "agent"
+    },
+    {
+      "id": "signaldesk-planning-agent",
+      "kind": "agent"
+    }
+  ],
+  "project_id": "signaldesk",
+  "role_bindings": [
+    {
+      "identity": "Neel",
+      "role": "architecture-owner"
+    },
+    {
+      "identity": "Neel",
+      "role": "code-owner"
+    },
+    {
+      "identity": "signaldesk-evaluator",
+      "role": "evaluator"
+    },
+    {
+      "identity": "signaldesk-executor",
+      "role": "executor"
+    },
+    {
+      "identity": "Neel",
+      "role": "human-owner"
+    },
+    {
+      "identity": "signaldesk-intake-agent",
+      "role": "intake-agent"
+    },
+    {
+      "identity": "signaldesk-learning-agent",
+      "role": "learning-agent"
+    },
+    {
+      "identity": "signaldesk-planning-agent",
+      "role": "planning-agent"
+    },
+    {
+      "identity": "Neel",
+      "role": "product-owner"
+    },
+    {
+      "identity": "Neel",
+      "role": "promoter"
+    },
+    {
+      "identity": "Neel",
+      "role": "release-owner"
+    },
+    {
+      "identity": "Neel",
+      "role": "security-owner"
+    }
+  ],
+  "source_authority_matrix_sha256": "bac8d3eeb52152df0f3d97a4e23c87b782ac96c7e2d7546d04f1555263ac8ec0",
+  "source_profile_sha256": "799c7f7083bbc827b3cb55ae47b9025af8918143e78b1e7bb379bb10d18ad0ef",
+  "source_role_registry_sha256": "1b3592fd64b186d80f612aba11d543dadbed540a53552dd19f9f805997c6b0bd",
+  "version": "0.5.1"
+}

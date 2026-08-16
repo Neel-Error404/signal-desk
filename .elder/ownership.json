@@ -1,0 +1,265 @@
+{
+  "generated": {
+    ".codex/config.toml": {
+      "owner": "elder",
+      "sha256": "de0437c2350355252988244d12a09a40a8316829bf488d923c8fa4dcc53e54de"
+    },
+    ".codex/skills/architecture-governance/SKILL.md": {
+      "owner": "elder",
+      "sha256": "996854e27e230919af355d9dc7b634c7bbb3669ed5167460a8a8c6aa91222cbf"
+    },
+    ".codex/skills/evidence-and-traces/SKILL.md": {
+      "owner": "elder",
+      "sha256": "4c74ca392e7790aa69dd3e3f39a9b211fc4693103d1d6a90141cd063c08dddb7"
+    },
+    ".codex/skills/git-change-planning/SKILL.md": {
+      "owner": "elder",
+      "sha256": "a7f07bd14d9b4ea11740b16be2f53d73bbd196a94af30a4e0a8c5d7ae2c8bd41"
+    },
+    ".codex/skills/grill-me/SKILL.md": {
+      "owner": "elder",
+      "sha256": "c40e9bf7cb01b729830dd36bd2b929300eb89980fc6dc771bb2a020140ca99fa"
+    },
+    ".codex/skills/grill-with-docs/SKILL.md": {
+      "owner": "elder",
+      "sha256": "e45a311189845756d9b886e8e577c326d677b8e40ec5bb6fc5f671017cf644f4"
+    },
+    ".codex/skills/learning-promotion/SKILL.md": {
+      "owner": "elder",
+      "sha256": "944d14ca0180caa3a6037dcca54ee6d3c94ffd0cde0b1602505b19b9eec491fc"
+    },
+    ".codex/skills/repository-dreaming/SKILL.md": {
+      "owner": "elder",
+      "sha256": "4b85d8e07a58928e76eb365038b0678f5ef47b16d8f02a83dbc3a12f3c07f695"
+    },
+    ".codex/skills/skill-creator/SKILL.md": {
+      "owner": "elder",
+      "sha256": "0e4117987b99b40c2af18a33628fb479ec4680f41e7554ea76126e05748bd533"
+    },
+    ".codex/skills/skill-router/SKILL.md": {
+      "owner": "elder",
+      "sha256": "cbc9104c67fcc5f8cf4e66764a6e4d0395979f015b14ad36e1d639774e118984"
+    },
+    ".codex/skills/test-ladder/SKILL.md": {
+      "owner": "elder",
+      "sha256": "029e485f2e908e30b05cf8b010d7e129d258391002df7f6a3acbd7d01bff46b0"
+    },
+    ".codex/skills/wayfinder/SKILL.md": {
+      "owner": "elder",
+      "sha256": "cd1980763e36c3c837e5fa6c059daebda67eb0994c5d963bbad4109997ab7833"
+    },
+    ".elder/authority-bindings.json": {
+      "owner": "elder",
+      "sha256": "6b7030b61dd78c15e8882ec5124cda53233d76c915e81768a9f52e7daafb430e"
+    },
+    ".elder/autonomy-authority-source.json": {
+      "owner": "elder",
+      "sha256": "928b7ecb8a870134b7c8465ea92826522dd8f28f6f46ed666a97f3125c75680c"
+    },
+    ".elder/autonomy-classes.json": {
+      "owner": "elder",
+      "sha256": "3f5b3e0cbd0b1920ffd7a59158f135cfd4fe0493a114ef8372dac86dc840adff"
+    },
+    ".elder/autonomy-policy.json": {
+      "owner": "elder",
+      "sha256": "edbbe757f80b889fdea612cd512a9ad990d90d8e477a911fad94a9aa58d140c5"
+    },
+    ".elder/capability-packs.json": {
+      "owner": "elder",
+      "sha256": "b793aadf308b71a23f75a50267d56e76e4a236384c762d58054cb80f83e96e96"
+    },
+    ".elder/context-policy.json": {
+      "owner": "elder",
+      "sha256": "5499facf9855be4ed0700e80e02393a693da753842b5f5b59607de35adaf56c5"
+    },
+    ".elder/delegation-policy.json": {
+      "owner": "elder",
+      "sha256": "2562fe85f32e15ddf96131e85954fc60c7060c0c724397ec31144fbbd76a9d6a"
+    },
+    ".elder/design-registry.json": {
+      "owner": "elder",
+      "sha256": "b2040274c361ad9cf4731a6f458dc057c4948d52d1898c2899fc145cec7eb979"
+    },
+    ".elder/evaluation-dataset.json": {
+      "owner": "elder",
+      "sha256": "d38ef8e42038c79ca06dd8652d6b8998381c8614fb6a5879978bf718aad15bb9"
+    },
+    ".elder/evaluation-registry.json": {
+      "owner": "elder",
+      "sha256": "06008434ccc64d5fa065f6fe5fcb9ee1f90460d2b52768e128bc8d6648a3f0c4"
+    },
+    ".elder/evaluator-contract.json": {
+      "owner": "elder",
+      "sha256": "d03d0cdebcc16937c2eb8edab8a2f7ed371b1310297ea13ac211c9687920bd08"
+    },
+    ".elder/judgment-rubric.json": {
+      "owner": "elder",
+      "sha256": "f215347e7b23936fb8925283adbe71f1d85fa776048dce3a159cac0e003b728f"
+    },
+    ".elder/learning-policy.json": {
+      "owner": "elder",
+      "sha256": "cbf7b1a65569bd1f427c0b1a90483a3e6b1db38a1e15f825329a9b8e6caa27c1"
+    },
+    ".elder/memory-policy.json": {
+      "owner": "elder",
+      "sha256": "64f2d7503642046eacdffeb717eab6ab0e5b94d1bfd8661e233fd3550df46382"
+    },
+    ".elder/multi-agent-runtime-policy.json": {
+      "owner": "elder",
+      "sha256": "2818101ddfc30f680d7eccd5ac364a676459e8850e8d902b9b8f858ebc3e8e86"
+    },
+    ".elder/operational-maturity.json": {
+      "owner": "elder",
+      "sha256": "26ad99e58fdd5574bdaba6b7fe2ee405a5a54cc11e673867d64c815c0cac0828"
+    },
+    ".elder/project-contract.json": {
+      "owner": "elder",
+      "sha256": "b97b42c37c2d06ed0cef957cadc0d193d2e5a20049e702d7f06ecf8db2b359b2"
+    },
+    ".elder/project-graph.json": {
+      "owner": "elder",
+      "sha256": "598075a24431cb984ac3015e0b015b346ee934c30ecc1a0f77b77361ab56b4b5"
+    },
+    ".elder/project-profile.json": {
+      "owner": "elder",
+      "sha256": "e57b710309c4f4890ef7bf62c8b80765f281c39552b39392afec076caff5b5d6"
+    },
+    ".elder/qualification-policy.json": {
+      "owner": "elder",
+      "sha256": "e0c1d0791c98feb0d03c2d5e679e1d5c09eb8b8b0f28b5c2877af15e5ef3273d"
+    },
+    ".elder/recommendation-ledger.json": {
+      "owner": "elder",
+      "sha256": "73feb77d16e3f0e22c28d3c0aec86b24136681415f3fa677fc7bd76e9299506a"
+    },
+    ".elder/repository-dreaming-policy.json": {
+      "owner": "elder",
+      "sha256": "443de5bdda398f929c2b4183a53cf4bed808f11990c93f2314cf53a83caa6fea"
+    },
+    ".elder/resolved-obligations.json": {
+      "owner": "elder",
+      "sha256": "e3b0e30914aad01c91faea67d5b692206850658d865f02ad2194165e6fe4c809"
+    },
+    ".elder/role-registry.json": {
+      "owner": "elder",
+      "sha256": "1fd643a63a0c1531c99119418f0df4a76e50cb58dab0191b61133748600dfd1f"
+    },
+    ".elder/runtime/.gitignore": {
+      "owner": "elder",
+      "sha256": "240a3e0d37d2e86b614063f5347eb02d4f99ca6c254de6b82871ff8d95532a7d"
+    },
+    ".elder/skills.json": {
+      "owner": "elder",
+      "sha256": "6629da0c05fada860fbf6eb83f6078090d3a51522526f7b694f8f4c21904adc0"
+    },
+    ".elder/stack-adapter-registry.json": {
+      "owner": "elder",
+      "sha256": "ef66fe5734cd35e1049f6ee779d46e11b8d23c101746b16abf146e02e2c92cab"
+    },
+    ".elder/telemetry-contract.json": {
+      "owner": "elder",
+      "sha256": "161fc01b62d76ed1fedbe64118ff4f928540d107663bb16af99ac5054ed2a287"
+    },
+    ".elder/transcript-review-policy.json": {
+      "owner": "elder",
+      "sha256": "ea648b9dad3aed6adb716aaac987c4ce431c9a4a646f7eadedf4c5c6b76fe190"
+    },
+    ".env.example": {
+      "owner": "elder",
+      "sha256": "b0921e7ea13161edea47374d6e961c8d3c76ce804b97721100c2090dc5ff371d"
+    },
+    "AGENTS.md": {
+      "owner": "elder",
+      "sha256": "cf7893129c4ef6f9116df52051bb41d1789c5ee765638e2f558c91c3aa1e7103"
+    },
+    "ARCHITECTURE.md": {
+      "owner": "elder",
+      "sha256": "360dc4124d97a3860787d0ec7304afa03cdba03534a45ab60dfcc75b8a778d92"
+    },
+    "docs/ARCHITECTURE_BOUNDARIES.md": {
+      "owner": "elder",
+      "sha256": "ed9e8f09f71356eb9f1d04fcb6f73f60e5ed50b1b1fd94ee5e6615b9404c6dd1"
+    },
+    "docs/ASSURANCE.md": {
+      "owner": "elder",
+      "sha256": "f6270ea69a115547a24cda06fba016074d60a09d74021f84240f7e490264ab1e"
+    },
+    "docs/BOUNDED_AUTONOMY.md": {
+      "owner": "elder",
+      "sha256": "44ecfa08d3e9ae0f97bad96b49a128142ee6f38655a6b7a4cdc5ff0b5487f83f"
+    },
+    "docs/BUILD_MEMORY.md": {
+      "owner": "elder",
+      "sha256": "f6ee777923e473c7c24aad07eaaf5e6c16853713ef1d7c3a240dca8afdf9a96e"
+    },
+    "docs/COMPONENT_CONTRACT.md": {
+      "owner": "elder",
+      "sha256": "ba54771f6c163b4141097f1ce6bde5275b39182c4975f9843db0dcf85aa7cb98"
+    },
+    "docs/DELEGATION.md": {
+      "owner": "elder",
+      "sha256": "20e590124531a97fff68e130da2e91dd34d7d8b55b3cbc156d79d29902316681"
+    },
+    "docs/EVALUATION.md": {
+      "owner": "elder",
+      "sha256": "5835b2a3ff1b40b51486ad83717150c6f9afb94b35970a8e02e72a9bb13836db"
+    },
+    "docs/GOLDEN_PATH.md": {
+      "owner": "elder",
+      "sha256": "8d4f1423041d130d9539d6c5eff042c4e2e5944b038518672249a141cafaab76"
+    },
+    "docs/HOSTED_QUALIFICATION.md": {
+      "owner": "elder",
+      "sha256": "142209107e3cfc40743b59b2e6bd75f07203d74f212490e6dc2fd1b1defb0b12"
+    },
+    "docs/KNOWLEDGE_RUNTIME.md": {
+      "owner": "elder",
+      "sha256": "23211219c889617d98868c018bb154d04c97e1f8944c812d5e5745bd15dc76cc"
+    },
+    "docs/LEARNING_RUNTIME.md": {
+      "owner": "elder",
+      "sha256": "9b62b874ee0cc228b083dc4b5267b61456dbd7b31e6ee542cfeeaf7f4b3e23b3"
+    },
+    "docs/MULTI_AGENT_RUNTIME.md": {
+      "owner": "elder",
+      "sha256": "9668f10e615959ec58f538ba7aa1128776c8b1e2202b03b0ba5747cb436513e8"
+    },
+    "docs/OBLIGATIONS.md": {
+      "owner": "elder",
+      "sha256": "a91d5ecd0fc77e979ccbc203d75391d82ec4cf0f6d9d5a7a1411dcaa74707776"
+    },
+    "docs/OWNERSHIP.md": {
+      "owner": "elder",
+      "sha256": "3ba482d749b496f0f7fc83b4b075ee09bb9e54f1e268de1343ade0d49cc0e398"
+    },
+    "docs/REPOSITORY_DREAMING.md": {
+      "owner": "elder",
+      "sha256": "67e1209e2b8b543ebbc952b607fe68c38f2c9355a87598022bf53e216b0557a0"
+    },
+    "docs/STACK_ADAPTERS.md": {
+      "owner": "elder",
+      "sha256": "8b118feb45d6fcf754ebc197e006379778e54ee24f4942c061c4459f6834499e"
+    },
+    "docs/TELEMETRY.md": {
+      "owner": "elder",
+      "sha256": "c4670e8ee978d5f305333231d1d019d620133d3deafb26e6cd75cf6a09f2192f"
+    },
+    "docs/TESTING.md": {
+      "owner": "elder",
+      "sha256": "2ca05c2cfe6e1d4714d329c178c6fecdd4eaa58f656a89cef73148b4ad528d8e"
+    },
+    "docs/TRACE_CONTRACT.md": {
+      "owner": "elder",
+      "sha256": "31e5995c197ca79c7fb4824d8dccc66f906cad061bee6f0d698746b4f672757b"
+    },
+    "docs/TRANSCRIPT_REVIEW.md": {
+      "owner": "elder",
+      "sha256": "d9829a3056b5bf2c46b2a10038ec3a0b0a3d662cc0a4914b80e0d7ed3afa6f14"
+    },
+    "docs/adr/0001-elder-foundation.md": {
+      "owner": "elder",
+      "sha256": "19cdf0a044f2232f5c637fbfdedb7a7bf39615720c0c1e596da712034bbba9c3"
+    }
+  },
+  "version": "0.5.1"
+}

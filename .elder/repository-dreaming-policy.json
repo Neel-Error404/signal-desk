@@ -1,0 +1,49 @@
+{
+  "allowed_input_kinds": [
+    "decision",
+    "evaluation",
+    "test-result",
+    "trace",
+    "user-correction"
+  ],
+  "authority": {
+    "elder_learning_runtime_required": true,
+    "provider_can_approve": false,
+    "provider_can_mutate_target": false,
+    "provider_can_promote": false
+  },
+  "candidate_kinds": [
+    "architecture",
+    "evaluator",
+    "memory",
+    "policy",
+    "skill"
+  ],
+  "execution": {
+    "allowed_network_services": [
+      "configured-azure-openai-endpoint"
+    ],
+    "automatic_refinement": false,
+    "candidate_only": true,
+    "dreaming_model": "gpt-5.6-luna",
+    "global_refinement": false,
+    "memory_provider": "mem0-oss",
+    "network_access": true,
+    "requires_external_sandbox": false,
+    "source_repository_access": false,
+    "vector_store": "qdrant-local"
+  },
+  "id": "elder-repository-dreaming-v1",
+  "provider_adapter": "mem0-azure-luna-dreaming",
+  "scope": "repository-development",
+  "triggers": [
+    "explicit-user-request",
+    "completed-work-item",
+    "repeated-failure",
+    "user-correction",
+    "incident",
+    "rollback",
+    "scheduled-review"
+  ],
+  "version": "0.5.1"
+}

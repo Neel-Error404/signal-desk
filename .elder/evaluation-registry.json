@@ -1,0 +1,15 @@
+{
+  "datasets": [
+    {
+      "content_sha256": "d38ef8e42038c79ca06dd8652d6b8998381c8614fb6a5879978bf718aad15bb9",
+      "id": "signaldesk-project-assurance-v1",
+      "notifies": [
+        "Neel"
+      ],
+      "owner": "Neel",
+      "path": ".elder/evaluation-dataset.json",
+      "status": "draft"
+    }
+  ],
+  "version": "0.5.1"
+}

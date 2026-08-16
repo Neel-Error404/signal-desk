@@ -1,0 +1,31 @@
+{
+  "allowed_graders": [
+    "exact",
+    "contains",
+    "numeric",
+    "rubric"
+  ],
+  "authority": {
+    "can_approve": false,
+    "can_modify_policy": false,
+    "can_promote": false,
+    "mode": "advisory-only"
+  },
+  "calibration": {
+    "maximum_abstention_rate": 0.25,
+    "minimum_accuracy": 0.75,
+    "minimum_f1": 0.75,
+    "minimum_samples": 4,
+    "split": "calibration"
+  },
+  "comparison": {
+    "fail_on_any_critical_regression": true,
+    "minimum_paired_cases": 4
+  },
+  "id": "elder-independent-evaluator",
+  "independence": {
+    "require_distinct_executor": true,
+    "require_immutable_inputs": true
+  },
+  "version": "0.5.1"
+}

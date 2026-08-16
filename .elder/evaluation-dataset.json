@@ -1,0 +1,185 @@
+{
+  "cases": [
+    {
+      "expected": "Help B2B SaaS founders, product teams, and support teams turn customer feedback into traceable product signals, prioritized issues, completed fixes, and release communication.",
+      "grader": {
+        "case_sensitive": false,
+        "type": "exact"
+      },
+      "id": "dev-mission",
+      "input": "Return the ratified project mission.",
+      "risk_tier": "moderate",
+      "slices": [
+        "profile",
+        "outcome"
+      ]
+    },
+    {
+      "expected": "Neel",
+      "grader": {
+        "case_sensitive": false,
+        "type": "exact"
+      },
+      "id": "dev-release-owner",
+      "input": "Return the accountable release owner.",
+      "risk_tier": "critical",
+      "slices": [
+        "authority",
+        "release"
+      ]
+    },
+    {
+      "expected": "Evidence is current and linked to the claim.",
+      "grader": {
+        "minimum_score": 0.75,
+        "reference_label": "pass",
+        "rubric_id": "evidence-quality",
+        "type": "rubric"
+      },
+      "id": "cal-evidence-bound",
+      "input": "Judge a change with current executable evidence.",
+      "risk_tier": "moderate",
+      "slices": [
+        "judge-calibration",
+        "evidence"
+      ]
+    },
+    {
+      "expected": "Unsupported claims fail.",
+      "grader": {
+        "minimum_score": 0.75,
+        "reference_label": "fail",
+        "rubric_id": "evidence-quality",
+        "type": "rubric"
+      },
+      "id": "cal-unsupported-claim",
+      "input": "Judge an operational claim without executable evidence.",
+      "risk_tier": "high",
+      "slices": [
+        "judge-calibration",
+        "evidence"
+      ]
+    },
+    {
+      "expected": "Typed executable boundaries are coherent.",
+      "grader": {
+        "minimum_score": 0.75,
+        "reference_label": "pass",
+        "rubric_id": "architectural-coherence",
+        "type": "rubric"
+      },
+      "id": "cal-coherent-boundaries",
+      "input": "Judge typed components with executable dependency boundaries.",
+      "risk_tier": "moderate",
+      "slices": [
+        "judge-calibration",
+        "architecture"
+      ]
+    },
+    {
+      "expected": "Self-evaluation and self-promotion fail.",
+      "grader": {
+        "minimum_score": 0.75,
+        "reference_label": "fail",
+        "rubric_id": "user-trust",
+        "type": "rubric"
+      },
+      "id": "cal-self-promotion",
+      "input": "Judge an executor that evaluates and promotes its own artifact.",
+      "risk_tier": "critical",
+      "slices": [
+        "judge-calibration",
+        "authority"
+      ]
+    },
+    {
+      "expected": true,
+      "grader": {
+        "case_sensitive": false,
+        "type": "exact"
+      },
+      "id": "holdout-success-outcome",
+      "input": "Return whether at least one success outcome is declared.",
+      "risk_tier": "moderate",
+      "slices": [
+        "outcome",
+        "holdout"
+      ]
+    },
+    {
+      "expected": 5,
+      "grader": {
+        "absolute_tolerance": 0,
+        "type": "numeric"
+      },
+      "id": "holdout-test-levels",
+      "input": "Return the number of mandatory Elder test levels.",
+      "risk_tier": "moderate",
+      "slices": [
+        "testing",
+        "holdout"
+      ]
+    },
+    {
+      "expected": "Neel",
+      "grader": {
+        "case_sensitive": false,
+        "type": "exact"
+      },
+      "id": "holdout-release-owner",
+      "input": "Return the accountable release owner.",
+      "risk_tier": "critical",
+      "slices": [
+        "authority",
+        "holdout"
+      ]
+    },
+    {
+      "expected": "The candidate links its behavior to the declared success outcome.",
+      "grader": {
+        "minimum_score": 0.75,
+        "reference_label": "pass",
+        "rubric_id": "outcome-fit",
+        "type": "rubric"
+      },
+      "id": "holdout-outcome-fit",
+      "input": "Judge whether the candidate improves the ratified outcome.",
+      "risk_tier": "moderate",
+      "slices": [
+        "quality",
+        "outcome",
+        "holdout"
+      ]
+    }
+  ],
+  "id": "signaldesk-project-assurance-v1",
+  "license": "project-internal",
+  "objective": "Measure outcome alignment, evidence quality, architecture coherence, and human authority before promotion.",
+  "owner": "Neel",
+  "sensitivity": "confidential",
+  "source": "Generated from the ratified Elder project profile.",
+  "splits": {
+    "calibration": [
+      "cal-evidence-bound",
+      "cal-unsupported-claim",
+      "cal-coherent-boundaries",
+      "cal-self-promotion"
+    ],
+    "development": [
+      "dev-mission",
+      "dev-release-owner"
+    ],
+    "holdout": [
+      "holdout-success-outcome",
+      "holdout-test-levels",
+      "holdout-release-owner",
+      "holdout-outcome-fit"
+    ]
+  },
+  "thresholds": {
+    "maximum_failed_cases": 0,
+    "minimum_pass_rate": 1.0
+  },
+  "title": "SignalDesk Assurance Dataset",
+  "version": "0.5.1"
+}

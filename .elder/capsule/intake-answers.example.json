@@ -1,0 +1,42 @@
+{
+  "name": "Example Intake Product",
+  "mission": "Provide a governed agent workflow that produces reviewable project changes.",
+  "success_outcomes": [
+    "A project profile and contract compile without unresolved authority gaps."
+  ],
+  "failure_outcomes": [
+    "The generated project silently overwrites project-owned files."
+  ],
+  "constraints": [
+    "No production secrets may be placed in generated files."
+  ],
+  "project_type": "agentic",
+  "lifecycle": "prototype",
+  "topology": "single-repo",
+  "risk_tier": "moderate",
+  "data_sensitivity": "internal",
+  "autonomy_ceiling": "L2",
+  "capability_packs": ["core", "agentic"],
+  "skill_overrides": {
+    "required": ["grill-with-docs"],
+    "forbidden": []
+  },
+  "languages": ["Python"],
+  "deployment_targets": ["local"],
+  "knowledge_sources": [
+    {
+      "id": "repository",
+      "type": "repository",
+      "location": ".",
+      "authority": "primary"
+    }
+  ],
+  "human_owners": {
+    "human": "founder",
+    "product": "founder",
+    "architecture": "technical-owner",
+    "security": "security-owner",
+    "release": "release-owner",
+    "code": "technical-owner"
+  }
+}

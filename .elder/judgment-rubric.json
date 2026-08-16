@@ -1,0 +1,111 @@
+{
+  "decision_rules": [
+    "The rubric informs judgment but cannot override deterministic controls.",
+    "Scores require cited evidence and recorded evaluator identity.",
+    "A veto blocks promotion regardless of aggregate score.",
+    "High-risk changes require independent human judgment in addition to agent review.",
+    "Rubric changes are governed evaluator changes and cannot self-promote."
+  ],
+  "dimensions": [
+    {
+      "evidence": [
+        "outcome trace",
+        "user workflow result",
+        "failure condition comparison"
+      ],
+      "id": "outcome-fit",
+      "question": "Does the change improve the ratified outcome rather than merely increase output?",
+      "weight": 2
+    },
+    {
+      "evidence": [
+        "work item",
+        "diff",
+        "change-class record"
+      ],
+      "id": "scope-discipline",
+      "question": "Is the change bounded to the approved work item without hidden expansion?",
+      "weight": 1
+    },
+    {
+      "evidence": [
+        "architecture fitness output",
+        "dependency graph",
+        "component contract"
+      ],
+      "id": "architectural-coherence",
+      "question": "Does the change preserve declared boundaries, dependency direction, and component contracts?",
+      "weight": 2
+    },
+    {
+      "evidence": [
+        "design alternatives",
+        "complexity delta",
+        "deleted or avoided mechanisms"
+      ],
+      "id": "simplicity",
+      "question": "Is this the smallest understandable design that satisfies the requirement?",
+      "weight": 1
+    },
+    {
+      "evidence": [
+        "design document",
+        "typed interfaces",
+        "delayed maintainability review"
+      ],
+      "id": "changeability",
+      "question": "Can another engineer or agent safely modify the result from its contracts and traces?",
+      "weight": 2
+    },
+    {
+      "evidence": [
+        "telemetry",
+        "failure injection",
+        "rollback result",
+        "cost measurement"
+      ],
+      "id": "operability",
+      "question": "Are failures visible, actionable, recoverable, and cost-bounded?",
+      "weight": 2
+    },
+    {
+      "evidence": [
+        "workflow observation",
+        "accessibility result",
+        "claim evidence"
+      ],
+      "id": "user-trust",
+      "question": "Does the behavior remain legible, safe, accessible, and honest to the user?",
+      "weight": 2
+    },
+    {
+      "evidence": [
+        "test and eval records",
+        "runtime observation",
+        "independent review"
+      ],
+      "id": "evidence-quality",
+      "question": "Are conclusions supported by current independent evidence rather than persuasive prose?",
+      "weight": 2
+    }
+  ],
+  "scale": {
+    "anchors": {
+      "0": "Contradicted by evidence or structurally unacceptable.",
+      "1": "Materially weak with unresolved risks.",
+      "2": "Adequate for the declared scope with explicit debt.",
+      "3": "Strong, coherent, and supported by current evidence.",
+      "4": "Exceptional for the declared constraints and independently validated."
+    },
+    "maximum": 4,
+    "minimum": 0
+  },
+  "version": "0.5.1",
+  "vetoes": [
+    "A deterministic invariant or security control fails.",
+    "The change makes an operational claim without current executable evidence.",
+    "The executor is the sole evaluator or promoter for a governed change.",
+    "A destructive or irreversible effect lacks accountable human approval and recovery.",
+    "Required design intent or failure behavior is undocumented."
+  ]
+}

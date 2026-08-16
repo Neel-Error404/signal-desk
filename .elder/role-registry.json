@@ -1,0 +1,195 @@
+{
+  "roles": [
+    {
+      "aliases": [],
+      "allowed_identity_kinds": [
+        "human"
+      ],
+      "can_approve": true,
+      "can_delegate": true,
+      "can_promote": true,
+      "id": "human-owner",
+      "kind": "human",
+      "responsibilities": [
+        "Remain accountable for constitutional authority and consequences."
+      ]
+    },
+    {
+      "aliases": [
+        "product"
+      ],
+      "allowed_identity_kinds": [
+        "human"
+      ],
+      "can_approve": true,
+      "can_delegate": true,
+      "can_promote": false,
+      "id": "product-owner",
+      "kind": "human",
+      "responsibilities": [
+        "Own mission, user outcome, economics, and product acceptance."
+      ]
+    },
+    {
+      "aliases": [
+        "architecture"
+      ],
+      "allowed_identity_kinds": [
+        "human"
+      ],
+      "can_approve": true,
+      "can_delegate": true,
+      "can_promote": false,
+      "id": "architecture-owner",
+      "kind": "human",
+      "responsibilities": [
+        "Own invariants, boundaries, schemas, and architecture exceptions."
+      ]
+    },
+    {
+      "aliases": [
+        "security"
+      ],
+      "allowed_identity_kinds": [
+        "human"
+      ],
+      "can_approve": true,
+      "can_delegate": true,
+      "can_promote": false,
+      "id": "security-owner",
+      "kind": "human",
+      "responsibilities": [
+        "Own security policy, restricted data, identity, credentials, and exceptions."
+      ]
+    },
+    {
+      "aliases": [
+        "release"
+      ],
+      "allowed_identity_kinds": [
+        "human"
+      ],
+      "can_approve": true,
+      "can_delegate": true,
+      "can_promote": false,
+      "id": "release-owner",
+      "kind": "human",
+      "responsibilities": [
+        "Own release approval, production consequence, rollback, and suspension."
+      ]
+    },
+    {
+      "aliases": [],
+      "allowed_identity_kinds": [
+        "human"
+      ],
+      "can_approve": true,
+      "can_delegate": true,
+      "can_promote": false,
+      "id": "code-owner",
+      "kind": "human",
+      "responsibilities": [
+        "Own implementation reviewability, maintainability, and code-boundary approval."
+      ]
+    },
+    {
+      "aliases": [],
+      "allowed_identity_kinds": [
+        "agent",
+        "service"
+      ],
+      "can_approve": false,
+      "can_delegate": false,
+      "can_promote": false,
+      "id": "intake-agent",
+      "kind": "agent",
+      "responsibilities": [
+        "Collect governed intake without inferring missing authority."
+      ]
+    },
+    {
+      "aliases": [],
+      "allowed_identity_kinds": [
+        "agent",
+        "service"
+      ],
+      "can_approve": false,
+      "can_delegate": true,
+      "can_promote": false,
+      "id": "planning-agent",
+      "kind": "agent",
+      "responsibilities": [
+        "Plan bounded work, evidence, dependencies, and escalation."
+      ]
+    },
+    {
+      "aliases": [
+        "execution-agent"
+      ],
+      "allowed_identity_kinds": [
+        "agent",
+        "service",
+        "human"
+      ],
+      "can_approve": false,
+      "can_delegate": true,
+      "can_promote": false,
+      "id": "executor",
+      "kind": "agent",
+      "responsibilities": [
+        "Execute only explicitly delegated scope, tools, authority, budget, and deadline."
+      ]
+    },
+    {
+      "aliases": [
+        "evaluation-agent"
+      ],
+      "allowed_identity_kinds": [
+        "agent",
+        "service",
+        "human"
+      ],
+      "can_approve": false,
+      "can_delegate": false,
+      "can_promote": false,
+      "id": "evaluator",
+      "kind": "agent",
+      "responsibilities": [
+        "Evaluate immutable evidence independently and remain advisory-only."
+      ]
+    },
+    {
+      "aliases": [
+        "release-agent"
+      ],
+      "allowed_identity_kinds": [
+        "human",
+        "service"
+      ],
+      "can_approve": false,
+      "can_delegate": false,
+      "can_promote": true,
+      "id": "promoter",
+      "kind": "function",
+      "responsibilities": [
+        "Promote only an approved immutable subject without changing it."
+      ]
+    },
+    {
+      "aliases": [],
+      "allowed_identity_kinds": [
+        "agent",
+        "service"
+      ],
+      "can_approve": false,
+      "can_delegate": false,
+      "can_promote": false,
+      "id": "learning-agent",
+      "kind": "agent",
+      "responsibilities": [
+        "Propose quarantined learning candidates without trusted-state mutation."
+      ]
+    }
+  ],
+  "version": "0.5.1"
+}
