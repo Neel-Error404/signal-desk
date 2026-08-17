@@ -48,8 +48,46 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
     .check();
   await page.getByRole("button", { name: "Append event" }).click();
   await expect(page.getByRole("status")).toContainText("Manual triage event appended.");
+  await expect(page.locator(".signal-meta")).toContainText("revision 1");
+  await expect(page.getByRole("button", { name: "Append event" })).toBeEnabled();
   await expect(page.getByText("new to reviewing")).toBeVisible();
   await expect(page.getByText("Confirm the reporting workflow impact.")).toBeVisible();
+
+  await page.getByLabel("State").selectOption("accepted");
+  await page.getByLabel("Local operator label (unverified)").fill("Neel");
+  await page.getByLabel("Rationale").fill("Customer impact confirmed for prioritization.");
+  await page
+    .getByLabel(/I acknowledge this persisted triage content/)
+    .check();
+  await page.getByRole("button", { name: "Append event" }).click();
+  await expect(page.locator(".signal-meta")).toContainText("revision 2");
+  await expect(page.getByRole("button", { name: "Append event" })).toBeEnabled();
+  await expect(page.getByText("reviewing to accepted")).toBeVisible();
+
+  await page
+    .getByRole("textbox", { name: "Issue title" })
+    .fill("Preserve the selected date range during export");
+  await page.getByRole("combobox", { name: "Priority", exact: true }).selectOption("high");
+  await page
+    .getByRole("textbox", { name: "Priority rationale" })
+    .fill("The confirmed reporting workflow loses an explicit user selection.");
+  await page
+    .getByRole("textbox", {
+      name: "Local operator label (unverified) for issue promotion"
+    })
+    .fill("Neel");
+  await page
+    .getByLabel(/I acknowledge this persisted issue content/)
+    .check();
+  await page.getByRole("button", { name: "Create prioritized issue" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "Prioritized product issue created with source lineage preserved."
+  );
+  await expect(
+    page.getByRole("heading", { name: "Prioritized product issue" })
+  ).toBeVisible();
+  await expect(page.getByText("Preserve the selected date range during export")).toBeVisible();
+  await expect(page.locator(".priority")).toHaveText("high");
 
   await page.reload();
   const reloadedRow = page.locator(".signal-row").filter({ hasText: feedback });
@@ -57,6 +95,11 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
   await reloadedRow.click();
   await expect(page.getByText("new to reviewing")).toBeVisible();
   await expect(page.getByText("Confirm the reporting workflow impact.")).toBeVisible();
+  await expect(page.getByText("reviewing to accepted")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Prioritized product issue" })
+  ).toBeVisible();
+  await expect(page.getByText("Preserve the selected date range during export")).toBeVisible();
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth

@@ -12,6 +12,13 @@ import {
 import { PrismaSignalStore } from "@/modules/signal-inbox/infrastructure/prisma-signal-store";
 import { PrismaSignalWriter } from "@/modules/signal-inbox/infrastructure/prisma-signal-writer";
 import { RevisionConflictError, StorageUnavailableError } from "@/shared/errors";
+import {
+  ProductIssueExistsError,
+  SignalNotAcceptedError
+} from "@/shared/errors";
+import { PrepareProductIssue } from "@/modules/product-issues/application";
+import { PromoteSignalToIssue } from "@/workflows/signal-to-issue/promote-signal-to-issue";
+import { PrismaSignalIssueUnitOfWork } from "@/workflows/signal-to-issue/prisma-unit-of-work";
 import { CreateFeedbackSignal } from "@/workflows/feedback-to-signal/create-feedback-signal";
 import { PrismaFeedbackSignalUnitOfWork } from "@/workflows/feedback-to-signal/prisma-unit-of-work";
 
@@ -29,6 +36,37 @@ function workflow(
     ),
     idGenerator
   );
+}
+
+function issueWorkflow(): PromoteSignalToIssue {
+  return new PromoteSignalToIssue(
+    new PrepareProductIssue(new DeterministicContentPolicy()),
+    new PrismaSignalIssueUnitOfWork(prisma)
+  );
+}
+
+const issueCommand = {
+  expectedSignalRevision: 1,
+  title: "Preserve the selected date range",
+  priority: "high",
+  rationale: "The reporting workflow loses an explicit user selection.",
+  operatorLabel: "Neel",
+  contentAcknowledged: true
+} as const;
+
+async function createAcceptedSignal(content: string) {
+  const created = await workflow().execute({ content, contentAcknowledged: true });
+  await new AppendTriage(
+    new PrepareTriage(new DeterministicContentPolicy()),
+    new PrismaSignalStore(prisma)
+  ).execute(created.signal.id, {
+    expectedRevision: 0,
+    toState: "accepted",
+    rationale: "Customer impact confirmed.",
+    operatorLabel: "Neel",
+    contentAcknowledged: true
+  });
+  return created;
 }
 
 describe("PostgreSQL feedback-to-signal integration", () => {
@@ -181,5 +219,71 @@ describe("PostgreSQL feedback-to-signal integration", () => {
     expect(
       await prisma.triageEvent.findUniqueOrThrow({ where: { id: first.event.id } })
     ).toMatchObject({ rationale: "Review started." });
+  });
+
+  it("creates one immutable Product Issue with exact Feedback and Signal lineage", async () => {
+    const created = await createAcceptedSignal("Prioritized integration source");
+    const result = await issueWorkflow().execute(created.signal.id, issueCommand);
+
+    expect(result.lineage).toEqual({
+      feedbackId: created.feedback.id,
+      signalId: created.signal.id,
+      signalRevision: 1
+    });
+    expect(result.productIssue).toMatchObject({
+      signalId: created.signal.id,
+      sourceSignalRevision: 1,
+      priority: "high",
+      operatorLabel: "Neel"
+    });
+    await expect(
+      prisma.productIssue.update({
+        where: { id: result.productIssue.id },
+        data: { priority: "CRITICAL" }
+      })
+    ).rejects.toBeDefined();
+    expect(
+      await prisma.productIssue.findUniqueOrThrow({
+        where: { id: result.productIssue.id }
+      })
+    ).toMatchObject({ priority: "HIGH" });
+  });
+
+  it("rejects non-accepted, stale, and duplicate promotion explicitly", async () => {
+    const created = await workflow().execute({
+      content: "Eligibility integration source",
+      contentAcknowledged: true
+    });
+    await expect(
+      issueWorkflow().execute(created.signal.id, {
+        ...issueCommand,
+        expectedSignalRevision: 0
+      })
+    ).rejects.toBeInstanceOf(SignalNotAcceptedError);
+
+    const accepted = await createAcceptedSignal("Stale integration source");
+    await expect(
+      issueWorkflow().execute(accepted.signal.id, {
+        ...issueCommand,
+        expectedSignalRevision: 0
+      })
+    ).rejects.toBeInstanceOf(RevisionConflictError);
+
+    await issueWorkflow().execute(accepted.signal.id, issueCommand);
+    await expect(
+      issueWorkflow().execute(accepted.signal.id, issueCommand)
+    ).rejects.toBeInstanceOf(ProductIssueExistsError);
+  });
+
+  it("accepts exactly one concurrent Product Issue promotion", async () => {
+    const created = await createAcceptedSignal("Concurrent issue source");
+    const results = await Promise.allSettled(
+      Array.from({ length: 8 }, () =>
+        issueWorkflow().execute(created.signal.id, issueCommand)
+      )
+    );
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(7);
+    expect(await prisma.productIssue.count({ where: { signalId: created.signal.id } })).toBe(1);
   });
 });

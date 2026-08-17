@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 type SignalState = "new" | "reviewing" | "accepted" | "rejected";
+type ProductIssuePriority = "low" | "medium" | "high" | "critical";
 
 interface SignalItem {
   readonly id: string;
@@ -32,6 +33,18 @@ interface SignalDetail {
     readonly createdAt: string;
   };
   readonly triageEvents: readonly TriageEventItem[];
+  readonly productIssue: ProductIssueItem | null;
+}
+
+interface ProductIssueItem {
+  readonly id: string;
+  readonly signalId: string;
+  readonly sourceSignalRevision: number;
+  readonly title: string;
+  readonly priority: ProductIssuePriority;
+  readonly rationale: string;
+  readonly operatorLabel: string;
+  readonly createdAt: string;
 }
 
 interface ApiErrorEnvelope {
@@ -178,12 +191,46 @@ export default function HomePage() {
     }
   }
 
+  async function promoteSignalToIssue(
+    signal: SignalItem,
+    title: string,
+    priority: ProductIssuePriority,
+    rationale: string,
+    operatorLabel: string,
+    contentAcknowledged: boolean
+  ): Promise<boolean> {
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/v1/signals/${signal.id}/product-issue`, {
+        method: "POST",
+        headers: { "content-type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          expectedSignalRevision: signal.revision,
+          title,
+          priority,
+          rationale,
+          operatorLabel,
+          contentAcknowledged
+        })
+      });
+      if (!response.ok) {
+        throw new Error(await safeError(response));
+      }
+      setMessage("Prioritized product issue created with source lineage preserved.");
+      await loadSignals(signal.id);
+      return true;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not create product issue.");
+      return false;
+    }
+  }
+
   return (
     <main>
       <header className="app-header">
         <div>
           <p className="product-name">SignalDesk</p>
-          <p className="product-scope">SD-001 local feedback operations</p>
+          <p className="product-scope">SD-002 local signal prioritization</p>
         </div>
         <p className="runtime-state">Local PostgreSQL workspace</p>
       </header>
@@ -281,7 +328,12 @@ export default function HomePage() {
             <p className="empty">Select a signal to inspect its source and triage history.</p>
           ) : null}
           {!detailLoading && detail !== null ? (
-            <SignalInspector key={detail.signal.id} detail={detail} onAppend={appendTriage} />
+            <SignalInspector
+              key={detail.signal.id}
+              detail={detail}
+              onAppend={appendTriage}
+              onPromote={promoteSignalToIssue}
+            />
           ) : null}
         </div>
       </section>
@@ -291,12 +343,21 @@ export default function HomePage() {
 
 function SignalInspector({
   detail,
-  onAppend
+  onAppend,
+  onPromote
 }: Readonly<{
   detail: SignalDetail;
   onAppend: (
     signal: SignalItem,
     toState: SignalState,
+    rationale: string,
+    operatorLabel: string,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+  onPromote: (
+    signal: SignalItem,
+    title: string,
+    priority: ProductIssuePriority,
     rationale: string,
     operatorLabel: string,
     acknowledged: boolean
@@ -380,6 +441,12 @@ function SignalInspector({
         )}
       </section>
 
+      <ProductIssuePanel
+        signal={signal}
+        productIssue={detail.productIssue}
+        onPromote={onPromote}
+      />
+
       <form className="triage" onSubmit={submit}>
         <h3>Append manual triage</h3>
         <div className="form-grid">
@@ -426,5 +493,146 @@ function SignalInspector({
         </button>
       </form>
     </article>
+  );
+}
+
+function ProductIssuePanel({
+  signal,
+  productIssue,
+  onPromote
+}: Readonly<{
+  signal: SignalItem;
+  productIssue: ProductIssueItem | null;
+  onPromote: (
+    signal: SignalItem,
+    title: string,
+    priority: ProductIssuePriority,
+    rationale: string,
+    operatorLabel: string,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+}>) {
+  const [title, setTitle] = useState("");
+  const [priority, setPriority] = useState<ProductIssuePriority>("medium");
+  const [rationale, setRationale] = useState("");
+  const [operatorLabel, setOperatorLabel] = useState("");
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      await onPromote(
+        signal,
+        title,
+        priority,
+        rationale,
+        operatorLabel,
+        acknowledged
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (productIssue !== null) {
+    return (
+      <section className="product-issue" aria-labelledby="product-issue-title">
+        <div className="history-heading">
+          <h3 id="product-issue-title">Prioritized product issue</h3>
+          <span className={`priority priority-${productIssue.priority}`}>
+            {productIssue.priority}
+          </span>
+        </div>
+        <h4>{productIssue.title}</h4>
+        <p>{productIssue.rationale}</p>
+        <dl>
+          <div>
+            <dt>Issue</dt>
+            <dd>{productIssue.id}</dd>
+          </div>
+          <div>
+            <dt>Source signal</dt>
+            <dd>{productIssue.signalId}</dd>
+          </div>
+          <div>
+            <dt>Source revision</dt>
+            <dd>{productIssue.sourceSignalRevision}</dd>
+          </div>
+          <div>
+            <dt>Promoted by</dt>
+            <dd>{productIssue.operatorLabel} (unverified local label)</dd>
+          </div>
+        </dl>
+      </section>
+    );
+  }
+
+  if (signal.state !== "accepted") {
+    return (
+      <section className="product-issue" aria-labelledby="product-issue-title">
+        <h3 id="product-issue-title">Prioritized product issue</h3>
+        <p className="empty">Accept this signal through manual triage before promotion.</p>
+      </section>
+    );
+  }
+
+  return (
+    <form className="product-issue" onSubmit={submit}>
+      <div>
+        <p className="section-label">Product decision</p>
+        <h3 id="product-issue-title">Promote accepted signal</h3>
+      </div>
+      <label>
+        Issue title
+        <input
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+          required
+          maxLength={200}
+        />
+      </label>
+      <label>
+        Priority
+        <select
+          value={priority}
+          onChange={(event) => setPriority(event.target.value as ProductIssuePriority)}
+        >
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="critical">Critical</option>
+        </select>
+      </label>
+      <label>
+        Priority rationale
+        <textarea
+          value={rationale}
+          onChange={(event) => setRationale(event.target.value)}
+          required
+          rows={3}
+        />
+      </label>
+      <label>
+        Local operator label (unverified) for issue promotion
+        <input
+          value={operatorLabel}
+          onChange={(event) => setOperatorLabel(event.target.value)}
+          required
+        />
+      </label>
+      <label className="acknowledgement compact">
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={(event) => setAcknowledged(event.target.checked)}
+        />
+        <span>I acknowledge this persisted issue content follows the same content boundary.</span>
+      </label>
+      <button type="submit" disabled={saving}>
+        {saving ? "Promoting..." : "Create prioritized issue"}
+      </button>
+    </form>
   );
 }

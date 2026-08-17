@@ -58,6 +58,18 @@ module.exports = {
       to: { path: "^src/modules/feedback-intake/(domain|http|infrastructure)" }
     },
     {
+      name: "product-issue-domain-is-context-local",
+      severity: "error",
+      from: { path: "^src/modules/product-issues/domain" },
+      to: { path: "^src/modules/(feedback-intake|signal-inbox)" }
+    },
+    {
+      name: "product-issue-context-imports-other-applications-only",
+      severity: "error",
+      from: { path: "^src/modules/product-issues" },
+      to: { path: "^src/modules/(feedback-intake|signal-inbox)/(domain|http|infrastructure)" }
+    },
+    {
       name: "platform-does-not-depend-on-product",
       severity: "error",
       from: { path: "^src/platform" },

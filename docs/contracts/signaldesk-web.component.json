@@ -2,7 +2,7 @@
   "version": "0.5.1",
   "id": "signaldesk-web",
   "owner": "Neel",
-  "purpose": "Operate the local deterministic SD-001 HTTP, feedback-intake, signal-inbox, and manual-triage slice inside one Next.js modular monolith.",
+  "purpose": "Operate the local deterministic SD-001 and SD-002 feedback-intake, signal-inbox, manual-triage, and prioritized-product-issue slices inside one Next.js modular monolith.",
   "execution_kind": "deterministic",
   "inputs": [
     {
@@ -19,6 +19,11 @@
       "name": "append-manual-triage-http-request",
       "schema": "docs/contracts/SD-001.md#post-apiv1signalssignalidtriage-events",
       "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "promote-signal-to-product-issue-http-request",
+      "schema": "docs/contracts/SD-002.md#post-apiv1signalssignalidproduct-issue",
+      "error_contract": "docs/contracts/SD-002.md#error-additions"
     }
   ],
   "outputs": [
@@ -36,6 +41,11 @@
       "name": "triage-event-http-response",
       "schema": "docs/contracts/SD-001.md#post-apiv1signalssignalidtriage-events",
       "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "prioritized-product-issue-http-response",
+      "schema": "docs/contracts/SD-002.md#post-apiv1signalssignalidproduct-issue",
+      "error_contract": "docs/contracts/SD-002.md#error-additions"
     }
   ],
   "dependencies": {
@@ -43,7 +53,9 @@
       "Next.js local application runtime",
       "Feedback Intake public application ports",
       "Signal Inbox public application ports",
+      "Product Issues public application ports",
       "SD-001 feedback-to-signal workflow",
+      "SD-002 signal-to-issue workflow",
       "Prisma client through bounded repository adapters",
       "PostgreSQL through Prisma"
     ],
@@ -68,6 +80,11 @@
       "effect": "Append an immutable TriageEvent after an explicit manual local request.",
       "reversible": false,
       "approval": "human"
+    },
+    {
+      "effect": "Create one immutable prioritized Product Issue from one currently accepted Signal at its exact revision after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
     }
   ],
   "authority": {
@@ -82,8 +99,8 @@
   },
   "data": {
     "classification": "confidential",
-    "retention": "Local prototype retention is operator-controlled; SD-001 provides no public deletion endpoint, hosted retention guarantee, backup claim, or recovery claim.",
-    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence."
+    "retention": "Local prototype retention is operator-controlled; SD-001 and SD-002 provide no public deletion endpoint, hosted retention guarantee, backup claim, or recovery claim.",
+    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence; each Product Issue retains one unique source Signal and its exact promotion revision."
   },
   "failure_modes": [
     {
@@ -112,6 +129,11 @@
       "response": "Preserve existing events and require the operator to reload before another explicit append."
     },
     {
+      "condition": "Product Issue promotion uses a missing, non-accepted, stale, or already-promoted Signal.",
+      "signal": "signal_not_found, signal_not_accepted, revision_conflict, or product_issue_exists.",
+      "response": "Reject without creating or mutating a Product Issue and require an explicit corrected operator request."
+    },
+    {
       "condition": "Restricted-content evaluation is unavailable or fails unexpectedly.",
       "signal": "A structured internal failure with bounded correlation and no raw content.",
       "response": "Fail the write closed; do not bypass detection or use a fallback."
@@ -138,9 +160,9 @@
   "verification": {
     "tests": [
       "Planned Foundation contract, TypeScript, Prisma schema, and dependency-cruiser checks",
-      "Planned Component validation, detector, domain, and append-only triage checks",
-      "Planned Integration PostgreSQL atomicity, uniqueness, revision, and repository checks",
-      "Planned Workflow feedback-to-inbox-to-manual-triage check",
+      "Planned Component validation, detector, domain, append-only triage, and Product Issue decision checks",
+      "Planned Integration PostgreSQL atomicity, uniqueness, revision, immutable issue, and repository checks",
+      "Planned Workflow feedback-to-inbox-to-manual-triage-to-prioritized-issue check",
       "Planned Stress input-bound, concurrency, failure-recovery, and telemetry-redaction checks"
     ],
     "evals": [
@@ -150,6 +172,7 @@
     "fitness_functions": [
       "dependency-cruiser must fail closed on undeclared modules and forbidden dependency direction",
       "Prisma schema must enforce unique Signal.feedbackId and unique TriageEvent signal sequence",
+      "Prisma and PostgreSQL must enforce unique immutable ProductIssue.signalId lineage",
       "HTTP contract fixtures must preserve closed schemas, bounds, acknowledgements, and explicit errors",
       "Telemetry checks must prove submitted confidential content is absent from logs, traces, and metrics"
     ]

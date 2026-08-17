@@ -87,3 +87,53 @@ describe("SD-001 ratified static contracts", () => {
     }
   });
 });
+
+describe("SD-002 ratified static contracts", () => {
+  it("binds the approved product outcome to a reviewable-pr work item", async () => {
+    const workItem = JSON.parse(await text("docs/work-items/SD-002.json")) as {
+      change_class: string;
+      owner: string;
+      ship_target: string;
+    };
+    expect(workItem).toMatchObject({
+      change_class: "public-contract",
+      owner: "Neel",
+      ship_target: "reviewable-pr"
+    });
+  });
+
+  it("declares the additive manual promotion endpoint and non-claims", async () => {
+    const contract = await text("docs/contracts/SD-002.md");
+    expect(contract).toContain("POST /api/v1/signals/{signalId}/product-issue");
+    expect(contract).toContain("currently accepted");
+    expect(contract).toContain("automatic prioritization");
+    expect(contract).toContain("local-only");
+  });
+
+  it("enforces unique immutable Product Issue lineage in PostgreSQL", async () => {
+    const schema = await text("prisma/schema.prisma");
+    const migration = await text(
+      "prisma/migrations/20260817193000_sd002_prioritized_product_issue/migration.sql"
+    );
+    expect(schema).toContain("signalId             String               @unique @db.Uuid");
+    expect(migration).toContain('CREATE UNIQUE INDEX "ProductIssue_signalId_key"');
+    expect(migration).toContain('CREATE TRIGGER "ProductIssue_immutable"');
+    expect(migration).toContain("BEFORE UPDATE OR DELETE");
+  });
+
+  it("keeps the new route outside direct Prisma access", async () => {
+    const route = await text(
+      "src/app/api/v1/signals/[signalId]/product-issue/route.ts"
+    );
+    expect(route).not.toContain("@prisma/client");
+    expect(route).toContain("postProductIssue");
+  });
+
+  it("extends fail-closed layout and context isolation rules", async () => {
+    const layout = await text("scripts/check-source-layout.mjs");
+    const boundaries = await text(".dependency-cruiser.cjs");
+    expect(layout).toContain("product-issues");
+    expect(layout).toContain("signal-to-issue");
+    expect(boundaries).toContain('name: "product-issue-domain-is-context-local"');
+  });
+});
