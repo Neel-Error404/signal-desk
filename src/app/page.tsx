@@ -34,6 +34,7 @@ interface SignalDetail {
   };
   readonly triageEvents: readonly TriageEventItem[];
   readonly productIssue: ProductIssueItem | null;
+  readonly implementationBrief: ImplementationBriefItem | null;
 }
 
 interface ProductIssueItem {
@@ -45,6 +46,16 @@ interface ProductIssueItem {
   readonly rationale: string;
   readonly operatorLabel: string;
   readonly createdAt: string;
+}
+
+interface ImplementationBriefItem {
+  readonly id: string;
+  readonly productIssueId: string;
+  readonly objective: string;
+  readonly acceptanceCriteria: readonly string[];
+  readonly constraints: readonly string[];
+  readonly approvedBy: string;
+  readonly approvedAt: string;
 }
 
 interface ApiErrorEnvelope {
@@ -225,12 +236,49 @@ export default function HomePage() {
     }
   }
 
+  async function approveImplementationBrief(
+    signalId: string,
+    productIssueId: string,
+    objective: string,
+    acceptanceCriteria: readonly string[],
+    constraints: readonly string[],
+    approvedBy: string,
+    contentAcknowledged: boolean
+  ): Promise<boolean> {
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/v1/product-issues/${productIssueId}/implementation-brief`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json; charset=utf-8" },
+          body: JSON.stringify({
+            objective,
+            acceptanceCriteria,
+            constraints,
+            approvedBy,
+            contentAcknowledged
+          })
+        }
+      );
+      if (!response.ok) {
+        throw new Error(await safeError(response));
+      }
+      setMessage("Implementation brief approved with acceptance criteria and lineage preserved.");
+      await loadSignals(signalId);
+      return true;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not approve implementation brief.");
+      return false;
+    }
+  }
+
   return (
     <main>
       <header className="app-header">
         <div>
           <p className="product-name">SignalDesk</p>
-          <p className="product-scope">SD-002 local signal prioritization</p>
+          <p className="product-scope">SD-003 local implementation approval</p>
         </div>
         <p className="runtime-state">Local PostgreSQL workspace</p>
       </header>
@@ -333,6 +381,7 @@ export default function HomePage() {
               detail={detail}
               onAppend={appendTriage}
               onPromote={promoteSignalToIssue}
+              onApproveBrief={approveImplementationBrief}
             />
           ) : null}
         </div>
@@ -344,7 +393,8 @@ export default function HomePage() {
 function SignalInspector({
   detail,
   onAppend,
-  onPromote
+  onPromote,
+  onApproveBrief
 }: Readonly<{
   detail: SignalDetail;
   onAppend: (
@@ -360,6 +410,15 @@ function SignalInspector({
     priority: ProductIssuePriority,
     rationale: string,
     operatorLabel: string,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+  onApproveBrief: (
+    signalId: string,
+    productIssueId: string,
+    objective: string,
+    acceptanceCriteria: readonly string[],
+    constraints: readonly string[],
+    approvedBy: string,
     acknowledged: boolean
   ) => Promise<boolean>;
 }>) {
@@ -445,6 +504,13 @@ function SignalInspector({
         signal={signal}
         productIssue={detail.productIssue}
         onPromote={onPromote}
+      />
+
+      <ImplementationBriefPanel
+        signal={signal}
+        productIssue={detail.productIssue}
+        implementationBrief={detail.implementationBrief}
+        onApprove={onApproveBrief}
       />
 
       <form className="triage" onSubmit={submit}>
@@ -632,6 +698,172 @@ function ProductIssuePanel({
       </label>
       <button type="submit" disabled={saving}>
         {saving ? "Promoting..." : "Create prioritized issue"}
+      </button>
+    </form>
+  );
+}
+
+function nonEmptyLines(value: string): readonly string[] {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+function ImplementationBriefPanel({
+  signal,
+  productIssue,
+  implementationBrief,
+  onApprove
+}: Readonly<{
+  signal: SignalItem;
+  productIssue: ProductIssueItem | null;
+  implementationBrief: ImplementationBriefItem | null;
+  onApprove: (
+    signalId: string,
+    productIssueId: string,
+    objective: string,
+    acceptanceCriteria: readonly string[],
+    constraints: readonly string[],
+    approvedBy: string,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+}>) {
+  const [objective, setObjective] = useState("");
+  const [acceptanceCriteria, setAcceptanceCriteria] = useState("");
+  const [constraints, setConstraints] = useState("");
+  const [approvedBy, setApprovedBy] = useState("");
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (productIssue === null) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await onApprove(
+        signal.id,
+        productIssue.id,
+        objective,
+        nonEmptyLines(acceptanceCriteria),
+        nonEmptyLines(constraints),
+        approvedBy,
+        acknowledged
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (productIssue === null) {
+    return (
+      <section className="implementation-brief" aria-labelledby="implementation-brief-title">
+        <h3 id="implementation-brief-title">Implementation brief</h3>
+        <p className="empty">Create a prioritized Product Issue before approving a brief.</p>
+      </section>
+    );
+  }
+
+  if (implementationBrief !== null) {
+    return (
+      <section className="implementation-brief" aria-labelledby="implementation-brief-title">
+        <div className="history-heading">
+          <h3 id="implementation-brief-title">Approved implementation brief</h3>
+          <span>immutable</span>
+        </div>
+        <h4>Objective</h4>
+        <p>{implementationBrief.objective}</p>
+        <h4>Acceptance criteria</h4>
+        <ol className="brief-list">
+          {implementationBrief.acceptanceCriteria.map((criterion, index) => (
+            <li key={`${index}-${criterion}`}>{criterion}</li>
+          ))}
+        </ol>
+        <h4>Constraints</h4>
+        {implementationBrief.constraints.length === 0 ? (
+          <p className="empty">No additional constraints recorded.</p>
+        ) : (
+          <ul className="brief-list">
+            {implementationBrief.constraints.map((constraint, index) => (
+              <li key={`${index}-${constraint}`}>{constraint}</li>
+            ))}
+          </ul>
+        )}
+        <dl>
+          <div>
+            <dt>Brief</dt>
+            <dd>{implementationBrief.id}</dd>
+          </div>
+          <div>
+            <dt>Source issue</dt>
+            <dd>{implementationBrief.productIssueId}</dd>
+          </div>
+          <div>
+            <dt>Approved by</dt>
+            <dd>{implementationBrief.approvedBy} (unverified local label)</dd>
+          </div>
+          <div>
+            <dt>Approved</dt>
+            <dd>{new Date(implementationBrief.approvedAt).toLocaleString()}</dd>
+          </div>
+        </dl>
+      </section>
+    );
+  }
+
+  return (
+    <form className="implementation-brief" onSubmit={submit}>
+      <div>
+        <p className="section-label">Implementation decision</p>
+        <h3 id="implementation-brief-title">Approve implementation brief</h3>
+      </div>
+      <label>
+        Implementation objective
+        <textarea
+          value={objective}
+          onChange={(event) => setObjective(event.target.value)}
+          required
+          rows={3}
+        />
+      </label>
+      <label>
+        Acceptance criteria (one per line)
+        <textarea
+          value={acceptanceCriteria}
+          onChange={(event) => setAcceptanceCriteria(event.target.value)}
+          required
+          rows={4}
+        />
+      </label>
+      <label>
+        Constraints (optional, one per line)
+        <textarea
+          value={constraints}
+          onChange={(event) => setConstraints(event.target.value)}
+          rows={3}
+        />
+      </label>
+      <label>
+        Local approver label (unverified)
+        <input
+          value={approvedBy}
+          onChange={(event) => setApprovedBy(event.target.value)}
+          required
+          maxLength={120}
+        />
+      </label>
+      <label className="acknowledgement compact">
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={(event) => setAcknowledged(event.target.checked)}
+        />
+        <span>I acknowledge this approved brief content follows the same content boundary.</span>
+      </label>
+      <button type="submit" disabled={saving}>
+        {saving ? "Approving..." : "Approve implementation brief"}
       </button>
     </form>
   );

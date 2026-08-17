@@ -5,6 +5,7 @@ import { errorResponse, jsonResponse } from "@/platform/http/response";
 import { assertClosedObject, requireNumber, requireString, requireUuid } from "@/shared/validation";
 import type { PromoteSignalToIssue } from "./promote-signal-to-issue";
 import type { GetSignalDetailWithIssue, SignalDetailWithIssue } from "./signal-detail";
+import { serializeImplementationBrief } from "@/workflows/issue-to-brief/http";
 
 function serializeSignal(signal: SignalRecord): Record<string, unknown> {
   return { ...signal, createdAt: signal.createdAt.toISOString() };
@@ -24,7 +25,11 @@ function serializeDetail(detail: SignalDetailWithIssue): Record<string, unknown>
     feedback: { ...detail.feedback, createdAt: detail.feedback.createdAt.toISOString() },
     triageEvents: detail.triageEvents.map(serializeEvent),
     productIssue:
-      detail.productIssue === null ? null : serializeProductIssue(detail.productIssue)
+      detail.productIssue === null ? null : serializeProductIssue(detail.productIssue),
+    implementationBrief:
+      detail.implementationBrief === null
+        ? null
+        : serializeImplementationBrief(detail.implementationBrief)
   };
 }
 

@@ -2,7 +2,7 @@
   "version": "0.5.1",
   "id": "signaldesk-web",
   "owner": "Neel",
-  "purpose": "Operate the local deterministic SD-001 and SD-002 feedback-intake, signal-inbox, manual-triage, and prioritized-product-issue slices inside one Next.js modular monolith.",
+  "purpose": "Operate the local deterministic SD-001 through SD-003 feedback-intake, signal-inbox, manual-triage, prioritized-product-issue, and approved-implementation-brief slices inside one Next.js modular monolith.",
   "execution_kind": "deterministic",
   "inputs": [
     {
@@ -24,6 +24,11 @@
       "name": "promote-signal-to-product-issue-http-request",
       "schema": "docs/contracts/SD-002.md#post-apiv1signalssignalidproduct-issue",
       "error_contract": "docs/contracts/SD-002.md#error-additions"
+    },
+    {
+      "name": "approve-implementation-brief-http-request",
+      "schema": "docs/contracts/SD-003.md#post-apiv1product-issuesproductissueidimplementation-brief",
+      "error_contract": "docs/contracts/SD-003.md#error-additions"
     }
   ],
   "outputs": [
@@ -46,6 +51,11 @@
       "name": "prioritized-product-issue-http-response",
       "schema": "docs/contracts/SD-002.md#post-apiv1signalssignalidproduct-issue",
       "error_contract": "docs/contracts/SD-002.md#error-additions"
+    },
+    {
+      "name": "approved-implementation-brief-http-response",
+      "schema": "docs/contracts/SD-003.md#post-apiv1product-issuesproductissueidimplementation-brief",
+      "error_contract": "docs/contracts/SD-003.md#error-additions"
     }
   ],
   "dependencies": {
@@ -54,8 +64,10 @@
       "Feedback Intake public application ports",
       "Signal Inbox public application ports",
       "Product Issues public application ports",
+      "Implementation Briefs public application ports",
       "SD-001 feedback-to-signal workflow",
       "SD-002 signal-to-issue workflow",
+      "SD-003 issue-to-brief workflow",
       "Prisma client through bounded repository adapters",
       "PostgreSQL through Prisma"
     ],
@@ -85,6 +97,11 @@
       "effect": "Create one immutable prioritized Product Issue from one currently accepted Signal at its exact revision after an explicit manual local request.",
       "reversible": false,
       "approval": "human"
+    },
+    {
+      "effect": "Create one immutable owner-approved Implementation Brief for one Product Issue after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
     }
   ],
   "authority": {
@@ -99,8 +116,8 @@
   },
   "data": {
     "classification": "confidential",
-    "retention": "Local prototype retention is operator-controlled; SD-001 and SD-002 provide no public deletion endpoint, hosted retention guarantee, backup claim, or recovery claim.",
-    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence; each Product Issue retains one unique source Signal and its exact promotion revision."
+    "retention": "Local prototype retention is operator-controlled; SD-001 through SD-003 provide no public deletion endpoint, hosted retention guarantee, backup claim, or recovery claim.",
+    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence; each Product Issue retains one unique source Signal and its exact promotion revision; each Implementation Brief retains one unique source Product Issue."
   },
   "failure_modes": [
     {
@@ -134,6 +151,11 @@
       "response": "Reject without creating or mutating a Product Issue and require an explicit corrected operator request."
     },
     {
+      "condition": "Implementation Brief approval uses a missing or already-briefed Product Issue.",
+      "signal": "product_issue_not_found or implementation_brief_exists.",
+      "response": "Reject without creating or mutating an Implementation Brief and require an explicit corrected operator request."
+    },
+    {
       "condition": "Restricted-content evaluation is unavailable or fails unexpectedly.",
       "signal": "A structured internal failure with bounded correlation and no raw content.",
       "response": "Fail the write closed; do not bypass detection or use a fallback."
@@ -160,9 +182,9 @@
   "verification": {
     "tests": [
       "Planned Foundation contract, TypeScript, Prisma schema, and dependency-cruiser checks",
-      "Planned Component validation, detector, domain, append-only triage, and Product Issue decision checks",
-      "Planned Integration PostgreSQL atomicity, uniqueness, revision, immutable issue, and repository checks",
-      "Planned Workflow feedback-to-inbox-to-manual-triage-to-prioritized-issue check",
+      "Planned Component validation, detector, domain, append-only triage, Product Issue, and Implementation Brief decision checks",
+      "Planned Integration PostgreSQL atomicity, uniqueness, revision, immutable issue, immutable brief, and repository checks",
+      "Planned Workflow feedback-to-inbox-to-manual-triage-to-prioritized-issue-to-approved-brief check",
       "Planned Stress input-bound, concurrency, failure-recovery, and telemetry-redaction checks"
     ],
     "evals": [
@@ -173,6 +195,7 @@
       "dependency-cruiser must fail closed on undeclared modules and forbidden dependency direction",
       "Prisma schema must enforce unique Signal.feedbackId and unique TriageEvent signal sequence",
       "Prisma and PostgreSQL must enforce unique immutable ProductIssue.signalId lineage",
+      "Prisma and PostgreSQL must enforce unique immutable ImplementationBrief.productIssueId lineage and bounded text arrays",
       "HTTP contract fixtures must preserve closed schemas, bounds, acknowledgements, and explicit errors",
       "Telemetry checks must prove submitted confidential content is absent from logs, traces, and metrics"
     ]

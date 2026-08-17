@@ -1,0 +1,36 @@
+{
+  "id": "SD-003",
+  "outcome_ids": [
+    ".elder/project-profile.json#/outcomes/success/3"
+  ],
+  "change_class": "public-contract",
+  "objective": "Let a local product owner approve one immutable implementation brief with explicit acceptance criteria for one prioritized Product Issue while preserving exact Feedback, Signal, and Product Issue lineage.",
+  "scope": [
+    "Add the Implementation Briefs bounded context and issue-to-brief workflow.",
+    "Create at most one immutable brief for an existing Product Issue in a locked PostgreSQL transaction.",
+    "Persist a bounded objective, one to ten bounded acceptance criteria, zero to ten bounded constraints, an unverified local approver label, and server approval time.",
+    "Add POST /api/v1/product-issues/{productIssueId}/implementation-brief and an additive implementationBrief Signal-detail projection.",
+    "Expose owner approval, persisted acceptance criteria, and full source lineage through the local product interface.",
+    "Apply existing acknowledgement, input-bound, restricted-content, privacy, and fail-closed storage rules.",
+    "Produce ordered Foundation, Component, Integration, Workflow, and Stress evidence without advancing past a failed level.",
+    "Measure Elder and direct-human intervention, correct at most one reproduced Elder blocker, replay it, write a handoff, and stop."
+  ],
+  "non_goals": [
+    "Brief editing, deletion, versioning, task breakdown, assignment, implementation status, verification status, release notes, or customer communication.",
+    "Probabilistic inference, automatic acceptance criteria, autonomous implementation, or autonomous pull-request creation.",
+    "Authentication, authorization, verified identity, tenancy, shared hosting, staging, production, deployment, merge, or release.",
+    "SD-004, Gate G continuation, L2 or L3 promotion, or more than one Elder correction."
+  ],
+  "ship_target": "reviewable-pr",
+  "session_boundary": "Stop after SD-003 product verification, retrospective, at most one reproduced Elder correction and replay, session close, and handoff at the Git authorization boundary; do not begin another slice, phase, gate, merge, or deployment.",
+  "evidence_plan": [
+    "Foundation: validate the SD-003 ADR, contract, work item, Prisma schema, migration, source layout, dependency boundaries, types, lint, and closed route surface.",
+    "Component: prove deterministic brief normalization, acknowledgement, array and text bounds, restricted-content rejection, and generated identity and time binding.",
+    "Integration: prove source Product Issue locking, one immutable brief per Product Issue, exact lineage, duplicate and concurrent rejection, and PostgreSQL constraints.",
+    "Workflow: use only the local UI to create and accept a Signal, promote it, approve its brief, inspect acceptance criteria and lineage, reload, and observe persistence at desktop and mobile widths.",
+    "Stress: prove concurrent brief creation has one winner, missing and duplicate creation fail closed, database outage and recovery are explicit, and submitted brief content is absent from logs.",
+    "Factory: record Elder activation, admission/readiness truth, direct Codex and human intervention, one reproduced blocker at most, its correction and replay, and the remaining authorization boundary."
+  ],
+  "owner": "Neel",
+  "status": "verified"
+}

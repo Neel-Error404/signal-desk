@@ -137,3 +137,65 @@ describe("SD-002 ratified static contracts", () => {
     expect(boundaries).toContain('name: "product-issue-domain-is-context-local"');
   });
 });
+
+describe("SD-003 ratified static contracts", () => {
+  it("binds the owner-approved brief outcome to one reviewable-pr work item", async () => {
+    const workItem = JSON.parse(await text("docs/work-items/SD-003.json")) as {
+      change_class: string;
+      owner: string;
+      ship_target: string;
+      status: string;
+    };
+    expect(workItem).toMatchObject({
+      change_class: "public-contract",
+      owner: "Neel",
+      ship_target: "reviewable-pr",
+      status: "verified"
+    });
+  });
+
+  it("declares one immutable owner-approved brief and its non-claims", async () => {
+    const contract = await text("docs/contracts/SD-003.md");
+    expect(contract).toContain(
+      "POST /api/v1/product-issues/{productIssueId}/implementation-brief"
+    );
+    expect(contract).toContain("1 to 10 strings");
+    expect(contract).toContain("unverified local label");
+    expect(contract).toContain("does not create tasks");
+    expect(contract).toContain("local-only");
+  });
+
+  it("enforces unique immutable Implementation Brief lineage and bounds", async () => {
+    const schema = await text("prisma/schema.prisma");
+    const migration = await text(
+      "prisma/migrations/20260818090000_sd003_approved_implementation_brief/migration.sql"
+    );
+    expect(schema).toContain("productIssueId     String       @unique @db.Uuid");
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "ImplementationBrief_productIssueId_key"'
+    );
+    expect(migration).toContain(
+      'CONSTRAINT "ImplementationBrief_acceptance_criteria_bounds"'
+    );
+    expect(migration).toContain('CREATE TRIGGER "ImplementationBrief_immutable"');
+    expect(migration).toContain("BEFORE UPDATE OR DELETE");
+  });
+
+  it("keeps the brief route outside direct Prisma access", async () => {
+    const route = await text(
+      "src/app/api/v1/product-issues/[productIssueId]/implementation-brief/route.ts"
+    );
+    expect(route).not.toContain("@prisma/client");
+    expect(route).toContain("postImplementationBrief");
+  });
+
+  it("extends fail-closed layout and context-isolation rules", async () => {
+    const layout = await text("scripts/check-source-layout.mjs");
+    const boundaries = await text(".dependency-cruiser.cjs");
+    expect(layout).toContain("implementation-briefs");
+    expect(layout).toContain("issue-to-brief");
+    expect(boundaries).toContain(
+      'name: "implementation-brief-domain-is-context-local"'
+    );
+  });
+});

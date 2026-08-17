@@ -52,8 +52,20 @@ model ProductIssue {
   operatorLabel        String               @db.VarChar(120)
   createdAt            DateTime             @default(now()) @db.Timestamptz(3)
   signal               Signal               @relation(fields: [signalId], references: [id], onDelete: Restrict)
+  implementationBrief  ImplementationBrief?
 
   @@index([priority, createdAt, id])
+}
+
+model ImplementationBrief {
+  id                 String       @id @default(uuid()) @db.Uuid
+  productIssueId     String       @unique @db.Uuid
+  objective          String       @db.Text
+  acceptanceCriteria String[]
+  constraints        String[]
+  approvedBy         String       @db.VarChar(120)
+  approvedAt         DateTime     @default(now()) @db.Timestamptz(3)
+  productIssue       ProductIssue @relation(fields: [productIssueId], references: [id], onDelete: Restrict)
 }
 
 model TriageEvent {

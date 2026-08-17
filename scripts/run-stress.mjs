@@ -147,6 +147,55 @@ try {
   );
   checks += 1;
 
+  const issueWinner = issueResponses.find((response) => response.status === 201);
+  assert(issueWinner !== undefined, "Concurrent issue promotion did not return a winner.");
+  const issueResult = await issueWinner.json();
+  const productIssueId = issueResult.productIssue.id;
+
+  const missingBrief = await jsonPost(
+    baseUrl,
+    "/api/v1/product-issues/11111111-1111-4111-8111-111111111111/implementation-brief",
+    {
+      objective: "Missing source must fail.",
+      acceptanceCriteria: ["A missing Product Issue cannot receive a brief."],
+      constraints: [],
+      approvedBy: "Stress operator",
+      contentAcknowledged: true
+    }
+  );
+  assert(
+    missingBrief.status === 404,
+    `Expected missing Product Issue 404, received ${missingBrief.status}.`
+  );
+  checks += 1;
+
+  const briefObjective = `Stress approved brief ${crypto.randomUUID()}`;
+  const briefResponses = await Promise.all(
+    Array.from({ length: 12 }, () =>
+      jsonPost(
+        baseUrl,
+        `/api/v1/product-issues/${productIssueId}/implementation-brief`,
+        {
+          objective: briefObjective,
+          acceptanceCriteria: [
+            "The export preserves the selected date range.",
+            "The approved behavior survives reload."
+          ],
+          constraints: ["Do not change retention."],
+          approvedBy: "Stress operator",
+          contentAcknowledged: true
+        }
+      )
+    )
+  );
+  const briefStatuses = briefResponses.map((response) => response.status);
+  assert(
+    briefStatuses.filter((status) => status === 201).length === 1 &&
+      briefStatuses.filter((status) => status === 409).length === 11,
+    `Expected one 201 and eleven 409 brief responses, received ${briefStatuses.join(", ")}.`
+  );
+  checks += 1;
+
   const bulkResponses = await Promise.all(
     Array.from({ length: 20 }, (_, index) =>
       jsonPost(baseUrl, "/api/v1/feedback", {
@@ -184,8 +233,9 @@ try {
   assert(
     recoveredDetail.signal.revision === 2 &&
       recoveredDetail.triageEvents.length === 2 &&
-      recoveredDetail.productIssue?.title === issueTitle,
-    "Recovered signal did not preserve triage and Product Issue state."
+      recoveredDetail.productIssue?.title === issueTitle &&
+      recoveredDetail.implementationBrief?.objective === briefObjective,
+    "Recovered signal did not preserve triage, Product Issue, and brief state."
   );
   checks += 1;
 
@@ -193,7 +243,8 @@ try {
   assert(
     !serverLogs.includes(secretMarker) &&
       !serverLogs.includes(confidentialMarker) &&
-      !serverLogs.includes(issueTitle),
+      !serverLogs.includes(issueTitle) &&
+      !serverLogs.includes(briefObjective),
     "Server logs exposed submitted confidential or restricted content."
   );
   checks += 1;
