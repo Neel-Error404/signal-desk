@@ -35,6 +35,7 @@ interface SignalDetail {
   readonly triageEvents: readonly TriageEventItem[];
   readonly productIssue: ProductIssueItem | null;
   readonly implementationBrief: ImplementationBriefItem | null;
+  readonly reviewDelivery: ReviewDeliveryItem | null;
 }
 
 interface ProductIssueItem {
@@ -56,6 +57,20 @@ interface ImplementationBriefItem {
   readonly constraints: readonly string[];
   readonly approvedBy: string;
   readonly approvedAt: string;
+}
+
+interface ReviewDeliveryItem {
+  readonly id: string;
+  readonly implementationBriefId: string;
+  readonly repositoryUrl: string;
+  readonly baseBranch: string;
+  readonly headBranch: string;
+  readonly commitSha: string;
+  readonly pullRequestNumber: number;
+  readonly pullRequestUrl: string;
+  readonly verificationSummary: string;
+  readonly deliveredBy: string;
+  readonly deliveredAt: string;
 }
 
 interface ApiErrorEnvelope {
@@ -273,12 +288,53 @@ export default function HomePage() {
     }
   }
 
+  async function recordReviewDelivery(
+    signalId: string,
+    implementationBriefId: string,
+    baseBranch: string,
+    headBranch: string,
+    commitSha: string,
+    pullRequestUrl: string,
+    verificationSummary: string,
+    deliveredBy: string,
+    contentAcknowledged: boolean
+  ): Promise<boolean> {
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/v1/implementation-briefs/${implementationBriefId}/review-delivery`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json; charset=utf-8" },
+          body: JSON.stringify({
+            baseBranch,
+            headBranch,
+            commitSha,
+            pullRequestUrl,
+            verificationSummary,
+            deliveredBy,
+            contentAcknowledged
+          })
+        }
+      );
+      if (!response.ok) {
+        throw new Error(await safeError(response));
+      }
+      setMessage("Review delivery recorded with implementation lineage preserved.");
+      await loadSignals(signalId);
+      return true;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not record review delivery.");
+      return false;
+    }
+  }
+
   return (
     <main>
       <header className="app-header">
         <div>
           <p className="product-name">SignalDesk</p>
-          <p className="product-scope">SD-003 local implementation approval</p>
+          <p className="product-scope">SD-004 local implementation-to-review trace</p>
         </div>
         <p className="runtime-state">Local PostgreSQL workspace</p>
       </header>
@@ -287,6 +343,7 @@ export default function HomePage() {
         <strong>Prototype boundary</strong>
         <span>No authentication or verified identity</span>
         <span>No uploads or hosted-operation claim</span>
+        <span>Git references are operator-supplied, not provider-verified</span>
         <span>High-confidence rejection is not complete DLP</span>
       </aside>
 
@@ -382,6 +439,7 @@ export default function HomePage() {
               onAppend={appendTriage}
               onPromote={promoteSignalToIssue}
               onApproveBrief={approveImplementationBrief}
+              onRecordDelivery={recordReviewDelivery}
             />
           ) : null}
         </div>
@@ -394,7 +452,8 @@ function SignalInspector({
   detail,
   onAppend,
   onPromote,
-  onApproveBrief
+  onApproveBrief,
+  onRecordDelivery
 }: Readonly<{
   detail: SignalDetail;
   onAppend: (
@@ -419,6 +478,17 @@ function SignalInspector({
     acceptanceCriteria: readonly string[],
     constraints: readonly string[],
     approvedBy: string,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+  onRecordDelivery: (
+    signalId: string,
+    implementationBriefId: string,
+    baseBranch: string,
+    headBranch: string,
+    commitSha: string,
+    pullRequestUrl: string,
+    verificationSummary: string,
+    deliveredBy: string,
     acknowledged: boolean
   ) => Promise<boolean>;
 }>) {
@@ -511,6 +581,13 @@ function SignalInspector({
         productIssue={detail.productIssue}
         implementationBrief={detail.implementationBrief}
         onApprove={onApproveBrief}
+      />
+
+      <ReviewDeliveryPanel
+        signal={signal}
+        implementationBrief={detail.implementationBrief}
+        reviewDelivery={detail.reviewDelivery}
+        onRecord={onRecordDelivery}
       />
 
       <form className="triage" onSubmit={submit}>
@@ -864,6 +941,198 @@ function ImplementationBriefPanel({
       </label>
       <button type="submit" disabled={saving}>
         {saving ? "Approving..." : "Approve implementation brief"}
+      </button>
+    </form>
+  );
+}
+
+function ReviewDeliveryPanel({
+  signal,
+  implementationBrief,
+  reviewDelivery,
+  onRecord
+}: Readonly<{
+  signal: SignalItem;
+  implementationBrief: ImplementationBriefItem | null;
+  reviewDelivery: ReviewDeliveryItem | null;
+  onRecord: (
+    signalId: string,
+    implementationBriefId: string,
+    baseBranch: string,
+    headBranch: string,
+    commitSha: string,
+    pullRequestUrl: string,
+    verificationSummary: string,
+    deliveredBy: string,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+}>) {
+  const [baseBranch, setBaseBranch] = useState("");
+  const [headBranch, setHeadBranch] = useState("");
+  const [commitSha, setCommitSha] = useState("");
+  const [pullRequestUrl, setPullRequestUrl] = useState("");
+  const [verificationSummary, setVerificationSummary] = useState("");
+  const [deliveredBy, setDeliveredBy] = useState("");
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (implementationBrief === null) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await onRecord(
+        signal.id,
+        implementationBrief.id,
+        baseBranch,
+        headBranch,
+        commitSha,
+        pullRequestUrl,
+        verificationSummary,
+        deliveredBy,
+        acknowledged
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (implementationBrief === null) {
+    return (
+      <section className="review-delivery" aria-labelledby="review-delivery-title">
+        <h3 id="review-delivery-title">Review delivery</h3>
+        <p className="empty">Approve an Implementation Brief before recording delivery.</p>
+      </section>
+    );
+  }
+
+  if (reviewDelivery !== null) {
+    return (
+      <section className="review-delivery" aria-labelledby="review-delivery-title">
+        <div className="history-heading">
+          <h3 id="review-delivery-title">Review delivery</h3>
+          <span>immutable operator-supplied trace</span>
+        </div>
+        <p className="delivery-warning">
+          This Git reference was recorded by a local operator and is not independently verified
+          by SignalDesk or Elder.
+        </p>
+        <dl>
+          <div>
+            <dt>Repository</dt>
+            <dd>{reviewDelivery.repositoryUrl}</dd>
+          </div>
+          <div>
+            <dt>Branches</dt>
+            <dd>{reviewDelivery.baseBranch} to {reviewDelivery.headBranch}</dd>
+          </div>
+          <div>
+            <dt>Commit</dt>
+            <dd>{reviewDelivery.commitSha}</dd>
+          </div>
+          <div>
+            <dt>Pull request</dt>
+            <dd>
+              <a href={reviewDelivery.pullRequestUrl} rel="noreferrer" target="_blank">
+                #{reviewDelivery.pullRequestNumber}
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt>Verification</dt>
+            <dd>{reviewDelivery.verificationSummary}</dd>
+          </div>
+          <div>
+            <dt>Recorded by</dt>
+            <dd>{reviewDelivery.deliveredBy} (unverified local label)</dd>
+          </div>
+          <div>
+            <dt>Recorded</dt>
+            <dd>{new Date(reviewDelivery.deliveredAt).toLocaleString()}</dd>
+          </div>
+        </dl>
+      </section>
+    );
+  }
+
+  return (
+    <form className="review-delivery" onSubmit={submit}>
+      <div>
+        <p className="section-label">Implementation delivery</p>
+        <h3 id="review-delivery-title">Record review delivery</h3>
+      </div>
+      <p className="delivery-warning">
+        Record only a real SignalDesk pull request. This local entry does not verify GitHub.
+      </p>
+      <div className="form-grid">
+        <label>
+          Base branch
+          <input
+            value={baseBranch}
+            onChange={(event) => setBaseBranch(event.target.value)}
+            required
+            maxLength={255}
+          />
+        </label>
+        <label>
+          Head branch
+          <input
+            value={headBranch}
+            onChange={(event) => setHeadBranch(event.target.value)}
+            required
+            maxLength={255}
+          />
+        </label>
+      </div>
+      <label>
+        Commit SHA
+        <input
+          value={commitSha}
+          onChange={(event) => setCommitSha(event.target.value)}
+          required
+          maxLength={64}
+        />
+      </label>
+      <label>
+        SignalDesk pull-request URL
+        <input
+          type="url"
+          value={pullRequestUrl}
+          onChange={(event) => setPullRequestUrl(event.target.value)}
+          required
+          maxLength={500}
+        />
+      </label>
+      <label>
+        Verification summary
+        <textarea
+          value={verificationSummary}
+          onChange={(event) => setVerificationSummary(event.target.value)}
+          required
+          rows={3}
+        />
+      </label>
+      <label>
+        Local delivery label (unverified)
+        <input
+          value={deliveredBy}
+          onChange={(event) => setDeliveredBy(event.target.value)}
+          required
+          maxLength={120}
+        />
+      </label>
+      <label className="acknowledgement compact">
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={(event) => setAcknowledged(event.target.checked)}
+        />
+        <span>I acknowledge this delivery trace follows the same content boundary.</span>
+      </label>
+      <button type="submit" disabled={saving}>
+        {saving ? "Recording..." : "Record review delivery"}
       </button>
     </form>
   );

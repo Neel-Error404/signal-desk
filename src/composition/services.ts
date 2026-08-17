@@ -21,6 +21,12 @@ import {
   PrepareImplementationBrief
 } from "@/modules/implementation-briefs/application";
 import { PrismaImplementationBriefStore } from "@/modules/implementation-briefs/infrastructure/prisma-implementation-brief-store";
+import {
+  GetReviewDeliveryByImplementationBrief,
+  PrepareReviewDelivery,
+  type ReviewDeliveryPolicy
+} from "@/modules/review-deliveries/application";
+import { PrismaReviewDeliveryStore } from "@/modules/review-deliveries/infrastructure/prisma-review-delivery-store";
 import { getPrismaClient } from "@/platform/database/prisma-client";
 import { CreateFeedbackSignal } from "@/workflows/feedback-to-signal/create-feedback-signal";
 import { PrismaFeedbackSignalUnitOfWork } from "@/workflows/feedback-to-signal/prisma-unit-of-work";
@@ -29,6 +35,17 @@ import { PrismaSignalIssueUnitOfWork } from "@/workflows/signal-to-issue/prisma-
 import { GetSignalDetailWithIssue } from "@/workflows/signal-to-issue/signal-detail";
 import { ApproveImplementationBrief } from "@/workflows/issue-to-brief/approve-implementation-brief";
 import { PrismaIssueBriefUnitOfWork } from "@/workflows/issue-to-brief/prisma-unit-of-work";
+import { RecordReviewDelivery } from "@/workflows/brief-to-delivery/record-review-delivery";
+import { PrismaBriefDeliveryUnitOfWork } from "@/workflows/brief-to-delivery/prisma-unit-of-work";
+import deliveryContract from "../../delivery/review-delivery-contract.json";
+
+const reviewDeliveryPolicy: ReviewDeliveryPolicy = {
+  repositoryUrl: deliveryContract.repository.url,
+  trustedPullRequestUrlPrefix: deliveryContract.repository.trustedPullRequestUrlPrefix,
+  baseBranchPattern: deliveryContract.branchPolicy.basePattern,
+  headBranchPattern: deliveryContract.branchPolicy.headPattern,
+  requireDistinctBranches: deliveryContract.branchPolicy.requireDistinctBranches
+};
 
 export interface SignalDeskServices {
   readonly createFeedbackSignal: CreateFeedbackSignal;
@@ -38,6 +55,7 @@ export interface SignalDeskServices {
   readonly appendTriage: AppendTriage;
   readonly promoteSignalToIssue: PromoteSignalToIssue;
   readonly approveImplementationBrief: ApproveImplementationBrief;
+  readonly recordReviewDelivery: RecordReviewDelivery;
 }
 
 let singleton: SignalDeskServices | undefined;
@@ -52,6 +70,7 @@ export function getSignalDeskServices(): SignalDeskServices {
   const signalStore = new PrismaSignalStore(prisma);
   const productIssueStore = new PrismaProductIssueStore(prisma);
   const implementationBriefStore = new PrismaImplementationBriefStore(prisma);
+  const reviewDeliveryStore = new PrismaReviewDeliveryStore(prisma);
   const getSignal = new GetSignal(signalStore);
   const unitOfWork = new PrismaFeedbackSignalUnitOfWork(
     prisma,
@@ -68,7 +87,8 @@ export function getSignalDeskServices(): SignalDeskServices {
     getSignalDetailWithIssue: new GetSignalDetailWithIssue(
       getSignal,
       new GetProductIssueBySignal(productIssueStore),
-      new GetImplementationBriefByProductIssue(implementationBriefStore)
+      new GetImplementationBriefByProductIssue(implementationBriefStore),
+      new GetReviewDeliveryByImplementationBrief(reviewDeliveryStore)
     ),
     appendTriage: new AppendTriage(new PrepareTriage(contentPolicy), signalStore),
     promoteSignalToIssue: new PromoteSignalToIssue(
@@ -78,6 +98,10 @@ export function getSignalDeskServices(): SignalDeskServices {
     approveImplementationBrief: new ApproveImplementationBrief(
       new PrepareImplementationBrief(contentPolicy),
       new PrismaIssueBriefUnitOfWork(prisma)
+    ),
+    recordReviewDelivery: new RecordReviewDelivery(
+      new PrepareReviewDelivery(contentPolicy, reviewDeliveryPolicy),
+      new PrismaBriefDeliveryUnitOfWork(prisma)
     )
   };
   return singleton;

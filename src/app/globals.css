@@ -321,7 +321,8 @@ dd {
 .product-issue h3,
 .product-issue h4,
 .implementation-brief h3,
-.implementation-brief h4 {
+.implementation-brief h4,
+.review-delivery h3 {
   margin: 0;
   font-size: 1rem;
 }
@@ -401,6 +402,23 @@ form.product-issue {
 
 form.implementation-brief {
   display: grid;
+}
+
+.review-delivery {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid #6f5f92;
+  background: #f7f5fb;
+}
+
+form.review-delivery {
+  display: grid;
+}
+
+.delivery-warning {
+  margin: 0.75rem 0;
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .brief-list {

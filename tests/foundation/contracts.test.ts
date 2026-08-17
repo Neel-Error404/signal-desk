@@ -199,3 +199,98 @@ describe("SD-003 ratified static contracts", () => {
     );
   });
 });
+
+describe("SD-004 ratified static contracts", () => {
+  it("binds the review-delivery outcome to the stacked reviewable PR work item", async () => {
+    const workItem = JSON.parse(await text("docs/work-items/SD-004.json")) as {
+      change_class: string;
+      owner: string;
+      ship_target: string;
+      status: string;
+      branch: string;
+      base_branch: string;
+    };
+    expect(workItem).toMatchObject({
+      change_class: "public-contract",
+      owner: "Neel",
+      ship_target: "reviewable-pr",
+      status: "verified",
+      branch: "work/sd-004-review-delivery",
+      base_branch: "work/sd-003-approved-implementation-brief"
+    });
+  });
+
+  it("declares the immutable operator-supplied delivery and its non-claims", async () => {
+    const contract = await text("docs/contracts/SD-004.md");
+    expect(contract).toContain(
+      "POST /api/v1/implementation-briefs/{implementationBriefId}/review-delivery"
+    );
+    expect(contract).toContain("operator-supplied");
+    expect(contract).toContain("does not verify GitHub");
+    expect(contract).toContain("local-only");
+  });
+
+  it("owns a closed Git delivery policy with ordered checks and retained authority", async () => {
+    const delivery = JSON.parse(
+      await text("delivery/review-delivery-contract.json")
+    ) as {
+      projectId: string;
+      repository: { url: string; trustedPullRequestUrlPrefix: string };
+      shipTarget: string;
+      requiredChecks: Array<{ order: number; level: string }>;
+      authority: Record<string, string>;
+    };
+    expect(delivery.projectId).toBe("signaldesk");
+    expect(delivery.repository.url).toBe(
+      "https://github.com/Neel-Error404/signal-desk"
+    );
+    expect(delivery.repository.trustedPullRequestUrlPrefix).toBe(
+      `${delivery.repository.url}/pull/`
+    );
+    expect(delivery.shipTarget).toBe("reviewable-pr");
+    expect(delivery.requiredChecks.map((check) => check.order)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8
+    ]);
+    expect(delivery.requiredChecks.slice(0, 5).map((check) => check.level)).toEqual([
+      "foundation",
+      "component",
+      "integration",
+      "workflow",
+      "stress"
+    ]);
+    expect(delivery.authority).toMatchObject({
+      createOrUpdatePullRequest: "owner-explicit",
+      merge: "human-only",
+      deployment: "human-only",
+      release: "human-only",
+      credentials: "external"
+    });
+  });
+
+  it("enforces unique immutable Review Delivery lineage and Git bounds", async () => {
+    const schema = await text("prisma/schema.prisma");
+    const migration = await text(
+      "prisma/migrations/20260818120000_sd004_review_delivery/migration.sql"
+    );
+    expect(schema).toContain("implementationBriefId String              @unique @db.Uuid");
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "ReviewDelivery_implementationBriefId_key"'
+    );
+    expect(migration).toContain('CONSTRAINT "ReviewDelivery_commit_sha"');
+    expect(migration).toContain('CONSTRAINT "ReviewDelivery_pull_request_url"');
+    expect(migration).toContain('CREATE TRIGGER "ReviewDelivery_immutable"');
+  });
+
+  it("keeps the delivery route outside persistence and extends fail-closed boundaries", async () => {
+    const route = await text(
+      "src/app/api/v1/implementation-briefs/[implementationBriefId]/review-delivery/route.ts"
+    );
+    const layout = await text("scripts/check-source-layout.mjs");
+    const boundaries = await text(".dependency-cruiser.cjs");
+    expect(route).not.toContain("@prisma/client");
+    expect(route).toContain("postReviewDelivery");
+    expect(layout).toContain("review-deliveries");
+    expect(layout).toContain("brief-to-delivery");
+    expect(boundaries).toContain('name: "review-delivery-domain-is-context-local"');
+  });
+});

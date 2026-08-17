@@ -2,7 +2,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 
 const roots = ["src", "tests"];
-const sourcePattern = /^(?:src\/app\/|src\/composition\/|src\/modules\/(?:feedback-intake|signal-inbox|product-issues|implementation-briefs)\/(?:domain|application|infrastructure|http)\/|src\/workflows\/(?:feedback-to-signal|signal-to-issue|issue-to-brief)\/|src\/platform\/(?:database|http)\/|src\/shared\/|tests\/(?:foundation|component|integration|workflow|stress)\/)/;
+const sourcePattern = /^(?:src\/app\/|src\/composition\/|src\/modules\/(?:feedback-intake|signal-inbox|product-issues|implementation-briefs|review-deliveries)\/(?:domain|application|infrastructure|http)\/|src\/workflows\/(?:feedback-to-signal|signal-to-issue|issue-to-brief|brief-to-delivery)\/|src\/platform\/(?:database|http)\/|src\/shared\/|tests\/(?:foundation|component|integration|workflow|stress)\/)/;
 
 async function filesUnder(directory) {
   const entries = await readdir(directory, { withFileTypes: true });

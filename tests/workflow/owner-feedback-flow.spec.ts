@@ -20,6 +20,8 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
   page.on("pageerror", (error) => browserErrors.push(error.message));
 
   const feedback = `${testInfo.project.name}: Export loses the selected date range.`;
+  const pullRequestNumber = testInfo.project.name === "desktop-chrome" ? 3 : 4;
+  const pullRequestUrl = `https://github.com/Neel-Error404/signal-desk/pull/${pullRequestNumber}`;
   await page.goto("/");
   await expect(page.getByText("SignalDesk", { exact: true })).toBeVisible();
   await expect(page.getByText("No authentication or verified identity")).toBeVisible();
@@ -118,6 +120,36 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
   ).toBeVisible();
   await expect(page.getByText("Do not change report retention.")).toBeVisible();
 
+  await page
+    .getByRole("textbox", { name: "Base branch" })
+    .fill("work/sd-003-approved-implementation-brief");
+  await page
+    .getByRole("textbox", { name: "Head branch" })
+    .fill("work/sd-004-review-delivery");
+  await page
+    .getByRole("textbox", { name: "Commit SHA" })
+    .fill("0123456789abcdef0123456789abcdef01234567");
+  await page
+    .getByRole("textbox", { name: "SignalDesk pull-request URL" })
+    .fill(pullRequestUrl);
+  await page
+    .getByRole("textbox", { name: "Verification summary" })
+    .fill("Foundation through Stress passed for the exact review commit.");
+  await page
+    .getByRole("textbox", { name: "Local delivery label (unverified)" })
+    .fill("Neel");
+  await page.getByLabel(/I acknowledge this delivery trace/).check();
+  await page.getByRole("button", { name: "Record review delivery" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "Review delivery recorded with implementation lineage preserved."
+  );
+  await expect(page.getByRole("heading", { name: "Review delivery" })).toBeVisible();
+  await expect(page.getByText("immutable operator-supplied trace")).toBeVisible();
+  await expect(page.getByRole("link", { name: `#${pullRequestNumber}` })).toHaveAttribute(
+    "href",
+    pullRequestUrl
+  );
+
   await page.reload();
   const reloadedRow = page.locator(".signal-row").filter({ hasText: feedback });
   await expect(reloadedRow).toBeVisible();
@@ -134,6 +166,10 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
   ).toBeVisible();
   await expect(
     page.getByText("Reloading does not change the completed exported artifact.")
+  ).toBeVisible();
+  await expect(page.getByText("work/sd-004-review-delivery", { exact: false })).toBeVisible();
+  await expect(
+    page.getByText("Foundation through Stress passed for the exact review commit.")
   ).toBeVisible();
 
   const hasHorizontalOverflow = await page.evaluate(

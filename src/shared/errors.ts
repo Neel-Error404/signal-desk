@@ -124,6 +124,26 @@ export class ImplementationBriefExistsError extends ApplicationError {
   }
 }
 
+export class ImplementationBriefNotFoundError extends ApplicationError {
+  constructor() {
+    super(
+      "implementation_brief_not_found",
+      404,
+      "The requested implementation brief does not exist."
+    );
+  }
+}
+
+export class ReviewDeliveryExistsError extends ApplicationError {
+  constructor() {
+    super(
+      "review_delivery_exists",
+      409,
+      "The implementation brief already has a review delivery."
+    );
+  }
+}
+
 export class StorageUnavailableError extends ApplicationError {
   constructor() {
     super(

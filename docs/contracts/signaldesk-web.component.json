@@ -2,7 +2,7 @@
   "version": "0.5.1",
   "id": "signaldesk-web",
   "owner": "Neel",
-  "purpose": "Operate the local deterministic SD-001 through SD-003 feedback-intake, signal-inbox, manual-triage, prioritized-product-issue, and approved-implementation-brief slices inside one Next.js modular monolith.",
+  "purpose": "Operate the local deterministic SD-001 through SD-004 feedback-intake, signal-inbox, manual-triage, prioritized-product-issue, approved-implementation-brief, and immutable-review-delivery slices inside one Next.js modular monolith.",
   "execution_kind": "deterministic",
   "inputs": [
     {
@@ -29,6 +29,11 @@
       "name": "approve-implementation-brief-http-request",
       "schema": "docs/contracts/SD-003.md#post-apiv1product-issuesproductissueidimplementation-brief",
       "error_contract": "docs/contracts/SD-003.md#error-additions"
+    },
+    {
+      "name": "record-review-delivery-http-request",
+      "schema": "docs/contracts/SD-004.md#post-apiv1implementation-briefsimplementationbriefidreview-delivery",
+      "error_contract": "docs/contracts/SD-004.md#error-additions"
     }
   ],
   "outputs": [
@@ -56,6 +61,11 @@
       "name": "approved-implementation-brief-http-response",
       "schema": "docs/contracts/SD-003.md#post-apiv1product-issuesproductissueidimplementation-brief",
       "error_contract": "docs/contracts/SD-003.md#error-additions"
+    },
+    {
+      "name": "immutable-review-delivery-http-response",
+      "schema": "docs/contracts/SD-004.md#post-apiv1implementation-briefsimplementationbriefidreview-delivery",
+      "error_contract": "docs/contracts/SD-004.md#error-additions"
     }
   ],
   "dependencies": {
@@ -65,9 +75,11 @@
       "Signal Inbox public application ports",
       "Product Issues public application ports",
       "Implementation Briefs public application ports",
+      "Review Deliveries public application ports",
       "SD-001 feedback-to-signal workflow",
       "SD-002 signal-to-issue workflow",
       "SD-003 issue-to-brief workflow",
+      "SD-004 brief-to-delivery workflow",
       "Prisma client through bounded repository adapters",
       "PostgreSQL through Prisma"
     ],
@@ -102,6 +114,11 @@
       "effect": "Create one immutable owner-approved Implementation Brief for one Product Issue after an explicit manual local request.",
       "reversible": false,
       "approval": "human"
+    },
+    {
+      "effect": "Create one immutable operator-supplied Review Delivery for one Implementation Brief after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
     }
   ],
   "authority": {
@@ -117,7 +134,7 @@
   "data": {
     "classification": "confidential",
     "retention": "Local prototype retention is operator-controlled; SD-001 through SD-003 provide no public deletion endpoint, hosted retention guarantee, backup claim, or recovery claim.",
-    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence; each Product Issue retains one unique source Signal and its exact promotion revision; each Implementation Brief retains one unique source Product Issue."
+    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence; each Product Issue retains one unique source Signal and its exact promotion revision; each Implementation Brief retains one unique source Product Issue; each Review Delivery retains one unique source Implementation Brief and exact Git review reference."
   },
   "failure_modes": [
     {
@@ -156,6 +173,11 @@
       "response": "Reject without creating or mutating an Implementation Brief and require an explicit corrected operator request."
     },
     {
+      "condition": "Review Delivery recording uses a missing or already-delivered brief or a Git reference outside product policy.",
+      "signal": "implementation_brief_not_found, review_delivery_exists, or invalid_request.",
+      "response": "Reject without creating or mutating a Review Delivery and require an explicit corrected operator request."
+    },
+    {
       "condition": "Restricted-content evaluation is unavailable or fails unexpectedly.",
       "signal": "A structured internal failure with bounded correlation and no raw content.",
       "response": "Fail the write closed; do not bypass detection or use a fallback."
@@ -182,9 +204,9 @@
   "verification": {
     "tests": [
       "Planned Foundation contract, TypeScript, Prisma schema, and dependency-cruiser checks",
-      "Planned Component validation, detector, domain, append-only triage, Product Issue, and Implementation Brief decision checks",
-      "Planned Integration PostgreSQL atomicity, uniqueness, revision, immutable issue, immutable brief, and repository checks",
-      "Planned Workflow feedback-to-inbox-to-manual-triage-to-prioritized-issue-to-approved-brief check",
+      "Planned Component validation, detector, domain, append-only triage, Product Issue, Implementation Brief, and Review Delivery decision checks",
+      "Planned Integration PostgreSQL atomicity, uniqueness, revision, immutable issue, immutable brief, immutable delivery, and repository checks",
+      "Planned Workflow feedback-to-inbox-to-manual-triage-to-prioritized-issue-to-approved-brief-to-review-delivery check",
       "Planned Stress input-bound, concurrency, failure-recovery, and telemetry-redaction checks"
     ],
     "evals": [
@@ -196,6 +218,7 @@
       "Prisma schema must enforce unique Signal.feedbackId and unique TriageEvent signal sequence",
       "Prisma and PostgreSQL must enforce unique immutable ProductIssue.signalId lineage",
       "Prisma and PostgreSQL must enforce unique immutable ImplementationBrief.productIssueId lineage and bounded text arrays",
+      "Prisma and PostgreSQL must enforce unique immutable ReviewDelivery.implementationBriefId lineage and exact product Git policy",
       "HTTP contract fixtures must preserve closed schemas, bounds, acknowledgements, and explicit errors",
       "Telemetry checks must prove submitted confidential content is absent from logs, traces, and metrics"
     ]

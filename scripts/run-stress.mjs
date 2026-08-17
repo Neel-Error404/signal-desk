@@ -196,6 +196,56 @@ try {
   );
   checks += 1;
 
+  const briefWinner = briefResponses.find((response) => response.status === 201);
+  assert(briefWinner !== undefined, "Concurrent brief approval did not return a winner.");
+  const briefResult = await briefWinner.json();
+  const implementationBriefId = briefResult.implementationBrief.id;
+
+  const missingDelivery = await jsonPost(
+    baseUrl,
+    "/api/v1/implementation-briefs/11111111-1111-4111-8111-111111111111/review-delivery",
+    {
+      baseBranch: "work/sd-003-approved-implementation-brief",
+      headBranch: "work/sd-004-review-delivery",
+      commitSha: "0123456789abcdef0123456789abcdef01234567",
+      pullRequestUrl: "https://github.com/Neel-Error404/signal-desk/pull/3",
+      verificationSummary: "Missing source must fail.",
+      deliveredBy: "Stress operator",
+      contentAcknowledged: true
+    }
+  );
+  assert(
+    missingDelivery.status === 404,
+    `Expected missing Implementation Brief 404, received ${missingDelivery.status}.`
+  );
+  checks += 1;
+
+  const deliverySummary = `Stress review delivery ${crypto.randomUUID()}`;
+  const deliveryResponses = await Promise.all(
+    Array.from({ length: 12 }, () =>
+      jsonPost(
+        baseUrl,
+        `/api/v1/implementation-briefs/${implementationBriefId}/review-delivery`,
+        {
+          baseBranch: "work/sd-003-approved-implementation-brief",
+          headBranch: "work/sd-004-review-delivery",
+          commitSha: "0123456789abcdef0123456789abcdef01234567",
+          pullRequestUrl: "https://github.com/Neel-Error404/signal-desk/pull/3",
+          verificationSummary: deliverySummary,
+          deliveredBy: "Stress operator",
+          contentAcknowledged: true
+        }
+      )
+    )
+  );
+  const deliveryStatuses = deliveryResponses.map((response) => response.status);
+  assert(
+    deliveryStatuses.filter((status) => status === 201).length === 1 &&
+      deliveryStatuses.filter((status) => status === 409).length === 11,
+    `Expected one 201 and eleven 409 delivery responses, received ${deliveryStatuses.join(", ")}.`
+  );
+  checks += 1;
+
   const bulkResponses = await Promise.all(
     Array.from({ length: 20 }, (_, index) =>
       jsonPost(baseUrl, "/api/v1/feedback", {
@@ -234,8 +284,9 @@ try {
     recoveredDetail.signal.revision === 2 &&
       recoveredDetail.triageEvents.length === 2 &&
       recoveredDetail.productIssue?.title === issueTitle &&
-      recoveredDetail.implementationBrief?.objective === briefObjective,
-    "Recovered signal did not preserve triage, Product Issue, and brief state."
+      recoveredDetail.implementationBrief?.objective === briefObjective &&
+      recoveredDetail.reviewDelivery?.verificationSummary === deliverySummary,
+    "Recovered signal did not preserve triage, Product Issue, brief, and delivery state."
   );
   checks += 1;
 
@@ -244,7 +295,8 @@ try {
     !serverLogs.includes(secretMarker) &&
       !serverLogs.includes(confidentialMarker) &&
       !serverLogs.includes(issueTitle) &&
-      !serverLogs.includes(briefObjective),
+      !serverLogs.includes(briefObjective) &&
+      !serverLogs.includes(deliverySummary),
     "Server logs exposed submitted confidential or restricted content."
   );
   checks += 1;
