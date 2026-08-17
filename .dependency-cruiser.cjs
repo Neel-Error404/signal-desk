@@ -70,6 +70,20 @@ module.exports = {
       to: { path: "^src/modules/(feedback-intake|signal-inbox)/(domain|http|infrastructure)" }
     },
     {
+      name: "implementation-brief-domain-is-context-local",
+      severity: "error",
+      from: { path: "^src/modules/implementation-briefs/domain" },
+      to: { path: "^src/modules/(feedback-intake|signal-inbox|product-issues)" }
+    },
+    {
+      name: "implementation-brief-context-imports-other-applications-only",
+      severity: "error",
+      from: { path: "^src/modules/implementation-briefs" },
+      to: {
+        path: "^src/modules/(feedback-intake|signal-inbox|product-issues)/(domain|http|infrastructure)"
+      }
+    },
+    {
       name: "platform-does-not-depend-on-product",
       severity: "error",
       from: { path: "^src/platform" },

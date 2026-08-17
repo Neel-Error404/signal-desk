@@ -2,8 +2,9 @@
 
 SignalDesk is Elder Protocol's first independent dogfood product. SD-001 implements local,
 deterministic feedback intake, PostgreSQL Signal lineage, and append-only manual triage. SD-002
-adds manual promotion of one accepted Signal into one immutable prioritized Product Issue while
-preserving its exact source revision.
+adds manual promotion of one accepted Signal into one immutable prioritized Product Issue. SD-003
+adds one immutable owner-approved Implementation Brief with explicit acceptance criteria while
+preserving the full source lineage.
 
 ## Current Scope
 
@@ -15,10 +16,13 @@ preserving its exact source revision.
 - Append revision-safe manual triage events.
 - Promote one accepted Signal into one manually prioritized Product Issue.
 - Inspect the issue's Feedback, Signal, revision, priority, rationale, and local operator lineage.
+- Approve one immutable implementation objective, acceptance-criteria list, and bounded
+  constraints for one Product Issue.
+- Inspect the brief's Feedback, Signal, Product Issue, approver label, and approval-time lineage.
 
-SD-001 and SD-002 are local-only. They do not provide authentication, authorization, tenancy,
+SD-001 through SD-003 are local-only. They do not provide authentication, authorization, tenancy,
 uploads, complete DLP, hosted operation, production deployment, automatic prioritization, or
-autonomous product decisions.
+autonomous product decisions, task execution, or release communication.
 
 ## Local Development
 
@@ -53,4 +57,5 @@ Integration, Workflow, and Stress launch real project-scoped PostgreSQL binaries
 `.elder/runtime/` directory. Workflow uses installed Chrome at desktop and mobile viewports.
 
 See [SD-001 evidence](docs/evidence/SD-001.md), [SD-002 evidence](docs/evidence/SD-002.md), and
+[SD-003 evidence](docs/evidence/SD-003.md), plus
 the corresponding test-reproduction records under `docs/test-reproduction/`.

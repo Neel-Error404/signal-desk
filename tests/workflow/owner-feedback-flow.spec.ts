@@ -89,6 +89,35 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
   await expect(page.getByText("Preserve the selected date range during export")).toBeVisible();
   await expect(page.locator(".priority")).toHaveText("high");
 
+  await page
+    .getByRole("textbox", { name: "Implementation objective" })
+    .fill("Preserve the selected date range when a report is exported.");
+  await page
+    .getByRole("textbox", { name: "Acceptance criteria (one per line)" })
+    .fill(
+      "The export uses the date range visible when export begins.\nReloading does not change the completed exported artifact."
+    );
+  await page
+    .getByRole("textbox", { name: "Constraints (optional, one per line)" })
+    .fill("Do not change report retention.");
+  await page
+    .getByRole("textbox", { name: "Local approver label (unverified)" })
+    .fill("Neel");
+  await page
+    .getByLabel(/I acknowledge this approved brief content/)
+    .check();
+  await page.getByRole("button", { name: "Approve implementation brief" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "Implementation brief approved with acceptance criteria and lineage preserved."
+  );
+  await expect(
+    page.getByRole("heading", { name: "Approved implementation brief" })
+  ).toBeVisible();
+  await expect(
+    page.getByText("The export uses the date range visible when export begins.")
+  ).toBeVisible();
+  await expect(page.getByText("Do not change report retention.")).toBeVisible();
+
   await page.reload();
   const reloadedRow = page.locator(".signal-row").filter({ hasText: feedback });
   await expect(reloadedRow).toBeVisible();
@@ -100,6 +129,12 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
     page.getByRole("heading", { name: "Prioritized product issue" })
   ).toBeVisible();
   await expect(page.getByText("Preserve the selected date range during export")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Approved implementation brief" })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Reloading does not change the completed exported artifact.")
+  ).toBeVisible();
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth

@@ -319,7 +319,9 @@ dd {
 .history h3,
 .triage h3,
 .product-issue h3,
-.product-issue h4 {
+.product-issue h4,
+.implementation-brief h3,
+.implementation-brief h4 {
   margin: 0;
   font-size: 1rem;
 }
@@ -329,7 +331,16 @@ dd {
   font-size: 1.05rem;
 }
 
+.implementation-brief h4 {
+  margin: 1rem 0 0.35rem;
+  font-size: 0.9rem;
+}
+
 .product-issue > p:not(.section-label):not(.empty) {
+  line-height: 1.5;
+}
+
+.implementation-brief > p:not(.section-label):not(.empty) {
   line-height: 1.5;
 }
 
@@ -379,6 +390,25 @@ dd {
 
 form.product-issue {
   display: grid;
+}
+
+.implementation-brief {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid var(--green);
+  background: #f4f8f2;
+}
+
+form.implementation-brief {
+  display: grid;
+}
+
+.brief-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.5rem 0 0;
+  padding-left: 1.35rem;
+  line-height: 1.45;
 }
 
 .priority {

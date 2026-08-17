@@ -49,6 +49,17 @@ export function requireNumber(
   return value;
 }
 
+export function requireStringArray(
+  record: Record<string, unknown>,
+  field: string
+): readonly string[] {
+  const value = record[field];
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+    throw new InvalidRequestError(`${field} must be an array of strings.`, [field]);
+  }
+  return value;
+}
+
 export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

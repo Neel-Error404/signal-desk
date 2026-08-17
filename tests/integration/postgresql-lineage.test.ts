@@ -19,6 +19,13 @@ import {
 import { PrepareProductIssue } from "@/modules/product-issues/application";
 import { PromoteSignalToIssue } from "@/workflows/signal-to-issue/promote-signal-to-issue";
 import { PrismaSignalIssueUnitOfWork } from "@/workflows/signal-to-issue/prisma-unit-of-work";
+import { PrepareImplementationBrief } from "@/modules/implementation-briefs/application";
+import { ApproveImplementationBrief } from "@/workflows/issue-to-brief/approve-implementation-brief";
+import { PrismaIssueBriefUnitOfWork } from "@/workflows/issue-to-brief/prisma-unit-of-work";
+import {
+  ImplementationBriefExistsError,
+  ProductIssueNotFoundError
+} from "@/shared/errors";
 import { CreateFeedbackSignal } from "@/workflows/feedback-to-signal/create-feedback-signal";
 import { PrismaFeedbackSignalUnitOfWork } from "@/workflows/feedback-to-signal/prisma-unit-of-work";
 
@@ -45,12 +52,30 @@ function issueWorkflow(): PromoteSignalToIssue {
   );
 }
 
+function briefWorkflow(): ApproveImplementationBrief {
+  return new ApproveImplementationBrief(
+    new PrepareImplementationBrief(new DeterministicContentPolicy()),
+    new PrismaIssueBriefUnitOfWork(prisma)
+  );
+}
+
 const issueCommand = {
   expectedSignalRevision: 1,
   title: "Preserve the selected date range",
   priority: "high",
   rationale: "The reporting workflow loses an explicit user selection.",
   operatorLabel: "Neel",
+  contentAcknowledged: true
+} as const;
+
+const briefCommand = {
+  objective: "Preserve the selected date range during export.",
+  acceptanceCriteria: [
+    "The export uses the date range visible when export begins.",
+    "Reloading does not change the completed exported artifact."
+  ],
+  constraints: ["Do not change report retention."],
+  approvedBy: "Neel",
   contentAcknowledged: true
 } as const;
 
@@ -285,5 +310,90 @@ describe("PostgreSQL feedback-to-signal integration", () => {
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(results.filter((result) => result.status === "rejected")).toHaveLength(7);
     expect(await prisma.productIssue.count({ where: { signalId: created.signal.id } })).toBe(1);
+  });
+
+  it("creates one immutable Implementation Brief with exact source lineage", async () => {
+    const created = await createAcceptedSignal("Approved brief integration source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const result = await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+
+    expect(result.lineage).toEqual({
+      feedbackId: created.feedback.id,
+      signalId: created.signal.id,
+      signalRevision: 1,
+      productIssueId: issue.productIssue.id
+    });
+    expect(result.implementationBrief).toMatchObject({
+      productIssueId: issue.productIssue.id,
+      objective: briefCommand.objective,
+      acceptanceCriteria: briefCommand.acceptanceCriteria,
+      constraints: briefCommand.constraints,
+      approvedBy: "Neel"
+    });
+    await expect(
+      prisma.implementationBrief.update({
+        where: { id: result.implementationBrief.id },
+        data: { objective: "Mutation must fail." }
+      })
+    ).rejects.toBeDefined();
+    expect(
+      await prisma.implementationBrief.findUniqueOrThrow({
+        where: { id: result.implementationBrief.id }
+      })
+    ).toMatchObject({ objective: briefCommand.objective });
+  });
+
+  it("rejects missing and duplicate brief sources explicitly", async () => {
+    await expect(
+      briefWorkflow().execute(
+        "11111111-1111-4111-8111-111111111111",
+        briefCommand
+      )
+    ).rejects.toBeInstanceOf(ProductIssueNotFoundError);
+
+    const created = await createAcceptedSignal("Duplicate brief integration source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+    await expect(
+      briefWorkflow().execute(issue.productIssue.id, briefCommand)
+    ).rejects.toBeInstanceOf(ImplementationBriefExistsError);
+  });
+
+  it("accepts exactly one concurrent Implementation Brief approval", async () => {
+    const created = await createAcceptedSignal("Concurrent brief source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const results = await Promise.allSettled(
+      Array.from({ length: 8 }, () =>
+        briefWorkflow().execute(issue.productIssue.id, briefCommand)
+      )
+    );
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(7);
+    expect(
+      await prisma.implementationBrief.count({
+        where: { productIssueId: issue.productIssue.id }
+      })
+    ).toBe(1);
+  });
+
+  it("enforces brief array bounds in PostgreSQL", async () => {
+    const created = await createAcceptedSignal("Brief database bound source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    await expect(
+      prisma.implementationBrief.create({
+        data: {
+          productIssueId: issue.productIssue.id,
+          objective: "A valid objective.",
+          acceptanceCriteria: [],
+          constraints: [],
+          approvedBy: "Neel"
+        }
+      })
+    ).rejects.toBeDefined();
+    expect(
+      await prisma.implementationBrief.count({
+        where: { productIssueId: issue.productIssue.id }
+      })
+    ).toBe(0);
   });
 });

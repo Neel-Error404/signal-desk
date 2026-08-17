@@ -108,6 +108,22 @@ export class ProductIssueExistsError extends ApplicationError {
   }
 }
 
+export class ProductIssueNotFoundError extends ApplicationError {
+  constructor() {
+    super("product_issue_not_found", 404, "The requested product issue does not exist.");
+  }
+}
+
+export class ImplementationBriefExistsError extends ApplicationError {
+  constructor() {
+    super(
+      "implementation_brief_exists",
+      409,
+      "The product issue already has an implementation brief."
+    );
+  }
+}
+
 export class StorageUnavailableError extends ApplicationError {
   constructor() {
     super(
