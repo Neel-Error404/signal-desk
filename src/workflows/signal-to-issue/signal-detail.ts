@@ -5,17 +5,23 @@ import type {
   GetImplementationBriefByProductIssue,
   ImplementationBriefRecord
 } from "@/modules/implementation-briefs/application";
+import type {
+  GetReviewDeliveryByImplementationBrief,
+  ReviewDeliveryRecord
+} from "@/modules/review-deliveries/application";
 
 export interface SignalDetailWithIssue extends SignalDetail {
   readonly productIssue: ProductIssueRecord | null;
   readonly implementationBrief: ImplementationBriefRecord | null;
+  readonly reviewDelivery: ReviewDeliveryRecord | null;
 }
 
 export class GetSignalDetailWithIssue {
   constructor(
     private readonly getSignal: GetSignal,
     private readonly getProductIssueBySignal: GetProductIssueBySignal,
-    private readonly getImplementationBriefByProductIssue: GetImplementationBriefByProductIssue
+    private readonly getImplementationBriefByProductIssue: GetImplementationBriefByProductIssue,
+    private readonly getReviewDeliveryByImplementationBrief: GetReviewDeliveryByImplementationBrief
   ) {}
 
   async execute(signalId: string): Promise<SignalDetailWithIssue> {
@@ -27,6 +33,10 @@ export class GetSignalDetailWithIssue {
       productIssue === null
         ? null
         : await this.getImplementationBriefByProductIssue.execute(productIssue.id);
-    return { ...detail, productIssue, implementationBrief };
+    const reviewDelivery =
+      implementationBrief === null
+        ? null
+        : await this.getReviewDeliveryByImplementationBrief.execute(implementationBrief.id);
+    return { ...detail, productIssue, implementationBrief, reviewDelivery };
   }
 }

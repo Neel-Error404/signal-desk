@@ -66,6 +66,22 @@ model ImplementationBrief {
   approvedBy         String       @db.VarChar(120)
   approvedAt         DateTime     @default(now()) @db.Timestamptz(3)
   productIssue       ProductIssue @relation(fields: [productIssueId], references: [id], onDelete: Restrict)
+  reviewDelivery     ReviewDelivery?
+}
+
+model ReviewDelivery {
+  id                    String              @id @default(uuid()) @db.Uuid
+  implementationBriefId String              @unique @db.Uuid
+  repositoryUrl         String              @db.VarChar(300)
+  baseBranch             String              @db.VarChar(255)
+  headBranch             String              @db.VarChar(255)
+  commitSha              String              @db.VarChar(64)
+  pullRequestNumber      Int
+  pullRequestUrl         String              @unique @db.VarChar(500)
+  verificationSummary   String              @db.Text
+  deliveredBy           String              @db.VarChar(120)
+  deliveredAt           DateTime            @default(now()) @db.Timestamptz(3)
+  implementationBrief   ImplementationBrief @relation(fields: [implementationBriefId], references: [id], onDelete: Restrict)
 }
 
 model TriageEvent {

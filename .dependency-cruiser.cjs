@@ -84,6 +84,22 @@ module.exports = {
       }
     },
     {
+      name: "review-delivery-domain-is-context-local",
+      severity: "error",
+      from: { path: "^src/modules/review-deliveries/domain" },
+      to: {
+        path: "^src/modules/(feedback-intake|signal-inbox|product-issues|implementation-briefs)"
+      }
+    },
+    {
+      name: "review-delivery-context-imports-other-applications-only",
+      severity: "error",
+      from: { path: "^src/modules/review-deliveries" },
+      to: {
+        path: "^src/modules/(feedback-intake|signal-inbox|product-issues|implementation-briefs)/(domain|http|infrastructure)"
+      }
+    },
+    {
       name: "platform-does-not-depend-on-product",
       severity: "error",
       from: { path: "^src/platform" },

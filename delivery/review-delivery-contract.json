@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "signaldesk-review-delivery-v1",
+  "projectId": "signaldesk",
+  "repository": {
+    "provider": "github",
+    "url": "https://github.com/Neel-Error404/signal-desk",
+    "trustedPullRequestUrlPrefix": "https://github.com/Neel-Error404/signal-desk/pull/"
+  },
+  "shipTarget": "reviewable-pr",
+  "branchPolicy": {
+    "basePattern": "^(main|work/sd-[0-9]{3}-[a-z0-9-]+)$",
+    "headPattern": "^work/sd-[0-9]{3}-[a-z0-9-]+$",
+    "requireDistinctBranches": true
+  },
+  "requiredChecks": [
+    { "order": 1, "level": "foundation", "command": "npm run test:foundation" },
+    { "order": 2, "level": "component", "command": "npm run test:component" },
+    { "order": 3, "level": "integration", "command": "npm run test:integration" },
+    { "order": 4, "level": "workflow", "command": "npm run test:workflow" },
+    { "order": 5, "level": "stress", "command": "npm run test:stress" },
+    { "order": 6, "level": "build", "command": "npm run build" },
+    { "order": 7, "level": "dependency-audit", "command": "npm audit --audit-level=high" },
+    { "order": 8, "level": "elder-validation", "command": ".\\elder.ps1 validate" }
+  ],
+  "authority": {
+    "createOrUpdatePullRequest": "owner-explicit",
+    "merge": "human-only",
+    "deployment": "human-only",
+    "release": "human-only",
+    "credentials": "external"
+  }
+}

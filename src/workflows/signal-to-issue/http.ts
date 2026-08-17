@@ -6,6 +6,7 @@ import { assertClosedObject, requireNumber, requireString, requireUuid } from "@
 import type { PromoteSignalToIssue } from "./promote-signal-to-issue";
 import type { GetSignalDetailWithIssue, SignalDetailWithIssue } from "./signal-detail";
 import { serializeImplementationBrief } from "@/workflows/issue-to-brief/http";
+import { serializeReviewDelivery } from "@/workflows/brief-to-delivery/http";
 
 function serializeSignal(signal: SignalRecord): Record<string, unknown> {
   return { ...signal, createdAt: signal.createdAt.toISOString() };
@@ -29,7 +30,11 @@ function serializeDetail(detail: SignalDetailWithIssue): Record<string, unknown>
     implementationBrief:
       detail.implementationBrief === null
         ? null
-        : serializeImplementationBrief(detail.implementationBrief)
+        : serializeImplementationBrief(detail.implementationBrief),
+    reviewDelivery:
+      detail.reviewDelivery === null
+        ? null
+        : serializeReviewDelivery(detail.reviewDelivery)
   };
 }
 
