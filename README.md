@@ -1,8 +1,9 @@
 # SignalDesk
 
-SignalDesk is Elder Protocol's first independent dogfood product. SD-001 implements a local,
-deterministic feedback-intake to signal-inbox workflow with PostgreSQL lineage and append-only
-manual triage.
+SignalDesk is Elder Protocol's first independent dogfood product. SD-001 implements local,
+deterministic feedback intake, PostgreSQL Signal lineage, and append-only manual triage. SD-002
+adds manual promotion of one accepted Signal into one immutable prioritized Product Issue while
+preserving its exact source revision.
 
 ## Current Scope
 
@@ -12,9 +13,12 @@ manual triage.
 - Commit one Feedback and one linked Signal in one PostgreSQL transaction.
 - Inspect source lineage and ordered triage history.
 - Append revision-safe manual triage events.
+- Promote one accepted Signal into one manually prioritized Product Issue.
+- Inspect the issue's Feedback, Signal, revision, priority, rationale, and local operator lineage.
 
-SD-001 is local-only. It does not provide authentication, authorization, tenancy, uploads,
-complete DLP, hosted operation, production deployment, or autonomous product decisions.
+SD-001 and SD-002 are local-only. They do not provide authentication, authorization, tenancy,
+uploads, complete DLP, hosted operation, production deployment, automatic prioritization, or
+autonomous product decisions.
 
 ## Local Development
 
@@ -48,5 +52,5 @@ npm run build
 Integration, Workflow, and Stress launch real project-scoped PostgreSQL binaries under the ignored
 `.elder/runtime/` directory. Workflow uses installed Chrome at desktop and mobile viewports.
 
-See [SD-001 evidence](docs/evidence/SD-001.md) and
-[test reproduction](docs/test-reproduction/SD-001.md).
+See [SD-001 evidence](docs/evidence/SD-001.md), [SD-002 evidence](docs/evidence/SD-002.md), and
+the corresponding test-reproduction records under `docs/test-reproduction/`.

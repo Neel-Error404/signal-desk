@@ -14,6 +14,13 @@ enum SignalState {
   REJECTED  @map("rejected")
 }
 
+enum ProductIssuePriority {
+  LOW      @map("low")
+  MEDIUM   @map("medium")
+  HIGH     @map("high")
+  CRITICAL @map("critical")
+}
+
 model Feedback {
   id        String   @id @default(uuid()) @db.Uuid
   content   String   @db.Text
@@ -30,8 +37,23 @@ model Signal {
   createdAt    DateTime      @default(now()) @db.Timestamptz(3)
   feedback     Feedback      @relation(fields: [feedbackId], references: [id], onDelete: Restrict)
   triageEvents TriageEvent[]
+  productIssue ProductIssue?
 
   @@index([createdAt, id])
+}
+
+model ProductIssue {
+  id                   String               @id @default(uuid()) @db.Uuid
+  signalId             String               @unique @db.Uuid
+  sourceSignalRevision Int
+  title                String               @db.VarChar(200)
+  priority             ProductIssuePriority
+  rationale            String               @db.Text
+  operatorLabel        String               @db.VarChar(120)
+  createdAt            DateTime             @default(now()) @db.Timestamptz(3)
+  signal               Signal               @relation(fields: [signalId], references: [id], onDelete: Restrict)
+
+  @@index([priority, createdAt, id])
 }
 
 model TriageEvent {

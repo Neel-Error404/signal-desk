@@ -85,6 +85,68 @@ try {
   );
   checks += 1;
 
+  const nonAcceptedIssue = await jsonPost(
+    baseUrl,
+    `/api/v1/signals/${signalId}/product-issue`,
+    {
+      expectedSignalRevision: 1,
+      title: "Issue must wait for acceptance",
+      priority: "high",
+      rationale: "A reviewing signal is not eligible.",
+      operatorLabel: "Stress operator",
+      contentAcknowledged: true
+    }
+  );
+  assert(
+    nonAcceptedIssue.status === 409,
+    `Expected non-accepted issue promotion 409, received ${nonAcceptedIssue.status}.`
+  );
+  checks += 1;
+
+  const accepted = await jsonPost(baseUrl, `/api/v1/signals/${signalId}/triage-events`, {
+    expectedRevision: 1,
+    toState: "accepted",
+    rationale: "Stress impact confirmed.",
+    operatorLabel: "Stress operator",
+    contentAcknowledged: true
+  });
+  assert(accepted.status === 201, `Expected acceptance 201, received ${accepted.status}.`);
+
+  const staleIssue = await jsonPost(baseUrl, `/api/v1/signals/${signalId}/product-issue`, {
+    expectedSignalRevision: 1,
+    title: "Stale issue decision",
+    priority: "high",
+    rationale: "The expected revision is stale.",
+    operatorLabel: "Stress operator",
+    contentAcknowledged: true
+  });
+  assert(
+    staleIssue.status === 409,
+    `Expected stale issue promotion 409, received ${staleIssue.status}.`
+  );
+  checks += 1;
+
+  const issueTitle = `Stress prioritized issue ${crypto.randomUUID()}`;
+  const issueResponses = await Promise.all(
+    Array.from({ length: 12 }, () =>
+      jsonPost(baseUrl, `/api/v1/signals/${signalId}/product-issue`, {
+        expectedSignalRevision: 2,
+        title: issueTitle,
+        priority: "critical",
+        rationale: "Concurrent promotion must accept one winner.",
+        operatorLabel: "Stress operator",
+        contentAcknowledged: true
+      })
+    )
+  );
+  const issueStatuses = issueResponses.map((response) => response.status);
+  assert(
+    issueStatuses.filter((status) => status === 201).length === 1 &&
+      issueStatuses.filter((status) => status === 409).length === 11,
+    `Expected one 201 and eleven 409 issue responses, received ${issueStatuses.join(", ")}.`
+  );
+  checks += 1;
+
   const bulkResponses = await Promise.all(
     Array.from({ length: 20 }, (_, index) =>
       jsonPost(baseUrl, "/api/v1/feedback", {
@@ -120,14 +182,18 @@ try {
   assert(recovered.status === 200, `Expected recovered detail 200, received ${recovered.status}.`);
   const recoveredDetail = await recovered.json();
   assert(
-    recoveredDetail.signal.revision === 1 && recoveredDetail.triageEvents.length === 1,
-    "Recovered signal did not preserve its accepted concurrent triage event."
+    recoveredDetail.signal.revision === 2 &&
+      recoveredDetail.triageEvents.length === 2 &&
+      recoveredDetail.productIssue?.title === issueTitle,
+    "Recovered signal did not preserve triage and Product Issue state."
   );
   checks += 1;
 
   const serverLogs = logs.join("");
   assert(
-    !serverLogs.includes(secretMarker) && !serverLogs.includes(confidentialMarker),
+    !serverLogs.includes(secretMarker) &&
+      !serverLogs.includes(confidentialMarker) &&
+      !serverLogs.includes(issueTitle),
     "Server logs exposed submitted confidential or restricted content."
   );
   checks += 1;

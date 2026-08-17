@@ -317,9 +317,20 @@ dd {
 }
 
 .history h3,
-.triage h3 {
+.triage h3,
+.product-issue h3,
+.product-issue h4 {
   margin: 0;
   font-size: 1rem;
+}
+
+.product-issue h4 {
+  margin-top: 0.9rem;
+  font-size: 1.05rem;
+}
+
+.product-issue > p:not(.section-label):not(.empty) {
+  line-height: 1.5;
 }
 
 .history ol {
@@ -357,6 +368,33 @@ dd {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--line);
+}
+
+.product-issue {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  border: 1px solid var(--line-strong);
+  background: #f7f4ec;
+}
+
+form.product-issue {
+  display: grid;
+}
+
+.priority {
+  display: inline-flex;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  color: var(--green);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.priority-high,
+.priority-critical {
+  color: var(--accent-dark);
 }
 
 .form-grid {

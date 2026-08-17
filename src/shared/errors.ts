@@ -88,6 +88,26 @@ export class RevisionConflictError extends ApplicationError {
   }
 }
 
+export class SignalNotAcceptedError extends ApplicationError {
+  constructor() {
+    super(
+      "signal_not_accepted",
+      409,
+      "Accept the signal through manual triage before promoting it to a product issue."
+    );
+  }
+}
+
+export class ProductIssueExistsError extends ApplicationError {
+  constructor() {
+    super(
+      "product_issue_exists",
+      409,
+      "The signal already has a product issue."
+    );
+  }
+}
+
 export class StorageUnavailableError extends ApplicationError {
   constructor() {
     super(
