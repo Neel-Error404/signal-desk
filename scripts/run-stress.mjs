@@ -7,6 +7,7 @@ import {
   startLocalPostgres,
   startNextDev,
   stopChild,
+  stopLocalPostgres,
   waitForHttp
 } from "./local-test-runtime.mjs";
 
@@ -246,6 +247,46 @@ try {
   );
   checks += 1;
 
+  const deliveryWinner = deliveryResponses.find((response) => response.status === 201);
+  assert(deliveryWinner !== undefined, "Concurrent review delivery did not return a winner.");
+  const deliveryResult = await deliveryWinner.json();
+  const reviewDeliveryId = deliveryResult.reviewDelivery.id;
+
+  const completionBody = {
+    mergedCommitSha: "89abcdef0123456789abcdef0123456789abcdef",
+    completionSummary: `Stress completed fix ${crypto.randomUUID()}`,
+    completedBy: "Stress operator",
+    mergeConfirmedOutsideSignalDesk: true,
+    contentAcknowledged: true
+  };
+  const missingCompletion = await jsonPost(
+    baseUrl,
+    "/api/v1/review-deliveries/11111111-1111-4111-8111-111111111111/completed-fix",
+    completionBody
+  );
+  assert(
+    missingCompletion.status === 404,
+    `Expected missing Review Delivery 404, received ${missingCompletion.status}.`
+  );
+  checks += 1;
+
+  const completionResponses = await Promise.all(
+    Array.from({ length: 12 }, () =>
+      jsonPost(
+        baseUrl,
+        `/api/v1/review-deliveries/${reviewDeliveryId}/completed-fix`,
+        completionBody
+      )
+    )
+  );
+  const completionStatuses = completionResponses.map((response) => response.status);
+  assert(
+    completionStatuses.filter((status) => status === 201).length === 1 &&
+      completionStatuses.filter((status) => status === 409).length === 11,
+    `Expected one 201 and eleven 409 completion responses, received ${completionStatuses.join(", ")}.`
+  );
+  checks += 1;
+
   const bulkResponses = await Promise.all(
     Array.from({ length: 20 }, (_, index) =>
       jsonPost(baseUrl, "/api/v1/feedback", {
@@ -261,7 +302,7 @@ try {
   );
   checks += 1;
 
-  await database.postgres.stop();
+  await stopLocalPostgres(database.postgres);
   databaseRunning = false;
   const unavailable = await fetch(`${baseUrl}/api/v1/signals?limit=1`, {
     signal: AbortSignal.timeout(20_000)
@@ -285,8 +326,9 @@ try {
       recoveredDetail.triageEvents.length === 2 &&
       recoveredDetail.productIssue?.title === issueTitle &&
       recoveredDetail.implementationBrief?.objective === briefObjective &&
-      recoveredDetail.reviewDelivery?.verificationSummary === deliverySummary,
-    "Recovered signal did not preserve triage, Product Issue, brief, and delivery state."
+      recoveredDetail.reviewDelivery?.verificationSummary === deliverySummary &&
+      recoveredDetail.completedFix?.completionSummary === completionBody.completionSummary,
+    "Recovered signal did not preserve triage, Product Issue, brief, delivery, and completion state."
   );
   checks += 1;
 
@@ -296,7 +338,8 @@ try {
       !serverLogs.includes(confidentialMarker) &&
       !serverLogs.includes(issueTitle) &&
       !serverLogs.includes(briefObjective) &&
-      !serverLogs.includes(deliverySummary),
+      !serverLogs.includes(deliverySummary) &&
+      !serverLogs.includes(completionBody.completionSummary),
     "Server logs exposed submitted confidential or restricted content."
   );
   checks += 1;
@@ -307,7 +350,7 @@ try {
     await stopChild(server);
   }
   if (databaseRunning) {
-    await database.postgres.stop();
+    await stopLocalPostgres(database.postgres);
   }
   const runtimeRoot = path.resolve(
     fileURLToPath(new URL("../.elder/runtime", import.meta.url))

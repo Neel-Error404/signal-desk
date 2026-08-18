@@ -6,6 +6,7 @@ import {
   startLocalPostgres,
   startNextDev,
   stopChild,
+  stopLocalPostgres,
   waitForHttp
 } from "./local-test-runtime.mjs";
 
@@ -35,5 +36,5 @@ try {
   if (server !== undefined) {
     await stopChild(server);
   }
-  await database.postgres.stop();
+  await stopLocalPostgres(database.postgres);
 }

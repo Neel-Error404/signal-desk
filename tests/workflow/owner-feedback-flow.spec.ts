@@ -150,6 +150,24 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
     pullRequestUrl
   );
 
+  const mergedCommit = "89abcdef0123456789abcdef0123456789abcdef";
+  await page.getByRole("textbox", { name: "Merged commit SHA" }).fill(mergedCommit);
+  await page
+    .getByRole("textbox", { name: "Completion summary" })
+    .fill("The human owner merged the reviewed fix after all required checks passed.");
+  await page
+    .getByRole("textbox", { name: "Local completion label (unverified)" })
+    .fill("Neel");
+  await page.getByLabel(/I confirm a human merged this change outside SignalDesk/).check();
+  await page.getByLabel(/I acknowledge this completion evidence/).check();
+  await page.getByRole("button", { name: "Record completed fix" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "Completed fix recorded with review and product lineage preserved."
+  );
+  await expect(page.getByRole("heading", { name: "Completed fix" })).toBeVisible();
+  await expect(page.getByText("immutable human-confirmed outcome")).toBeVisible();
+  await expect(page.getByText(mergedCommit)).toBeVisible();
+
   await page.reload();
   const reloadedRow = page.locator(".signal-row").filter({ hasText: feedback });
   await expect(reloadedRow).toBeVisible();
@@ -170,6 +188,9 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
   await expect(page.getByText("work/sd-004-review-delivery", { exact: false })).toBeVisible();
   await expect(
     page.getByText("Foundation through Stress passed for the exact review commit.")
+  ).toBeVisible();
+  await expect(
+    page.getByText("The human owner merged the reviewed fix after all required checks passed.")
   ).toBeVisible();
 
   const hasHorizontalOverflow = await page.evaluate(

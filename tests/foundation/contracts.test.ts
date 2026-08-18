@@ -237,6 +237,7 @@ describe("SD-004 ratified static contracts", () => {
       projectId: string;
       repository: { url: string; trustedPullRequestUrlPrefix: string };
       shipTarget: string;
+      contextContracts: string[];
       requiredChecks: Array<{ order: number; level: string }>;
       authority: Record<string, string>;
     };
@@ -248,6 +249,9 @@ describe("SD-004 ratified static contracts", () => {
       `${delivery.repository.url}/pull/`
     );
     expect(delivery.shipTarget).toBe("reviewable-pr");
+    expect(delivery.contextContracts).toEqual([
+      "delivery/completed-fix-contract.json"
+    ]);
     expect(delivery.requiredChecks.map((check) => check.order)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8
     ]);
@@ -292,5 +296,88 @@ describe("SD-004 ratified static contracts", () => {
     expect(layout).toContain("review-deliveries");
     expect(layout).toContain("brief-to-delivery");
     expect(boundaries).toContain('name: "review-delivery-domain-is-context-local"');
+  });
+});
+
+describe("SD-005 ratified static contracts", () => {
+  it("binds the completed-fix outcome to the stacked reviewable PR work item", async () => {
+    const workItem = JSON.parse(await text("docs/work-items/SD-005.json")) as {
+      change_class: string;
+      owner: string;
+      ship_target: string;
+      status: string;
+      branch: string;
+      base_branch: string;
+    };
+    expect(workItem).toMatchObject({
+      change_class: "public-contract",
+      owner: "Neel",
+      ship_target: "reviewable-pr",
+      status: "verified",
+      branch: "work/sd-005-completed-fix",
+      base_branch: "work/sd-004-review-delivery"
+    });
+  });
+
+  it("declares an immutable human-confirmed completion and its non-claims", async () => {
+    const contract = await text("docs/contracts/SD-005.md");
+    expect(contract).toContain(
+      "POST /api/v1/review-deliveries/{reviewDeliveryId}/completed-fix"
+    );
+    expect(contract).toContain("mergeConfirmedOutsideSignalDesk");
+    expect(contract).toContain("does not query GitHub");
+    expect(contract).toContain("local-only");
+  });
+
+  it("owns closed lifecycle context that preserves retained authority", async () => {
+    const lifecycle = JSON.parse(
+      await text("delivery/completed-fix-contract.json")
+    ) as {
+      projectId: string;
+      lifecycleStage: string;
+      outcome: { evidenceSource: string; requiredEvidence: string[] };
+      authority: Record<string, string>;
+      nextEligibleStage: string;
+    };
+    expect(lifecycle).toMatchObject({
+      projectId: "signaldesk",
+      lifecycleStage: "completed-fix",
+      nextEligibleStage: "release-communication"
+    });
+    expect(lifecycle.outcome.evidenceSource).toBe(
+      "operator-confirmed-not-provider-verified"
+    );
+    expect(lifecycle.outcome.requiredEvidence).toContain("mergedCommitSha");
+    expect(lifecycle.authority).toMatchObject({
+      verifyHostedMerge: "not-granted",
+      merge: "human-only",
+      deployment: "human-only",
+      release: "human-only",
+      credentials: "external"
+    });
+  });
+
+  it("enforces unique immutable Completed Fix lineage and evidence bounds", async () => {
+    const schema = await text("prisma/schema.prisma");
+    const migration = await text(
+      "prisma/migrations/20260818170000_sd005_completed_fix/migration.sql"
+    );
+    expect(schema).toContain("reviewDeliveryId  String         @unique @db.Uuid");
+    expect(migration).toContain('CREATE UNIQUE INDEX "CompletedFix_reviewDeliveryId_key"');
+    expect(migration).toContain('CONSTRAINT "CompletedFix_merged_commit_sha"');
+    expect(migration).toContain('CREATE TRIGGER "CompletedFix_immutable"');
+  });
+
+  it("keeps the completion route outside persistence and extends boundaries", async () => {
+    const route = await text(
+      "src/app/api/v1/review-deliveries/[reviewDeliveryId]/completed-fix/route.ts"
+    );
+    const layout = await text("scripts/check-source-layout.mjs");
+    const boundaries = await text(".dependency-cruiser.cjs");
+    expect(route).not.toContain("@prisma/client");
+    expect(route).toContain("postCompletedFix");
+    expect(layout).toContain("completed-fixes");
+    expect(layout).toContain("delivery-to-completion");
+    expect(boundaries).toContain('name: "completed-fix-domain-is-context-local"');
   });
 });

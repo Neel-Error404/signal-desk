@@ -36,6 +36,7 @@ interface SignalDetail {
   readonly productIssue: ProductIssueItem | null;
   readonly implementationBrief: ImplementationBriefItem | null;
   readonly reviewDelivery: ReviewDeliveryItem | null;
+  readonly completedFix: CompletedFixItem | null;
 }
 
 interface ProductIssueItem {
@@ -71,6 +72,15 @@ interface ReviewDeliveryItem {
   readonly verificationSummary: string;
   readonly deliveredBy: string;
   readonly deliveredAt: string;
+}
+
+interface CompletedFixItem {
+  readonly id: string;
+  readonly reviewDeliveryId: string;
+  readonly mergedCommitSha: string;
+  readonly completionSummary: string;
+  readonly completedBy: string;
+  readonly completedAt: string;
 }
 
 interface ApiErrorEnvelope {
@@ -329,12 +339,49 @@ export default function HomePage() {
     }
   }
 
+  async function recordCompletedFix(
+    signalId: string,
+    reviewDeliveryId: string,
+    mergedCommitSha: string,
+    completionSummary: string,
+    completedBy: string,
+    mergeConfirmedOutsideSignalDesk: boolean,
+    contentAcknowledged: boolean
+  ): Promise<boolean> {
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/v1/review-deliveries/${reviewDeliveryId}/completed-fix`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json; charset=utf-8" },
+          body: JSON.stringify({
+            mergedCommitSha,
+            completionSummary,
+            completedBy,
+            mergeConfirmedOutsideSignalDesk,
+            contentAcknowledged
+          })
+        }
+      );
+      if (!response.ok) {
+        throw new Error(await safeError(response));
+      }
+      setMessage("Completed fix recorded with review and product lineage preserved.");
+      await loadSignals(signalId);
+      return true;
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not record completed fix.");
+      return false;
+    }
+  }
+
   return (
     <main>
       <header className="app-header">
         <div>
           <p className="product-name">SignalDesk</p>
-          <p className="product-scope">SD-004 local implementation-to-review trace</p>
+          <p className="product-scope">SD-005 local feedback-to-completed-fix trace</p>
         </div>
         <p className="runtime-state">Local PostgreSQL workspace</p>
       </header>
@@ -344,6 +391,7 @@ export default function HomePage() {
         <span>No authentication or verified identity</span>
         <span>No uploads or hosted-operation claim</span>
         <span>Git references are operator-supplied, not provider-verified</span>
+        <span>Merge completion is human-confirmed, not provider-verified</span>
         <span>High-confidence rejection is not complete DLP</span>
       </aside>
 
@@ -440,6 +488,7 @@ export default function HomePage() {
               onPromote={promoteSignalToIssue}
               onApproveBrief={approveImplementationBrief}
               onRecordDelivery={recordReviewDelivery}
+              onRecordCompletedFix={recordCompletedFix}
             />
           ) : null}
         </div>
@@ -453,7 +502,8 @@ function SignalInspector({
   onAppend,
   onPromote,
   onApproveBrief,
-  onRecordDelivery
+  onRecordDelivery,
+  onRecordCompletedFix
 }: Readonly<{
   detail: SignalDetail;
   onAppend: (
@@ -489,6 +539,15 @@ function SignalInspector({
     pullRequestUrl: string,
     verificationSummary: string,
     deliveredBy: string,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+  onRecordCompletedFix: (
+    signalId: string,
+    reviewDeliveryId: string,
+    mergedCommitSha: string,
+    completionSummary: string,
+    completedBy: string,
+    mergeConfirmedOutsideSignalDesk: boolean,
     acknowledged: boolean
   ) => Promise<boolean>;
 }>) {
@@ -588,6 +647,13 @@ function SignalInspector({
         implementationBrief={detail.implementationBrief}
         reviewDelivery={detail.reviewDelivery}
         onRecord={onRecordDelivery}
+      />
+
+      <CompletedFixPanel
+        signal={signal}
+        reviewDelivery={detail.reviewDelivery}
+        completedFix={detail.completedFix}
+        onRecord={onRecordCompletedFix}
       />
 
       <form className="triage" onSubmit={submit}>
@@ -1133,6 +1199,154 @@ function ReviewDeliveryPanel({
       </label>
       <button type="submit" disabled={saving}>
         {saving ? "Recording..." : "Record review delivery"}
+      </button>
+    </form>
+  );
+}
+
+function CompletedFixPanel({
+  signal,
+  reviewDelivery,
+  completedFix,
+  onRecord
+}: Readonly<{
+  signal: SignalItem;
+  reviewDelivery: ReviewDeliveryItem | null;
+  completedFix: CompletedFixItem | null;
+  onRecord: (
+    signalId: string,
+    reviewDeliveryId: string,
+    mergedCommitSha: string,
+    completionSummary: string,
+    completedBy: string,
+    mergeConfirmedOutsideSignalDesk: boolean,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+}>) {
+  const [mergedCommitSha, setMergedCommitSha] = useState("");
+  const [completionSummary, setCompletionSummary] = useState("");
+  const [completedBy, setCompletedBy] = useState("");
+  const [mergeConfirmed, setMergeConfirmed] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (reviewDelivery === null) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await onRecord(
+        signal.id,
+        reviewDelivery.id,
+        mergedCommitSha,
+        completionSummary,
+        completedBy,
+        mergeConfirmed,
+        acknowledged
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (reviewDelivery === null) {
+    return (
+      <section className="review-delivery" aria-labelledby="completed-fix-title">
+        <h3 id="completed-fix-title">Completed fix</h3>
+        <p className="empty">Record a Review Delivery before completing the fix.</p>
+      </section>
+    );
+  }
+
+  if (completedFix !== null) {
+    return (
+      <section className="review-delivery" aria-labelledby="completed-fix-title">
+        <div className="history-heading">
+          <h3 id="completed-fix-title">Completed fix</h3>
+          <span>immutable human-confirmed outcome</span>
+        </div>
+        <p className="delivery-warning">
+          This merge outcome was confirmed by a local operator and was not independently
+          verified by SignalDesk or Elder.
+        </p>
+        <dl>
+          <div>
+            <dt>Merged commit</dt>
+            <dd>{completedFix.mergedCommitSha}</dd>
+          </div>
+          <div>
+            <dt>Completion summary</dt>
+            <dd>{completedFix.completionSummary}</dd>
+          </div>
+          <div>
+            <dt>Completed by</dt>
+            <dd>{completedFix.completedBy} (unverified local label)</dd>
+          </div>
+          <div>
+            <dt>Completed</dt>
+            <dd>{new Date(completedFix.completedAt).toLocaleString()}</dd>
+          </div>
+        </dl>
+      </section>
+    );
+  }
+
+  return (
+    <form className="review-delivery" onSubmit={submit}>
+      <div>
+        <p className="section-label">Human merge outcome</p>
+        <h3 id="completed-fix-title">Record completed fix</h3>
+      </div>
+      <p className="delivery-warning">
+        Record this only after a human merged the reviewed change outside SignalDesk.
+      </p>
+      <label>
+        Merged commit SHA
+        <input
+          value={mergedCommitSha}
+          onChange={(event) => setMergedCommitSha(event.target.value)}
+          required
+          maxLength={64}
+        />
+      </label>
+      <label>
+        Completion summary
+        <textarea
+          value={completionSummary}
+          onChange={(event) => setCompletionSummary(event.target.value)}
+          required
+          rows={3}
+        />
+      </label>
+      <label>
+        Local completion label (unverified)
+        <input
+          value={completedBy}
+          onChange={(event) => setCompletedBy(event.target.value)}
+          required
+          maxLength={120}
+        />
+      </label>
+      <label className="acknowledgement compact">
+        <input
+          type="checkbox"
+          checked={mergeConfirmed}
+          onChange={(event) => setMergeConfirmed(event.target.checked)}
+        />
+        <span>I confirm a human merged this change outside SignalDesk.</span>
+      </label>
+      <label className="acknowledgement compact">
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={(event) => setAcknowledged(event.target.checked)}
+        />
+        <span>I acknowledge this completion evidence follows the content boundary.</span>
+      </label>
+      <button type="submit" disabled={saving}>
+        {saving ? "Recording..." : "Record completed fix"}
       </button>
     </form>
   );

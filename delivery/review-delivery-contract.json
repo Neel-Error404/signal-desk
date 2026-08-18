@@ -13,6 +13,9 @@
     "headPattern": "^work/sd-[0-9]{3}-[a-z0-9-]+$",
     "requireDistinctBranches": true
   },
+  "contextContracts": [
+    "delivery/completed-fix-contract.json"
+  ],
   "requiredChecks": [
     { "order": 1, "level": "foundation", "command": "npm run test:foundation" },
     { "order": 2, "level": "component", "command": "npm run test:component" },

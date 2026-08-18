@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "projectId": "signaldesk",
+  "lifecycleStage": "completed-fix",
+  "source": {
+    "recordType": "review-delivery",
+    "cardinality": "exactly-one"
+  },
+  "outcome": {
+    "recordType": "completed-fix",
+    "cardinality": "at-most-one-per-source",
+    "requiredEvidence": [
+      "mergedCommitSha",
+      "completionSummary",
+      "completedBy",
+      "completedAt"
+    ],
+    "evidenceSource": "operator-confirmed-not-provider-verified"
+  },
+  "authority": {
+    "recordCompletion": "explicit-local-human-action",
+    "verifyHostedMerge": "not-granted",
+    "merge": "human-only",
+    "deployment": "human-only",
+    "release": "human-only",
+    "credentials": "external"
+  },
+  "nextEligibleStage": "release-communication"
+}

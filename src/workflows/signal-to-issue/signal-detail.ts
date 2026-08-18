@@ -9,11 +9,16 @@ import type {
   GetReviewDeliveryByImplementationBrief,
   ReviewDeliveryRecord
 } from "@/modules/review-deliveries/application";
+import type {
+  CompletedFixRecord,
+  GetCompletedFixByReviewDelivery
+} from "@/modules/completed-fixes/application";
 
 export interface SignalDetailWithIssue extends SignalDetail {
   readonly productIssue: ProductIssueRecord | null;
   readonly implementationBrief: ImplementationBriefRecord | null;
   readonly reviewDelivery: ReviewDeliveryRecord | null;
+  readonly completedFix: CompletedFixRecord | null;
 }
 
 export class GetSignalDetailWithIssue {
@@ -21,7 +26,8 @@ export class GetSignalDetailWithIssue {
     private readonly getSignal: GetSignal,
     private readonly getProductIssueBySignal: GetProductIssueBySignal,
     private readonly getImplementationBriefByProductIssue: GetImplementationBriefByProductIssue,
-    private readonly getReviewDeliveryByImplementationBrief: GetReviewDeliveryByImplementationBrief
+    private readonly getReviewDeliveryByImplementationBrief: GetReviewDeliveryByImplementationBrief,
+    private readonly getCompletedFixByReviewDelivery: GetCompletedFixByReviewDelivery
   ) {}
 
   async execute(signalId: string): Promise<SignalDetailWithIssue> {
@@ -37,6 +43,10 @@ export class GetSignalDetailWithIssue {
       implementationBrief === null
         ? null
         : await this.getReviewDeliveryByImplementationBrief.execute(implementationBrief.id);
-    return { ...detail, productIssue, implementationBrief, reviewDelivery };
+    const completedFix =
+      reviewDelivery === null
+        ? null
+        : await this.getCompletedFixByReviewDelivery.execute(reviewDelivery.id);
+    return { ...detail, productIssue, implementationBrief, reviewDelivery, completedFix };
   }
 }

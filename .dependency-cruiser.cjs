@@ -100,6 +100,22 @@ module.exports = {
       }
     },
     {
+      name: "completed-fix-domain-is-context-local",
+      severity: "error",
+      from: { path: "^src/modules/completed-fixes/domain" },
+      to: {
+        path: "^src/modules/(feedback-intake|signal-inbox|product-issues|implementation-briefs|review-deliveries)"
+      }
+    },
+    {
+      name: "completed-fix-context-imports-other-applications-only",
+      severity: "error",
+      from: { path: "^src/modules/completed-fixes" },
+      to: {
+        path: "^src/modules/(feedback-intake|signal-inbox|product-issues|implementation-briefs|review-deliveries)/(domain|http|infrastructure)"
+      }
+    },
+    {
       name: "platform-does-not-depend-on-product",
       severity: "error",
       from: { path: "^src/platform" },

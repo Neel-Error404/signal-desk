@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { createServer } from "node:net";
 import { fileURLToPath } from "node:url";
 import EmbeddedPostgres from "embedded-postgres";
+import { stopLocalPostgres } from "./local-test-runtime.mjs";
 
 async function availableLoopbackPort() {
   return new Promise((resolve, reject) => {
@@ -99,6 +100,6 @@ if (typeof suppliedUrl === "string" && suppliedUrl.trim().length > 0) {
       "?schema=public";
     await run(databaseUrl);
   } finally {
-    await postgres.stop();
+    await stopLocalPostgres(postgres);
   }
 }

@@ -28,11 +28,16 @@ import {
 } from "@/modules/review-deliveries/application";
 import { RecordReviewDelivery } from "@/workflows/brief-to-delivery/record-review-delivery";
 import { PrismaBriefDeliveryUnitOfWork } from "@/workflows/brief-to-delivery/prisma-unit-of-work";
+import { PrepareCompletedFix } from "@/modules/completed-fixes/application";
+import { RecordCompletedFix } from "@/workflows/delivery-to-completion/record-completed-fix";
+import { PrismaDeliveryCompletionUnitOfWork } from "@/workflows/delivery-to-completion/prisma-unit-of-work";
 import {
   ImplementationBriefExistsError,
   ImplementationBriefNotFoundError,
   ProductIssueNotFoundError,
-  ReviewDeliveryExistsError
+  ReviewDeliveryExistsError,
+  ReviewDeliveryNotFoundError,
+  CompletedFixExistsError
 } from "@/shared/errors";
 import { CreateFeedbackSignal } from "@/workflows/feedback-to-signal/create-feedback-signal";
 import { PrismaFeedbackSignalUnitOfWork } from "@/workflows/feedback-to-signal/prisma-unit-of-work";
@@ -82,6 +87,13 @@ function deliveryWorkflow(): RecordReviewDelivery {
   );
 }
 
+function completionWorkflow(): RecordCompletedFix {
+  return new RecordCompletedFix(
+    new PrepareCompletedFix(new DeterministicContentPolicy()),
+    new PrismaDeliveryCompletionUnitOfWork(prisma)
+  );
+}
+
 const issueCommand = {
   expectedSignalRevision: 1,
   title: "Preserve the selected date range",
@@ -109,6 +121,14 @@ const deliveryCommand = {
   pullRequestUrl: "https://github.com/Neel-Error404/signal-desk/pull/3",
   verificationSummary: "Foundation through Stress passed.",
   deliveredBy: "Neel",
+  contentAcknowledged: true
+} as const;
+
+const completionCommand = {
+  mergedCommitSha: "89abcdef0123456789abcdef0123456789abcdef",
+  completionSummary: "The human owner merged the reviewed fix after all checks passed.",
+  completedBy: "Neel",
+  mergeConfirmedOutsideSignalDesk: true,
   contentAcknowledged: true
 } as const;
 
@@ -521,6 +541,109 @@ describe("PostgreSQL feedback-to-signal integration", () => {
     expect(
       await prisma.reviewDelivery.count({
         where: { implementationBriefId: brief.implementationBrief.id }
+      })
+    ).toBe(0);
+  });
+
+  it("creates one immutable Completed Fix with exact source lineage", async () => {
+    const created = await createAcceptedSignal("Completed fix integration source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const brief = await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+    const delivery = await deliveryWorkflow().execute(
+      brief.implementationBrief.id,
+      deliveryCommand
+    );
+    const result = await completionWorkflow().execute(
+      delivery.reviewDelivery.id,
+      completionCommand
+    );
+
+    expect(result.lineage).toEqual({
+      feedbackId: created.feedback.id,
+      signalId: created.signal.id,
+      signalRevision: 1,
+      productIssueId: issue.productIssue.id,
+      implementationBriefId: brief.implementationBrief.id,
+      reviewDeliveryId: delivery.reviewDelivery.id
+    });
+    expect(result.completedFix).toMatchObject({
+      reviewDeliveryId: delivery.reviewDelivery.id,
+      mergedCommitSha: completionCommand.mergedCommitSha,
+      completionSummary: completionCommand.completionSummary,
+      completedBy: "Neel"
+    });
+    await expect(
+      prisma.completedFix.update({
+        where: { id: result.completedFix.id },
+        data: { completionSummary: "Mutation must fail." }
+      })
+    ).rejects.toBeDefined();
+  });
+
+  it("rejects missing and duplicate Completed Fix sources explicitly", async () => {
+    await expect(
+      completionWorkflow().execute(
+        "11111111-1111-4111-8111-111111111111",
+        completionCommand
+      )
+    ).rejects.toBeInstanceOf(ReviewDeliveryNotFoundError);
+
+    const created = await createAcceptedSignal("Duplicate completion integration source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const brief = await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+    const delivery = await deliveryWorkflow().execute(
+      brief.implementationBrief.id,
+      deliveryCommand
+    );
+    await completionWorkflow().execute(delivery.reviewDelivery.id, completionCommand);
+    await expect(
+      completionWorkflow().execute(delivery.reviewDelivery.id, completionCommand)
+    ).rejects.toBeInstanceOf(CompletedFixExistsError);
+  });
+
+  it("accepts exactly one concurrent Completed Fix record", async () => {
+    const created = await createAcceptedSignal("Concurrent completion source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const brief = await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+    const delivery = await deliveryWorkflow().execute(
+      brief.implementationBrief.id,
+      deliveryCommand
+    );
+    const results = await Promise.allSettled(
+      Array.from({ length: 8 }, () =>
+        completionWorkflow().execute(delivery.reviewDelivery.id, completionCommand)
+      )
+    );
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(7);
+    expect(
+      await prisma.completedFix.count({
+        where: { reviewDeliveryId: delivery.reviewDelivery.id }
+      })
+    ).toBe(1);
+  });
+
+  it("enforces Completed Fix evidence bounds in PostgreSQL", async () => {
+    const created = await createAcceptedSignal("Completion database bound source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const brief = await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+    const delivery = await deliveryWorkflow().execute(
+      brief.implementationBrief.id,
+      deliveryCommand
+    );
+    await expect(
+      prisma.completedFix.create({
+        data: {
+          reviewDeliveryId: delivery.reviewDelivery.id,
+          mergedCommitSha: "invalid",
+          completionSummary: "Invalid direct write.",
+          completedBy: "Neel"
+        }
+      })
+    ).rejects.toBeDefined();
+    expect(
+      await prisma.completedFix.count({
+        where: { reviewDeliveryId: delivery.reviewDelivery.id }
       })
     ).toBe(0);
   });

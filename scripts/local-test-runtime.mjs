@@ -1,6 +1,7 @@
 import { spawn, spawnSync } from "node:child_process";
-import { mkdir } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { createServer } from "node:net";
+import { platform } from "node:os";
 import { fileURLToPath } from "node:url";
 import EmbeddedPostgres from "embedded-postgres";
 
@@ -51,6 +52,7 @@ export async function startLocalPostgres(label, persistent = false) {
     )
   );
   await mkdir(databaseDir, { recursive: true });
+  const startupDiagnostics = [];
   const postgres = new EmbeddedPostgres({
     databaseDir,
     user,
@@ -58,13 +60,23 @@ export async function startLocalPostgres(label, persistent = false) {
     port,
     persistent,
     postgresFlags: ["-h", "127.0.0.1"],
-    onLog: () => {},
-    onError: (error) => console.error(error)
+    onLog: (message) => startupDiagnostics.push(String(message)),
+    onError: (error) => startupDiagnostics.push(String(error))
   });
 
-  await postgres.initialise();
-  await postgres.start();
-  await postgres.createDatabase(databaseName);
+  try {
+    await postgres.initialise();
+    await postgres.start();
+    await postgres.createDatabase(databaseName);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "process exited before readiness";
+    const diagnostic = startupDiagnostics.join("").trim();
+    throw new Error(
+      `Local PostgreSQL ${label} startup failed: ${reason}.` +
+        (diagnostic.length === 0 ? " No PostgreSQL diagnostic was emitted." : ` ${diagnostic}`),
+      { cause: error }
+    );
+  }
   return {
     databaseDir,
     postgres,
@@ -145,5 +157,47 @@ export async function stopChild(child) {
   if (child.exitCode === null) {
     child.kill("SIGKILL");
     await exited;
+  }
+}
+
+export async function stopLocalPostgres(postgres, timeoutMs = 10_000) {
+  const child = postgres.process;
+  if (child === undefined || child.exitCode !== null) {
+    await postgres.stop();
+    return;
+  }
+  if (child.pid === undefined) {
+    throw new Error("Local PostgreSQL process has no PID for bounded shutdown.");
+  }
+  if (platform() !== "win32") {
+    await postgres.stop();
+    return;
+  }
+
+  const exited = new Promise((resolve) => child.once("exit", () => resolve(true)));
+  const result = spawnSync("taskkill", ["/pid", String(child.pid), "/f", "/t"], {
+    encoding: "utf-8"
+  });
+  if (result.error !== undefined) {
+    throw new Error(`Local PostgreSQL taskkill could not start: ${result.error.message}`);
+  }
+  const stopped = await Promise.race([
+    exited,
+    new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs))
+  ]);
+  if (stopped !== true) {
+    throw new Error(
+      `Local PostgreSQL process did not exit within ${timeoutMs} milliseconds after stop.`
+    );
+  }
+  if (result.status !== 0) {
+    throw new Error(
+      `Local PostgreSQL taskkill failed with exit code ${result.status ?? "unknown"}: ` +
+        `${result.stderr.trim()}`
+    );
+  }
+  postgres.process = undefined;
+  if (postgres.options.persistent === false) {
+    await rm(postgres.options.databaseDir, { recursive: true, force: true });
   }
 }

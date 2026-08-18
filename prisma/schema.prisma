@@ -82,6 +82,17 @@ model ReviewDelivery {
   deliveredBy           String              @db.VarChar(120)
   deliveredAt           DateTime            @default(now()) @db.Timestamptz(3)
   implementationBrief   ImplementationBrief @relation(fields: [implementationBriefId], references: [id], onDelete: Restrict)
+  completedFix           CompletedFix?
+}
+
+model CompletedFix {
+  id                String         @id @default(uuid()) @db.Uuid
+  reviewDeliveryId  String         @unique @db.Uuid
+  mergedCommitSha   String         @db.VarChar(64)
+  completionSummary String         @db.Text
+  completedBy       String         @db.VarChar(120)
+  completedAt       DateTime       @default(now()) @db.Timestamptz(3)
+  reviewDelivery    ReviewDelivery @relation(fields: [reviewDeliveryId], references: [id], onDelete: Restrict)
 }
 
 model TriageEvent {

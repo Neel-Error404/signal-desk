@@ -144,6 +144,33 @@ export class ReviewDeliveryExistsError extends ApplicationError {
   }
 }
 
+export class ReviewDeliveryNotFoundError extends ApplicationError {
+  constructor() {
+    super("review_delivery_not_found", 404, "The requested review delivery does not exist.");
+  }
+}
+
+export class CompletedFixExistsError extends ApplicationError {
+  constructor() {
+    super(
+      "completed_fix_exists",
+      409,
+      "The review delivery already has a completed fix."
+    );
+  }
+}
+
+export class ExternalMergeConfirmationRequiredError extends ApplicationError {
+  constructor() {
+    super(
+      "external_merge_confirmation_required",
+      422,
+      "Confirm that a human completed the merge outside SignalDesk before recording the fix.",
+      { fields: ["mergeConfirmedOutsideSignalDesk"] }
+    );
+  }
+}
+
 export class StorageUnavailableError extends ApplicationError {
   constructor() {
     super(

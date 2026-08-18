@@ -7,6 +7,7 @@ import type { PromoteSignalToIssue } from "./promote-signal-to-issue";
 import type { GetSignalDetailWithIssue, SignalDetailWithIssue } from "./signal-detail";
 import { serializeImplementationBrief } from "@/workflows/issue-to-brief/http";
 import { serializeReviewDelivery } from "@/workflows/brief-to-delivery/http";
+import { serializeCompletedFix } from "@/workflows/delivery-to-completion/http";
 
 function serializeSignal(signal: SignalRecord): Record<string, unknown> {
   return { ...signal, createdAt: signal.createdAt.toISOString() };
@@ -34,7 +35,9 @@ function serializeDetail(detail: SignalDetailWithIssue): Record<string, unknown>
     reviewDelivery:
       detail.reviewDelivery === null
         ? null
-        : serializeReviewDelivery(detail.reviewDelivery)
+        : serializeReviewDelivery(detail.reviewDelivery),
+    completedFix:
+      detail.completedFix === null ? null : serializeCompletedFix(detail.completedFix)
   };
 }
 

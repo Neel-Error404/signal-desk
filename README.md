@@ -5,7 +5,9 @@ deterministic feedback intake, PostgreSQL Signal lineage, and append-only manual
 adds manual promotion of one accepted Signal into one immutable prioritized Product Issue. SD-003
 adds one immutable owner-approved Implementation Brief with explicit acceptance criteria while
 preserving the full source lineage. SD-004 adds one immutable, operator-supplied Review Delivery
-and a product-owned Git delivery contract without claiming hosted-provider verification.
+and a product-owned Git delivery contract without claiming hosted-provider verification. SD-005
+adds one immutable human-confirmed Completed Fix and product-owned completion context without
+granting merge authority.
 
 ## Current Scope
 
@@ -24,10 +26,15 @@ and a product-owned Git delivery contract without claiming hosted-provider verif
   summary, and full Feedback-to-Brief lineage.
 - Declare the trusted SignalDesk repository, PR URL prefix, branch policy, ordered checks, and
   retained authority in `delivery/review-delivery-contract.json`.
+- Record one immutable Completed Fix with the merged commit, completion summary, human label,
+  server time, and complete Feedback-to-Review lineage.
+- Declare the completion evidence source, retained authority, and next eligible lifecycle stage
+  in `delivery/completed-fix-contract.json`.
 
-SD-001 through SD-004 are local-only. They do not provide authentication, authorization, tenancy,
+SD-001 through SD-005 are local-only. They do not provide authentication, authorization, tenancy,
 uploads, complete DLP, hosted-provider verification, production deployment, automatic
-prioritization, or autonomous product decisions, task execution, merge, or release communication.
+prioritization, or autonomous product decisions, task execution, merge, release, or customer
+communication.
 
 ## Local Development
 
@@ -61,6 +68,5 @@ npm run build
 Integration, Workflow, and Stress launch real project-scoped PostgreSQL binaries under the ignored
 `.elder/runtime/` directory. Workflow uses installed Chrome at desktop and mobile viewports.
 
-See [SD-001 evidence](docs/evidence/SD-001.md), [SD-002 evidence](docs/evidence/SD-002.md), and
-[SD-003 evidence](docs/evidence/SD-003.md), plus the forthcoming SD-004 evidence and
-the corresponding test-reproduction records under `docs/test-reproduction/`.
+See the per-slice evidence under `docs/evidence/` and the corresponding reproduction records
+under `docs/test-reproduction/`.
