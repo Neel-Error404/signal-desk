@@ -12,7 +12,7 @@ permissions:
 jobs:
   ordered-review-gate:
     name: signaldesk-ordered-review-gate
-    runs-on: windows-2022
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
       CI: "true"
@@ -29,10 +29,10 @@ jobs:
 
       - name: Configure the mutable test runtime
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
-            throw "LOCALAPPDATA is required for the hosted PostgreSQL runtime."
+          if ([string]::IsNullOrWhiteSpace($env:RUNNER_TEMP)) {
+            throw "RUNNER_TEMP is required for the hosted PostgreSQL runtime."
           }
-          $runtimeRoot = Join-Path $env:LOCALAPPDATA "SignalDesk\test-runtime"
+          $runtimeRoot = Join-Path $env:RUNNER_TEMP "signaldesk-runtime"
           "SIGNALDESK_TEST_RUNTIME_ROOT=$runtimeRoot" |
             Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 

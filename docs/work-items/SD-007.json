@@ -6,7 +6,7 @@
   "change_class": "infrastructure",
   "objective": "Make SignalDesk's exact product-owned verification ladder visible on a real GitHub pull request and require its hosted check before protected delivery can be satisfied.",
   "scope": [
-    "Add one least-privilege GitHub Actions pull-request workflow with one sequential Windows job.",
+    "Add one least-privilege GitHub Actions pull-request workflow with one sequential Ubuntu 24.04 job.",
     "Run every command from delivery/review-delivery-contract.json in exact order after deterministic npm ci.",
     "Correct the reproduced bounded Windows Stress runtime-directory cleanup race without hiding failures.",
     "Open one stacked SD-007 pull request against work/sd-006-release-communication.",

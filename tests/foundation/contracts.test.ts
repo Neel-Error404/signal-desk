@@ -491,7 +491,7 @@ describe("SD-007 hosted review gate contracts", () => {
     expect(["in_progress", "verified"]).toContain(workItem.status);
   });
 
-  it("pins a least-privilege Windows pull-request workflow", async () => {
+  it("pins a least-privilege Ubuntu pull-request workflow", async () => {
     const workflow = await text(".github/workflows/hosted-review-gate.yml");
     expect(workflow).toContain("pull_request:");
     expect(workflow).not.toContain("pull_request_target");
@@ -499,12 +499,12 @@ describe("SD-007 hosted review gate contracts", () => {
     expect(workflow).not.toContain("contents: write");
     expect(workflow).not.toContain("secrets.");
     expect(workflow).toContain("name: signaldesk-ordered-review-gate");
-    expect(workflow).toContain("runs-on: windows-2022");
+    expect(workflow).toContain("runs-on: ubuntu-24.04");
     expect(workflow).toContain('node-version: "22.18.0"');
-    expect(workflow).toContain("$env:LOCALAPPDATA");
+    expect(workflow).toContain("$env:RUNNER_TEMP");
     expect(workflow).toContain("$env:GITHUB_ENV");
     expect(workflow).toContain("SIGNALDESK_TEST_RUNTIME_ROOT=$runtimeRoot");
-    expect(workflow).not.toContain("$env:RUNNER_TEMP");
+    expect(workflow).not.toContain("$env:LOCALAPPDATA");
     expect(workflow).not.toContain("${{ runner.temp }}");
     expect(workflow).toContain("persist-credentials: false");
     expect(workflow).toContain(

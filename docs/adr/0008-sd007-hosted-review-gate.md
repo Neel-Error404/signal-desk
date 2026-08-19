@@ -6,6 +6,10 @@ Accepted for bounded implementation by Neel's explicit approval on August 19, 20
 of the live repository, privacy preflight, hosted workflow, public-visibility mutation, protected
 delivery rule, controlled-failure proof, human interventions, and stop boundary.
 
+The hosted runner decision was amended from Windows Server 2022 to Ubuntu 24.04 by Neel's exact
+approval on August 20, 2026 after live Windows runs proved that PostgreSQL rejects GitHub's
+administrative `runneradmin` account.
+
 ## Change classification and authority
 
 - The GitHub Actions workflow, runner cleanup correction, and protected-delivery configuration
@@ -29,16 +33,22 @@ visibility is a Git delivery control for this prototype; it is not application d
 
 ## Decision
 
-Add one pull-request workflow with one sequential Windows job named
+Add one pull-request workflow with one sequential Ubuntu 24.04 job named
 `signaldesk-ordered-review-gate`. It uses immutable action revisions, Node.js 22, deterministic
 `npm ci`, the product-owned checks in exact order, and the portable Elder capsule. The job has
 read-only repository permission, persists no checkout credential, and uses `pull_request` rather
 than `pull_request_target`.
 
-Use Windows because the current capsule launcher and bootstrap use a Windows virtual-environment
-layout, and the product's integration, workflow, and stress lanes exercise embedded PostgreSQL
-and installed Chrome. Hosted execution, not local assumption, decides whether those dependencies
-work on the selected runner.
+Use GitHub's ephemeral Ubuntu 24.04 hosted runner because its job account is non-root and the
+current official image includes PowerShell and Google Chrome. The immutable setup actions still
+pin Node.js 22.18.0 and Python 3.13.5. SignalDesk's integration, workflow, and stress lanes keep
+using embedded PostgreSQL, and the portable capsule keeps running through PowerShell. This does
+not add WSL or change the owner's local Windows environment.
+
+The original Windows selection was tested rather than assumed. Its work volume rejected
+PostgreSQL permission changes, and its user-owned `C:` path allowed initialization but PostgreSQL
+then explicitly refused the administrative runner account. Retaining Windows would therefore
+make the hosted gate structurally unreliable.
 
 After the private hosted check is real, make SignalDesk public and install one active GitHub
 ruleset on `main` and the exact SD-007 base branch. Require pull requests and the observed exact
