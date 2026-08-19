@@ -250,7 +250,8 @@ describe("SD-004 ratified static contracts", () => {
     );
     expect(delivery.shipTarget).toBe("reviewable-pr");
     expect(delivery.contextContracts).toEqual([
-      "delivery/completed-fix-contract.json"
+      "delivery/completed-fix-contract.json",
+      "delivery/release-communication-contract.json"
     ]);
     expect(delivery.requiredChecks.map((check) => check.order)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8
@@ -362,7 +363,7 @@ describe("SD-005 ratified static contracts", () => {
     const migration = await text(
       "prisma/migrations/20260818170000_sd005_completed_fix/migration.sql"
     );
-    expect(schema).toContain("reviewDeliveryId  String         @unique @db.Uuid");
+    expect(schema).toMatch(/reviewDeliveryId\s+String\s+@unique @db\.Uuid/);
     expect(migration).toContain('CREATE UNIQUE INDEX "CompletedFix_reviewDeliveryId_key"');
     expect(migration).toContain('CONSTRAINT "CompletedFix_merged_commit_sha"');
     expect(migration).toContain('CREATE TRIGGER "CompletedFix_immutable"');
@@ -379,5 +380,89 @@ describe("SD-005 ratified static contracts", () => {
     expect(layout).toContain("completed-fixes");
     expect(layout).toContain("delivery-to-completion");
     expect(boundaries).toContain('name: "completed-fix-domain-is-context-local"');
+  });
+});
+
+describe("SD-006 ratified static contracts", () => {
+  it("binds approved unsent communication to the stacked reviewable PR work item", async () => {
+    const workItem = JSON.parse(await text("docs/work-items/SD-006.json")) as {
+      change_class: string;
+      owner: string;
+      ship_target: string;
+      status: string;
+      branch: string;
+      base_branch: string;
+    };
+    expect(workItem).toMatchObject({
+      change_class: "public-contract",
+      owner: "Neel",
+      ship_target: "reviewable-pr",
+      status: "verified",
+      branch: "work/sd-006-release-communication",
+      base_branch: "work/sd-005-completed-fix"
+    });
+  });
+
+  it("declares one immutable approved communication without publication authority", async () => {
+    const contract = await text("docs/contracts/SD-006.md");
+    expect(contract).toContain(
+      "POST /api/v1/completed-fixes/{completedFixId}/release-communication"
+    );
+    expect(contract).toContain("approvalConfirmed");
+    expect(contract).toContain('publicationStatus: "not-sent"');
+    expect(contract).toContain("does not send");
+  });
+
+  it("connects release communication lifecycle context without granting publication", async () => {
+    const lifecycle = JSON.parse(
+      await text("delivery/release-communication-contract.json")
+    ) as {
+      projectId: string;
+      lifecycleStage: string;
+      source: { recordType: string };
+      outcome: { evidenceSource: string; requiredEvidence: string[] };
+      authority: Record<string, string>;
+    };
+    expect(lifecycle).toMatchObject({
+      projectId: "signaldesk",
+      lifecycleStage: "release-communication",
+      source: { recordType: "completed-fix" }
+    });
+    expect(lifecycle.outcome.evidenceSource).toBe("owner-approved-not-published");
+    expect(lifecycle.outcome.requiredEvidence).toContain("message");
+    expect(lifecycle.authority).toMatchObject({
+      publishCommunication: "not-granted",
+      deployment: "human-only",
+      release: "human-only",
+      credentials: "external"
+    });
+  });
+
+  it("enforces unique immutable Release Communication lineage and bounds", async () => {
+    const schema = await text("prisma/schema.prisma");
+    const migration = await text(
+      "prisma/migrations/20260819090000_sd006_release_communication/migration.sql"
+    );
+    expect(schema).toMatch(/completedFixId\s+String\s+@unique @db\.Uuid/);
+    expect(migration).toContain(
+      'CREATE UNIQUE INDEX "ReleaseCommunication_completedFixId_key"'
+    );
+    expect(migration).toContain('CONSTRAINT "ReleaseCommunication_message_length"');
+    expect(migration).toContain('CREATE TRIGGER "ReleaseCommunication_immutable"');
+  });
+
+  it("keeps the communication route outside persistence and extends boundaries", async () => {
+    const route = await text(
+      "src/app/api/v1/completed-fixes/[completedFixId]/release-communication/route.ts"
+    );
+    const layout = await text("scripts/check-source-layout.mjs");
+    const boundaries = await text(".dependency-cruiser.cjs");
+    expect(route).not.toContain("@prisma/client");
+    expect(route).toContain("postReleaseCommunication");
+    expect(layout).toContain("release-communications");
+    expect(layout).toContain("completion-to-communication");
+    expect(boundaries).toContain(
+      'name: "release-communication-domain-is-context-local"'
+    );
   });
 });

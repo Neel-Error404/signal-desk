@@ -171,6 +171,33 @@ export class ExternalMergeConfirmationRequiredError extends ApplicationError {
   }
 }
 
+export class CompletedFixNotFoundError extends ApplicationError {
+  constructor() {
+    super("completed_fix_not_found", 404, "The requested completed fix does not exist.");
+  }
+}
+
+export class ReleaseCommunicationExistsError extends ApplicationError {
+  constructor() {
+    super(
+      "release_communication_exists",
+      409,
+      "The completed fix already has a release communication."
+    );
+  }
+}
+
+export class ReleaseApprovalRequiredError extends ApplicationError {
+  constructor() {
+    super(
+      "release_approval_required",
+      422,
+      "Confirm that the owner approved the communication before recording it.",
+      { fields: ["approvalConfirmed"] }
+    );
+  }
+}
+
 export class StorageUnavailableError extends ApplicationError {
   constructor() {
     super(

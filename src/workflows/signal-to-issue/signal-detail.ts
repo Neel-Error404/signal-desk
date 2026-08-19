@@ -13,12 +13,17 @@ import type {
   CompletedFixRecord,
   GetCompletedFixByReviewDelivery
 } from "@/modules/completed-fixes/application";
+import type {
+  GetReleaseCommunicationByCompletedFix,
+  ReleaseCommunicationRecord
+} from "@/modules/release-communications/application";
 
 export interface SignalDetailWithIssue extends SignalDetail {
   readonly productIssue: ProductIssueRecord | null;
   readonly implementationBrief: ImplementationBriefRecord | null;
   readonly reviewDelivery: ReviewDeliveryRecord | null;
   readonly completedFix: CompletedFixRecord | null;
+  readonly releaseCommunication: ReleaseCommunicationRecord | null;
 }
 
 export class GetSignalDetailWithIssue {
@@ -27,7 +32,8 @@ export class GetSignalDetailWithIssue {
     private readonly getProductIssueBySignal: GetProductIssueBySignal,
     private readonly getImplementationBriefByProductIssue: GetImplementationBriefByProductIssue,
     private readonly getReviewDeliveryByImplementationBrief: GetReviewDeliveryByImplementationBrief,
-    private readonly getCompletedFixByReviewDelivery: GetCompletedFixByReviewDelivery
+    private readonly getCompletedFixByReviewDelivery: GetCompletedFixByReviewDelivery,
+    private readonly getReleaseCommunicationByCompletedFix: GetReleaseCommunicationByCompletedFix
   ) {}
 
   async execute(signalId: string): Promise<SignalDetailWithIssue> {
@@ -47,6 +53,17 @@ export class GetSignalDetailWithIssue {
       reviewDelivery === null
         ? null
         : await this.getCompletedFixByReviewDelivery.execute(reviewDelivery.id);
-    return { ...detail, productIssue, implementationBrief, reviewDelivery, completedFix };
+    const releaseCommunication =
+      completedFix === null
+        ? null
+        : await this.getReleaseCommunicationByCompletedFix.execute(completedFix.id);
+    return {
+      ...detail,
+      productIssue,
+      implementationBrief,
+      reviewDelivery,
+      completedFix,
+      releaseCommunication
+    };
   }
 }

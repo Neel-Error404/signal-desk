@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "projectId": "signaldesk",
+  "lifecycleStage": "release-communication",
+  "source": {
+    "recordType": "completed-fix",
+    "cardinality": "exactly-one"
+  },
+  "outcome": {
+    "recordType": "release-communication",
+    "cardinality": "at-most-one-per-source",
+    "requiredEvidence": [
+      "audience",
+      "subject",
+      "message",
+      "approvedBy",
+      "approvedAt"
+    ],
+    "evidenceSource": "owner-approved-not-published"
+  },
+  "authority": {
+    "recordApproval": "explicit-local-human-action",
+    "publishCommunication": "not-granted",
+    "merge": "human-only",
+    "deployment": "human-only",
+    "release": "human-only",
+    "credentials": "external"
+  },
+  "nextEligibleStage": "external-publication"
+}

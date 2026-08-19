@@ -37,6 +37,7 @@ interface SignalDetail {
   readonly implementationBrief: ImplementationBriefItem | null;
   readonly reviewDelivery: ReviewDeliveryItem | null;
   readonly completedFix: CompletedFixItem | null;
+  readonly releaseCommunication: ReleaseCommunicationItem | null;
 }
 
 interface ProductIssueItem {
@@ -81,6 +82,17 @@ interface CompletedFixItem {
   readonly completionSummary: string;
   readonly completedBy: string;
   readonly completedAt: string;
+}
+
+interface ReleaseCommunicationItem {
+  readonly id: string;
+  readonly completedFixId: string;
+  readonly audience: string;
+  readonly subject: string;
+  readonly message: string;
+  readonly approvedBy: string;
+  readonly approvedAt: string;
+  readonly publicationStatus: "not-sent";
 }
 
 interface ApiErrorEnvelope {
@@ -376,6 +388,47 @@ export default function HomePage() {
     }
   }
 
+  async function approveReleaseCommunication(
+    signalId: string,
+    completedFixId: string,
+    audience: string,
+    subject: string,
+    communicationMessage: string,
+    approvedBy: string,
+    approvalConfirmed: boolean,
+    contentAcknowledged: boolean
+  ): Promise<boolean> {
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/v1/completed-fixes/${completedFixId}/release-communication`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json; charset=utf-8" },
+          body: JSON.stringify({
+            audience,
+            subject,
+            message: communicationMessage,
+            approvedBy,
+            approvalConfirmed,
+            contentAcknowledged
+          })
+        }
+      );
+      if (!response.ok) {
+        throw new Error(await safeError(response));
+      }
+      setMessage("Release communication approved and preserved as not sent.");
+      await loadSignals(signalId);
+      return true;
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not approve release communication."
+      );
+      return false;
+    }
+  }
+
   return (
     <main>
       <header className="app-header">
@@ -489,6 +542,7 @@ export default function HomePage() {
               onApproveBrief={approveImplementationBrief}
               onRecordDelivery={recordReviewDelivery}
               onRecordCompletedFix={recordCompletedFix}
+              onApproveReleaseCommunication={approveReleaseCommunication}
             />
           ) : null}
         </div>
@@ -503,7 +557,8 @@ function SignalInspector({
   onPromote,
   onApproveBrief,
   onRecordDelivery,
-  onRecordCompletedFix
+  onRecordCompletedFix,
+  onApproveReleaseCommunication
 }: Readonly<{
   detail: SignalDetail;
   onAppend: (
@@ -548,6 +603,16 @@ function SignalInspector({
     completionSummary: string,
     completedBy: string,
     mergeConfirmedOutsideSignalDesk: boolean,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+  onApproveReleaseCommunication: (
+    signalId: string,
+    completedFixId: string,
+    audience: string,
+    subject: string,
+    message: string,
+    approvedBy: string,
+    approvalConfirmed: boolean,
     acknowledged: boolean
   ) => Promise<boolean>;
 }>) {
@@ -654,6 +719,13 @@ function SignalInspector({
         reviewDelivery={detail.reviewDelivery}
         completedFix={detail.completedFix}
         onRecord={onRecordCompletedFix}
+      />
+
+      <ReleaseCommunicationPanel
+        signal={signal}
+        completedFix={detail.completedFix}
+        releaseCommunication={detail.releaseCommunication}
+        onApprove={onApproveReleaseCommunication}
       />
 
       <form className="triage" onSubmit={submit}>
@@ -1347,6 +1419,176 @@ function CompletedFixPanel({
       </label>
       <button type="submit" disabled={saving}>
         {saving ? "Recording..." : "Record completed fix"}
+      </button>
+    </form>
+  );
+}
+
+function ReleaseCommunicationPanel({
+  signal,
+  completedFix,
+  releaseCommunication,
+  onApprove
+}: Readonly<{
+  signal: SignalItem;
+  completedFix: CompletedFixItem | null;
+  releaseCommunication: ReleaseCommunicationItem | null;
+  onApprove: (
+    signalId: string,
+    completedFixId: string,
+    audience: string,
+    subject: string,
+    message: string,
+    approvedBy: string,
+    approvalConfirmed: boolean,
+    acknowledged: boolean
+  ) => Promise<boolean>;
+}>) {
+  const [audience, setAudience] = useState("");
+  const [subject, setSubject] = useState("");
+  const [communicationMessage, setCommunicationMessage] = useState("");
+  const [approvedBy, setApprovedBy] = useState("");
+  const [approvalConfirmed, setApprovalConfirmed] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (completedFix === null) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await onApprove(
+        signal.id,
+        completedFix.id,
+        audience,
+        subject,
+        communicationMessage,
+        approvedBy,
+        approvalConfirmed,
+        acknowledged
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (completedFix === null) {
+    return (
+      <section className="review-delivery" aria-labelledby="release-communication-title">
+        <h3 id="release-communication-title">Release communication</h3>
+        <p className="empty">Record a Completed Fix before approving communication.</p>
+      </section>
+    );
+  }
+
+  if (releaseCommunication !== null) {
+    return (
+      <section className="review-delivery" aria-labelledby="release-communication-title">
+        <div className="history-heading">
+          <h3 id="release-communication-title">Release communication</h3>
+          <span>Approved - not sent</span>
+        </div>
+        <p className="delivery-warning">
+          This content is approved product state. SignalDesk has not published it or contacted
+          any customer.
+        </p>
+        <dl>
+          <div>
+            <dt>Audience</dt>
+            <dd>{releaseCommunication.audience}</dd>
+          </div>
+          <div>
+            <dt>Subject</dt>
+            <dd>{releaseCommunication.subject}</dd>
+          </div>
+          <div>
+            <dt>Message</dt>
+            <dd>{releaseCommunication.message}</dd>
+          </div>
+          <div>
+            <dt>Approved by</dt>
+            <dd>{releaseCommunication.approvedBy} (unverified local label)</dd>
+          </div>
+          <div>
+            <dt>Approved</dt>
+            <dd>{new Date(releaseCommunication.approvedAt).toLocaleString()}</dd>
+          </div>
+          <div>
+            <dt>Publication status</dt>
+            <dd>{releaseCommunication.publicationStatus}</dd>
+          </div>
+        </dl>
+      </section>
+    );
+  }
+
+  return (
+    <form className="review-delivery" onSubmit={submit}>
+      <div>
+        <p className="section-label">Owner-approved content</p>
+        <h3 id="release-communication-title">Approve release communication</h3>
+      </div>
+      <p className="delivery-warning">
+        Approval records the message only. It does not send, publish, deploy, or release it.
+      </p>
+      <label>
+        Intended audience
+        <textarea
+          value={audience}
+          onChange={(event) => setAudience(event.target.value)}
+          required
+          rows={2}
+          maxLength={500}
+        />
+      </label>
+      <label>
+        Subject
+        <input
+          value={subject}
+          onChange={(event) => setSubject(event.target.value)}
+          required
+          maxLength={200}
+        />
+      </label>
+      <label>
+        Message
+        <textarea
+          value={communicationMessage}
+          onChange={(event) => setCommunicationMessage(event.target.value)}
+          required
+          rows={5}
+          maxLength={4000}
+        />
+      </label>
+      <label>
+        Local approver label (unverified)
+        <input
+          value={approvedBy}
+          onChange={(event) => setApprovedBy(event.target.value)}
+          required
+          maxLength={120}
+        />
+      </label>
+      <label className="acknowledgement compact">
+        <input
+          type="checkbox"
+          checked={approvalConfirmed}
+          onChange={(event) => setApprovalConfirmed(event.target.checked)}
+        />
+        <span>I confirm the owner approved this exact communication content.</span>
+      </label>
+      <label className="acknowledgement compact">
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={(event) => setAcknowledged(event.target.checked)}
+        />
+        <span>I acknowledge this content follows the confidential-data boundary.</span>
+      </label>
+      <button type="submit" disabled={saving}>
+        {saving ? "Approving..." : "Approve as not sent"}
       </button>
     </form>
   );

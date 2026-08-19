@@ -8,6 +8,7 @@ import type { GetSignalDetailWithIssue, SignalDetailWithIssue } from "./signal-d
 import { serializeImplementationBrief } from "@/workflows/issue-to-brief/http";
 import { serializeReviewDelivery } from "@/workflows/brief-to-delivery/http";
 import { serializeCompletedFix } from "@/workflows/delivery-to-completion/http";
+import { serializeReleaseCommunication } from "@/workflows/completion-to-communication/http";
 
 function serializeSignal(signal: SignalRecord): Record<string, unknown> {
   return { ...signal, createdAt: signal.createdAt.toISOString() };
@@ -37,7 +38,11 @@ function serializeDetail(detail: SignalDetailWithIssue): Record<string, unknown>
         ? null
         : serializeReviewDelivery(detail.reviewDelivery),
     completedFix:
-      detail.completedFix === null ? null : serializeCompletedFix(detail.completedFix)
+      detail.completedFix === null ? null : serializeCompletedFix(detail.completedFix),
+    releaseCommunication:
+      detail.releaseCommunication === null
+        ? null
+        : serializeReleaseCommunication(detail.releaseCommunication)
   };
 }
 

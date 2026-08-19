@@ -287,6 +287,46 @@ try {
   );
   checks += 1;
 
+  const completionWinner = completionResponses.find((response) => response.status === 201);
+  assert(completionWinner !== undefined, "Concurrent completion did not return a winner.");
+  const completionResult = await completionWinner.json();
+  const completedFixId = completionResult.completedFix.id;
+  const communicationBody = {
+    audience: `Stress audience ${crypto.randomUUID()}`,
+    subject: "Stress release communication",
+    message: `Stress approved message ${crypto.randomUUID()}`,
+    approvedBy: "Stress operator",
+    approvalConfirmed: true,
+    contentAcknowledged: true
+  };
+  const missingCommunication = await jsonPost(
+    baseUrl,
+    "/api/v1/completed-fixes/11111111-1111-4111-8111-111111111111/release-communication",
+    communicationBody
+  );
+  assert(
+    missingCommunication.status === 404,
+    `Expected missing Completed Fix 404, received ${missingCommunication.status}.`
+  );
+  checks += 1;
+
+  const communicationResponses = await Promise.all(
+    Array.from({ length: 12 }, () =>
+      jsonPost(
+        baseUrl,
+        `/api/v1/completed-fixes/${completedFixId}/release-communication`,
+        communicationBody
+      )
+    )
+  );
+  const communicationStatuses = communicationResponses.map((response) => response.status);
+  assert(
+    communicationStatuses.filter((status) => status === 201).length === 1 &&
+      communicationStatuses.filter((status) => status === 409).length === 11,
+    `Expected one 201 and eleven 409 communication responses, received ${communicationStatuses.join(", ")}.`
+  );
+  checks += 1;
+
   const bulkResponses = await Promise.all(
     Array.from({ length: 20 }, (_, index) =>
       jsonPost(baseUrl, "/api/v1/feedback", {
@@ -327,8 +367,10 @@ try {
       recoveredDetail.productIssue?.title === issueTitle &&
       recoveredDetail.implementationBrief?.objective === briefObjective &&
       recoveredDetail.reviewDelivery?.verificationSummary === deliverySummary &&
-      recoveredDetail.completedFix?.completionSummary === completionBody.completionSummary,
-    "Recovered signal did not preserve triage, Product Issue, brief, delivery, and completion state."
+      recoveredDetail.completedFix?.completionSummary === completionBody.completionSummary &&
+      recoveredDetail.releaseCommunication?.message === communicationBody.message &&
+      recoveredDetail.releaseCommunication?.publicationStatus === "not-sent",
+    "Recovered signal did not preserve triage, Product Issue, brief, delivery, completion, and approved communication state."
   );
   checks += 1;
 
@@ -339,7 +381,9 @@ try {
       !serverLogs.includes(issueTitle) &&
       !serverLogs.includes(briefObjective) &&
       !serverLogs.includes(deliverySummary) &&
-      !serverLogs.includes(completionBody.completionSummary),
+      !serverLogs.includes(completionBody.completionSummary) &&
+      !serverLogs.includes(communicationBody.audience) &&
+      !serverLogs.includes(communicationBody.message),
     "Server logs exposed submitted confidential or restricted content."
   );
   checks += 1;

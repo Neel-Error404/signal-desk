@@ -86,13 +86,25 @@ model ReviewDelivery {
 }
 
 model CompletedFix {
-  id                String         @id @default(uuid()) @db.Uuid
-  reviewDeliveryId  String         @unique @db.Uuid
-  mergedCommitSha   String         @db.VarChar(64)
-  completionSummary String         @db.Text
-  completedBy       String         @db.VarChar(120)
-  completedAt       DateTime       @default(now()) @db.Timestamptz(3)
-  reviewDelivery    ReviewDelivery @relation(fields: [reviewDeliveryId], references: [id], onDelete: Restrict)
+  id                   String                @id @default(uuid()) @db.Uuid
+  reviewDeliveryId     String                @unique @db.Uuid
+  mergedCommitSha      String                @db.VarChar(64)
+  completionSummary    String                @db.Text
+  completedBy          String                @db.VarChar(120)
+  completedAt          DateTime              @default(now()) @db.Timestamptz(3)
+  reviewDelivery       ReviewDelivery        @relation(fields: [reviewDeliveryId], references: [id], onDelete: Restrict)
+  releaseCommunication ReleaseCommunication?
+}
+
+model ReleaseCommunication {
+  id             String       @id @default(uuid()) @db.Uuid
+  completedFixId String       @unique @db.Uuid
+  audience       String       @db.VarChar(500)
+  subject        String       @db.VarChar(200)
+  message        String       @db.Text
+  approvedBy     String       @db.VarChar(120)
+  approvedAt     DateTime     @default(now()) @db.Timestamptz(3)
+  completedFix   CompletedFix @relation(fields: [completedFixId], references: [id], onDelete: Restrict)
 }
 
 model TriageEvent {

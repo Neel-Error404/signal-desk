@@ -31,13 +31,18 @@ import { PrismaBriefDeliveryUnitOfWork } from "@/workflows/brief-to-delivery/pri
 import { PrepareCompletedFix } from "@/modules/completed-fixes/application";
 import { RecordCompletedFix } from "@/workflows/delivery-to-completion/record-completed-fix";
 import { PrismaDeliveryCompletionUnitOfWork } from "@/workflows/delivery-to-completion/prisma-unit-of-work";
+import { PrepareReleaseCommunication } from "@/modules/release-communications/application";
+import { ApproveReleaseCommunication } from "@/workflows/completion-to-communication/approve-release-communication";
+import { PrismaCompletionCommunicationUnitOfWork } from "@/workflows/completion-to-communication/prisma-unit-of-work";
 import {
   ImplementationBriefExistsError,
   ImplementationBriefNotFoundError,
   ProductIssueNotFoundError,
   ReviewDeliveryExistsError,
   ReviewDeliveryNotFoundError,
-  CompletedFixExistsError
+  CompletedFixExistsError,
+  CompletedFixNotFoundError,
+  ReleaseCommunicationExistsError
 } from "@/shared/errors";
 import { CreateFeedbackSignal } from "@/workflows/feedback-to-signal/create-feedback-signal";
 import { PrismaFeedbackSignalUnitOfWork } from "@/workflows/feedback-to-signal/prisma-unit-of-work";
@@ -94,6 +99,13 @@ function completionWorkflow(): RecordCompletedFix {
   );
 }
 
+function communicationWorkflow(): ApproveReleaseCommunication {
+  return new ApproveReleaseCommunication(
+    new PrepareReleaseCommunication(new DeterministicContentPolicy()),
+    new PrismaCompletionCommunicationUnitOfWork(prisma)
+  );
+}
+
 const issueCommand = {
   expectedSignalRevision: 1,
   title: "Preserve the selected date range",
@@ -129,6 +141,15 @@ const completionCommand = {
   completionSummary: "The human owner merged the reviewed fix after all checks passed.",
   completedBy: "Neel",
   mergeConfirmedOutsideSignalDesk: true,
+  contentAcknowledged: true
+} as const;
+
+const communicationCommand = {
+  audience: "Customers who reported the affected workflow",
+  subject: "The reported workflow issue is fixed",
+  message: "We completed the reviewed fix. No action is required from you.",
+  approvedBy: "Neel",
+  approvalConfirmed: true,
   contentAcknowledged: true
 } as const;
 
@@ -644,6 +665,127 @@ describe("PostgreSQL feedback-to-signal integration", () => {
     expect(
       await prisma.completedFix.count({
         where: { reviewDeliveryId: delivery.reviewDelivery.id }
+      })
+    ).toBe(0);
+  });
+
+  it("creates one immutable Release Communication with exact source lineage", async () => {
+    const created = await createAcceptedSignal("Release communication integration source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const brief = await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+    const delivery = await deliveryWorkflow().execute(
+      brief.implementationBrief.id,
+      deliveryCommand
+    );
+    const fix = await completionWorkflow().execute(
+      delivery.reviewDelivery.id,
+      completionCommand
+    );
+    const result = await communicationWorkflow().execute(
+      fix.completedFix.id,
+      communicationCommand
+    );
+
+    expect(result.lineage).toEqual({
+      feedbackId: created.feedback.id,
+      signalId: created.signal.id,
+      signalRevision: 1,
+      productIssueId: issue.productIssue.id,
+      implementationBriefId: brief.implementationBrief.id,
+      reviewDeliveryId: delivery.reviewDelivery.id,
+      completedFixId: fix.completedFix.id
+    });
+    expect(result.releaseCommunication).toMatchObject({
+      completedFixId: fix.completedFix.id,
+      audience: communicationCommand.audience,
+      subject: communicationCommand.subject,
+      approvedBy: "Neel"
+    });
+    await expect(
+      prisma.releaseCommunication.update({
+        where: { id: result.releaseCommunication.id },
+        data: { message: "Mutation must fail." }
+      })
+    ).rejects.toBeDefined();
+  });
+
+  it("rejects missing and duplicate Release Communication sources explicitly", async () => {
+    await expect(
+      communicationWorkflow().execute(
+        "11111111-1111-4111-8111-111111111111",
+        communicationCommand
+      )
+    ).rejects.toBeInstanceOf(CompletedFixNotFoundError);
+
+    const created = await createAcceptedSignal("Duplicate communication source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const brief = await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+    const delivery = await deliveryWorkflow().execute(
+      brief.implementationBrief.id,
+      deliveryCommand
+    );
+    const fix = await completionWorkflow().execute(
+      delivery.reviewDelivery.id,
+      completionCommand
+    );
+    await communicationWorkflow().execute(fix.completedFix.id, communicationCommand);
+    await expect(
+      communicationWorkflow().execute(fix.completedFix.id, communicationCommand)
+    ).rejects.toBeInstanceOf(ReleaseCommunicationExistsError);
+  });
+
+  it("accepts exactly one concurrent Release Communication approval", async () => {
+    const created = await createAcceptedSignal("Concurrent communication source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const brief = await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+    const delivery = await deliveryWorkflow().execute(
+      brief.implementationBrief.id,
+      deliveryCommand
+    );
+    const fix = await completionWorkflow().execute(
+      delivery.reviewDelivery.id,
+      completionCommand
+    );
+    const results = await Promise.allSettled(
+      Array.from({ length: 8 }, () =>
+        communicationWorkflow().execute(fix.completedFix.id, communicationCommand)
+      )
+    );
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(7);
+    expect(
+      await prisma.releaseCommunication.count({
+        where: { completedFixId: fix.completedFix.id }
+      })
+    ).toBe(1);
+  });
+
+  it("enforces Release Communication content bounds in PostgreSQL", async () => {
+    const created = await createAcceptedSignal("Communication database bound source");
+    const issue = await issueWorkflow().execute(created.signal.id, issueCommand);
+    const brief = await briefWorkflow().execute(issue.productIssue.id, briefCommand);
+    const delivery = await deliveryWorkflow().execute(
+      brief.implementationBrief.id,
+      deliveryCommand
+    );
+    const fix = await completionWorkflow().execute(
+      delivery.reviewDelivery.id,
+      completionCommand
+    );
+    await expect(
+      prisma.releaseCommunication.create({
+        data: {
+          completedFixId: fix.completedFix.id,
+          audience: "Customers",
+          subject: "x".repeat(201),
+          message: "Invalid direct write.",
+          approvedBy: "Neel"
+        }
+      })
+    ).rejects.toBeDefined();
+    expect(
+      await prisma.releaseCommunication.count({
+        where: { completedFixId: fix.completedFix.id }
       })
     ).toBe(0);
   });

@@ -168,6 +168,28 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
   await expect(page.getByText("immutable human-confirmed outcome")).toBeVisible();
   await expect(page.getByText(mergedCommit)).toBeVisible();
 
+  await page
+    .getByRole("textbox", { name: "Intended audience" })
+    .fill("Customers who reported the affected workflow");
+  await page
+    .getByRole("textbox", { name: "Subject" })
+    .fill("The reported workflow issue is fixed");
+  await page
+    .getByRole("textbox", { name: "Message" })
+    .fill("We completed the reviewed fix. No action is required from you.");
+  await page
+    .getByRole("textbox", { name: "Local approver label (unverified)" })
+    .fill("Neel");
+  await page.getByLabel(/I confirm the owner approved this exact communication/).check();
+  await page.getByLabel(/I acknowledge this content follows/).check();
+  await page.getByRole("button", { name: "Approve as not sent" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "Release communication approved and preserved as not sent."
+  );
+  await expect(page.getByRole("heading", { name: "Release communication" })).toBeVisible();
+  await expect(page.getByText("Approved - not sent")).toBeVisible();
+  await expect(page.getByText("The reported workflow issue is fixed")).toBeVisible();
+
   await page.reload();
   const reloadedRow = page.locator(".signal-row").filter({ hasText: feedback });
   await expect(reloadedRow).toBeVisible();
@@ -192,6 +214,8 @@ test("local operator creates, inspects, triages, and reloads a signal", async ({
   await expect(
     page.getByText("The human owner merged the reviewed fix after all required checks passed.")
   ).toBeVisible();
+  await expect(page.getByText("The reported workflow issue is fixed")).toBeVisible();
+  await expect(page.getByText("not-sent", { exact: true })).toBeVisible();
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth

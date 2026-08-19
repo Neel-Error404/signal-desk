@@ -116,6 +116,22 @@ module.exports = {
       }
     },
     {
+      name: "release-communication-domain-is-context-local",
+      severity: "error",
+      from: { path: "^src/modules/release-communications/domain" },
+      to: {
+        path: "^src/modules/(feedback-intake|signal-inbox|product-issues|implementation-briefs|review-deliveries|completed-fixes)"
+      }
+    },
+    {
+      name: "release-communication-context-imports-other-applications-only",
+      severity: "error",
+      from: { path: "^src/modules/release-communications" },
+      to: {
+        path: "^src/modules/(feedback-intake|signal-inbox|product-issues|implementation-briefs|review-deliveries|completed-fixes)/(domain|http|infrastructure)"
+      }
+    },
+    {
       name: "platform-does-not-depend-on-product",
       severity: "error",
       from: { path: "^src/platform" },

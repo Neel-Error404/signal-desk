@@ -32,6 +32,11 @@ import {
   PrepareCompletedFix
 } from "@/modules/completed-fixes/application";
 import { PrismaCompletedFixStore } from "@/modules/completed-fixes/infrastructure/prisma-completed-fix-store";
+import {
+  GetReleaseCommunicationByCompletedFix,
+  PrepareReleaseCommunication
+} from "@/modules/release-communications/application";
+import { PrismaReleaseCommunicationStore } from "@/modules/release-communications/infrastructure/prisma-release-communication-store";
 import { getPrismaClient } from "@/platform/database/prisma-client";
 import { CreateFeedbackSignal } from "@/workflows/feedback-to-signal/create-feedback-signal";
 import { PrismaFeedbackSignalUnitOfWork } from "@/workflows/feedback-to-signal/prisma-unit-of-work";
@@ -44,6 +49,8 @@ import { RecordReviewDelivery } from "@/workflows/brief-to-delivery/record-revie
 import { PrismaBriefDeliveryUnitOfWork } from "@/workflows/brief-to-delivery/prisma-unit-of-work";
 import { RecordCompletedFix } from "@/workflows/delivery-to-completion/record-completed-fix";
 import { PrismaDeliveryCompletionUnitOfWork } from "@/workflows/delivery-to-completion/prisma-unit-of-work";
+import { ApproveReleaseCommunication } from "@/workflows/completion-to-communication/approve-release-communication";
+import { PrismaCompletionCommunicationUnitOfWork } from "@/workflows/completion-to-communication/prisma-unit-of-work";
 import deliveryContract from "../../delivery/review-delivery-contract.json";
 
 const reviewDeliveryPolicy: ReviewDeliveryPolicy = {
@@ -64,6 +71,7 @@ export interface SignalDeskServices {
   readonly approveImplementationBrief: ApproveImplementationBrief;
   readonly recordReviewDelivery: RecordReviewDelivery;
   readonly recordCompletedFix: RecordCompletedFix;
+  readonly approveReleaseCommunication: ApproveReleaseCommunication;
 }
 
 let singleton: SignalDeskServices | undefined;
@@ -80,6 +88,7 @@ export function getSignalDeskServices(): SignalDeskServices {
   const implementationBriefStore = new PrismaImplementationBriefStore(prisma);
   const reviewDeliveryStore = new PrismaReviewDeliveryStore(prisma);
   const completedFixStore = new PrismaCompletedFixStore(prisma);
+  const releaseCommunicationStore = new PrismaReleaseCommunicationStore(prisma);
   const getSignal = new GetSignal(signalStore);
   const unitOfWork = new PrismaFeedbackSignalUnitOfWork(
     prisma,
@@ -98,7 +107,8 @@ export function getSignalDeskServices(): SignalDeskServices {
       new GetProductIssueBySignal(productIssueStore),
       new GetImplementationBriefByProductIssue(implementationBriefStore),
       new GetReviewDeliveryByImplementationBrief(reviewDeliveryStore),
-      new GetCompletedFixByReviewDelivery(completedFixStore)
+      new GetCompletedFixByReviewDelivery(completedFixStore),
+      new GetReleaseCommunicationByCompletedFix(releaseCommunicationStore)
     ),
     appendTriage: new AppendTriage(new PrepareTriage(contentPolicy), signalStore),
     promoteSignalToIssue: new PromoteSignalToIssue(
@@ -116,6 +126,10 @@ export function getSignalDeskServices(): SignalDeskServices {
     recordCompletedFix: new RecordCompletedFix(
       new PrepareCompletedFix(contentPolicy),
       new PrismaDeliveryCompletionUnitOfWork(prisma)
+    ),
+    approveReleaseCommunication: new ApproveReleaseCommunication(
+      new PrepareReleaseCommunication(contentPolicy),
+      new PrismaCompletionCommunicationUnitOfWork(prisma)
     )
   };
   return singleton;

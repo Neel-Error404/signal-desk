@@ -7,7 +7,8 @@ adds one immutable owner-approved Implementation Brief with explicit acceptance 
 preserving the full source lineage. SD-004 adds one immutable, operator-supplied Review Delivery
 and a product-owned Git delivery contract without claiming hosted-provider verification. SD-005
 adds one immutable human-confirmed Completed Fix and product-owned completion context without
-granting merge authority.
+granting merge authority. SD-006 adds one immutable owner-approved Release Communication with
+explicit `not-sent` semantics and complete source lineage without granting publication authority.
 
 ## Current Scope
 
@@ -30,11 +31,15 @@ granting merge authority.
   server time, and complete Feedback-to-Review lineage.
 - Declare the completion evidence source, retained authority, and next eligible lifecycle stage
   in `delivery/completed-fix-contract.json`.
+- Approve one immutable Release Communication for a Completed Fix with intended audience, subject,
+  message, unverified local approver label, server time, and complete lineage.
+- Declare the owner-approved but unpublished outcome in
+  `delivery/release-communication-contract.json` without storing credentials or adding a send path.
 
-SD-001 through SD-005 are local-only. They do not provide authentication, authorization, tenancy,
+SD-001 through SD-006 are local-only. They do not provide authentication, authorization, tenancy,
 uploads, complete DLP, hosted-provider verification, production deployment, automatic
-prioritization, or autonomous product decisions, task execution, merge, release, or customer
-communication.
+prioritization, or autonomous product decisions, task execution, merge, release, publication, or
+customer contact.
 
 ## Local Development
 

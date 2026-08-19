@@ -14,7 +14,8 @@
     "requireDistinctBranches": true
   },
   "contextContracts": [
-    "delivery/completed-fix-contract.json"
+    "delivery/completed-fix-contract.json",
+    "delivery/release-communication-contract.json"
   ],
   "requiredChecks": [
     { "order": 1, "level": "foundation", "command": "npm run test:foundation" },

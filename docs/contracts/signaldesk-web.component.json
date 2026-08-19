@@ -1,8 +1,8 @@
 {
-  "version": "0.6.0",
+  "version": "0.7.0",
   "id": "signaldesk-web",
   "owner": "Neel",
-  "purpose": "Operate the local deterministic SD-001 through SD-005 feedback-intake, signal-inbox, manual-triage, prioritized-product-issue, approved-implementation-brief, immutable-review-delivery, and completed-fix slices inside one Next.js modular monolith.",
+  "purpose": "Operate the local deterministic SD-001 through SD-006 feedback-intake, signal-inbox, manual-triage, prioritized-product-issue, approved-implementation-brief, immutable-review-delivery, completed-fix, and approved-unsent-release-communication slices inside one Next.js modular monolith.",
   "execution_kind": "deterministic",
   "inputs": [
     {
@@ -39,6 +39,11 @@
       "name": "record-completed-fix-http-request",
       "schema": "docs/contracts/SD-005.md#post-apiv1review-deliveriesreviewdeliveryidcompleted-fix",
       "error_contract": "docs/contracts/SD-005.md#errors"
+    },
+    {
+      "name": "approve-release-communication-http-request",
+      "schema": "docs/contracts/SD-006.md#post-apiv1completed-fixescompletedfixidrelease-communication",
+      "error_contract": "docs/contracts/SD-006.md#errors"
     }
   ],
   "outputs": [
@@ -76,6 +81,11 @@
       "name": "immutable-completed-fix-http-response",
       "schema": "docs/contracts/SD-005.md#post-apiv1review-deliveriesreviewdeliveryidcompleted-fix",
       "error_contract": "docs/contracts/SD-005.md#errors"
+    },
+    {
+      "name": "approved-unsent-release-communication-http-response",
+      "schema": "docs/contracts/SD-006.md#post-apiv1completed-fixescompletedfixidrelease-communication",
+      "error_contract": "docs/contracts/SD-006.md#errors"
     }
   ],
   "dependencies": {
@@ -87,11 +97,13 @@
       "Implementation Briefs public application ports",
       "Review Deliveries public application ports",
       "Completed Fixes public application ports",
+      "Release Communications public application ports",
       "SD-001 feedback-to-signal workflow",
       "SD-002 signal-to-issue workflow",
       "SD-003 issue-to-brief workflow",
       "SD-004 brief-to-delivery workflow",
       "SD-005 delivery-to-completion workflow",
+      "SD-006 completion-to-communication workflow",
       "Prisma client through bounded repository adapters",
       "PostgreSQL through Prisma"
     ],
@@ -136,6 +148,11 @@
       "effect": "Create one immutable operator-confirmed Completed Fix for one Review Delivery after an explicit manual local request.",
       "reversible": false,
       "approval": "human"
+    },
+    {
+      "effect": "Create one immutable owner-approved but unsent Release Communication for one Completed Fix after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
     }
   ],
   "authority": {
@@ -150,8 +167,8 @@
   },
   "data": {
     "classification": "confidential",
-    "retention": "Local prototype retention is operator-controlled; SD-001 through SD-005 provide no public deletion endpoint, hosted retention guarantee, backup claim, or recovery claim.",
-    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence; each Product Issue retains one unique source Signal and its exact promotion revision; each Implementation Brief retains one unique source Product Issue; each Review Delivery retains one unique source Implementation Brief and exact Git review reference; each Completed Fix retains one unique source Review Delivery and merged commit reference."
+    "retention": "Local prototype retention is operator-controlled; SD-001 through SD-006 provide no public deletion endpoint, hosted retention guarantee, backup claim, or recovery claim.",
+    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence; each Product Issue retains one unique source Signal and its exact promotion revision; each Implementation Brief retains one unique source Product Issue; each Review Delivery retains one unique source Implementation Brief and exact Git review reference; each Completed Fix retains one unique source Review Delivery and merged commit reference; each Release Communication retains one unique source Completed Fix and explicit not-sent semantics."
   },
   "failure_modes": [
     {
@@ -200,6 +217,11 @@
       "response": "Reject without creating or mutating a Completed Fix and require an explicit corrected operator request."
     },
     {
+      "condition": "Release Communication approval uses a missing or already-communicated Completed Fix, lacks explicit approval, or contains invalid content.",
+      "signal": "completed_fix_not_found, release_communication_exists, release_approval_required, or invalid_request.",
+      "response": "Reject without creating or mutating a Release Communication and never imply publication."
+    },
+    {
       "condition": "Restricted-content evaluation is unavailable or fails unexpectedly.",
       "signal": "A structured internal failure with bounded correlation and no raw content.",
       "response": "Fail the write closed; do not bypass detection or use a fallback."
@@ -226,9 +248,9 @@
   "verification": {
     "tests": [
       "Planned Foundation contract, TypeScript, Prisma schema, and dependency-cruiser checks",
-      "Planned Component validation, detector, domain, append-only triage, Product Issue, Implementation Brief, Review Delivery, and Completed Fix decision checks",
-      "Planned Integration PostgreSQL atomicity, uniqueness, revision, immutable issue, immutable brief, immutable delivery, immutable completion, and repository checks",
-      "Planned Workflow feedback-to-inbox-to-manual-triage-to-prioritized-issue-to-approved-brief-to-review-delivery-to-completed-fix check",
+      "Planned Component validation, detector, domain, append-only triage, Product Issue, Implementation Brief, Review Delivery, Completed Fix, and Release Communication decision checks",
+      "Planned Integration PostgreSQL atomicity, uniqueness, revision, immutable issue, immutable brief, immutable delivery, immutable completion, immutable communication, and repository checks",
+      "Planned Workflow feedback-to-inbox-to-manual-triage-to-prioritized-issue-to-approved-brief-to-review-delivery-to-completed-fix-to-approved-communication check",
       "Planned Stress input-bound, concurrency, failure-recovery, and telemetry-redaction checks"
     ],
     "evals": [
@@ -242,6 +264,7 @@
       "Prisma and PostgreSQL must enforce unique immutable ImplementationBrief.productIssueId lineage and bounded text arrays",
       "Prisma and PostgreSQL must enforce unique immutable ReviewDelivery.implementationBriefId lineage and exact product Git policy",
       "Prisma and PostgreSQL must enforce unique immutable CompletedFix.reviewDeliveryId lineage and merged commit bounds",
+      "Prisma and PostgreSQL must enforce unique immutable ReleaseCommunication.completedFixId lineage and content bounds",
       "HTTP contract fixtures must preserve closed schemas, bounds, acknowledgements, and explicit errors",
       "Telemetry checks must prove submitted confidential content is absent from logs, traces, and metrics"
     ]
