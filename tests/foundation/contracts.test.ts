@@ -494,6 +494,8 @@ describe("SD-007 hosted review gate contracts", () => {
   it("pins a least-privilege Ubuntu pull-request workflow", async () => {
     const workflow = await text(".github/workflows/hosted-review-gate.yml");
     expect(workflow).toContain("pull_request:");
+    expect(workflow).toContain("      - main");
+    expect(workflow).toContain("      - work/sd-006-release-communication");
     expect(workflow).not.toContain("pull_request_target");
     expect(workflow).toContain("contents: read");
     expect(workflow).not.toContain("contents: write");
@@ -516,6 +518,29 @@ describe("SD-007 hosted review gate contracts", () => {
     expect(workflow).toContain(
       "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
     );
+  });
+
+  it("binds the mainline correction to a separate cumulative review target", async () => {
+    const workItem = JSON.parse(await text("docs/work-items/SD-007A.json")) as {
+      change_class: string;
+      owner: string;
+      ship_target: string;
+      status: string;
+      branch: string;
+      base_branch: string;
+      base_commit: string;
+      required_check: string;
+    };
+    expect(workItem).toMatchObject({
+      change_class: "infrastructure",
+      owner: "Neel",
+      ship_target: "reviewable-pr",
+      branch: "work/sd-007a-mainline-gate",
+      base_branch: "main",
+      base_commit: "5a7b43aa29e50e8eae0e91938a8aa747f19b9177",
+      required_check: "signaldesk-ordered-review-gate"
+    });
+    expect(["in_progress", "verified"]).toContain(workItem.status);
   });
 
   it("runs the product-owned checks once and in exact order", async () => {

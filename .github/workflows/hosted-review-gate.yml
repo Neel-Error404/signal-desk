@@ -3,6 +3,7 @@ name: SignalDesk Hosted Review Gate
 on:
   pull_request:
     branches:
+      - main
       - work/sd-006-release-communication
     types: [opened, synchronize, reopened, ready_for_review]
 

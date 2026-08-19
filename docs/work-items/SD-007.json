@@ -37,5 +37,5 @@
     "Learning: bind one quarantined candidate to the actual trace, run two replay and two shadow cases, independent evaluation, exact human decision, and non-mutating promotion only when approved."
   ],
   "owner": "Neel",
-  "status": "in_progress"
+  "status": "verified"
 }
