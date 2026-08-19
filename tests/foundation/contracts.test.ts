@@ -501,6 +501,9 @@ describe("SD-007 hosted review gate contracts", () => {
     expect(workflow).toContain("name: signaldesk-ordered-review-gate");
     expect(workflow).toContain("runs-on: windows-2022");
     expect(workflow).toContain('node-version: "22.18.0"');
+    expect(workflow).toContain(
+      "SIGNALDESK_TEST_RUNTIME_ROOT: ${{ runner.temp }}\\signaldesk-runtime"
+    );
     expect(workflow).toContain("persist-credentials: false");
     expect(workflow).toContain(
       "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
@@ -530,11 +533,23 @@ describe("SD-007 hosted review gate contracts", () => {
 
   it("keeps the reproduced Windows cleanup bounded and explicit", async () => {
     const runtime = await text("scripts/local-test-runtime.mjs");
+    const integration = await text("scripts/run-integration.mjs");
     const stress = await text("scripts/run-stress.mjs");
+    expect(runtime).toContain("SIGNALDESK_TEST_RUNTIME_ROOT must be an absolute path");
+    expect(integration).toContain("testRuntimeRoot()");
+    expect(stress).toContain("testRuntimeRoot()");
     expect(runtime).toContain("maxRetries: 10");
     expect(runtime).toContain("retryDelay: 100");
+    expect(runtime).toContain("Local PostgreSQL process did not exit within");
+    expect(runtime).not.toContain("Local PostgreSQL taskkill failed");
     expect(stress).toContain("maxRetries: 10");
     expect(stress).toContain("retryDelay: 100");
     expect(stress).toContain("Refused to remove unexpected PostgreSQL path");
+  });
+
+  it("bounds the full cold-start Workflow path without retries", async () => {
+    const playwright = await text("playwright.config.ts");
+    expect(playwright).toContain("timeout: 60_000");
+    expect(playwright).toContain("retries: 0");
   });
 });

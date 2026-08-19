@@ -1,9 +1,10 @@
 import { spawnSync } from "node:child_process";
 import { mkdir } from "node:fs/promises";
 import { createServer } from "node:net";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import EmbeddedPostgres from "embedded-postgres";
-import { stopLocalPostgres } from "./local-test-runtime.mjs";
+import { stopLocalPostgres, testRuntimeRoot } from "./local-test-runtime.mjs";
 
 async function availableLoopbackPort() {
   return new Promise((resolve, reject) => {
@@ -73,11 +74,9 @@ if (typeof suppliedUrl === "string" && suppliedUrl.trim().length > 0) {
   const databaseName = "signaldesk_test";
   const user = "signaldesk_test";
   const password = "local_integration_only";
-  const databaseDir = fileURLToPath(
-    new URL(
-      `../.elder/runtime/postgres-integration-${process.pid}-${Date.now()}`,
-      import.meta.url
-    )
+  const databaseDir = path.join(
+    testRuntimeRoot(),
+    `postgres-integration-${process.pid}-${Date.now()}`
   );
   await mkdir(databaseDir, { recursive: true });
   const postgres = new EmbeddedPostgres({

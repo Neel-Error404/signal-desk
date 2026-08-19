@@ -1,6 +1,5 @@
 import { rm } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   applyMigrations,
   availableLoopbackPort,
@@ -8,6 +7,7 @@ import {
   startNextDev,
   stopChild,
   stopLocalPostgres,
+  testRuntimeRoot,
   waitForHttp
 } from "./local-test-runtime.mjs";
 
@@ -396,9 +396,7 @@ try {
   if (databaseRunning) {
     await stopLocalPostgres(database.postgres);
   }
-  const runtimeRoot = path.resolve(
-    fileURLToPath(new URL("../.elder/runtime", import.meta.url))
-  );
+  const runtimeRoot = testRuntimeRoot();
   const databaseDir = path.resolve(database.databaseDir);
   if (!databaseDir.startsWith(`${runtimeRoot}${path.sep}`)) {
     throw new Error(`Refused to remove unexpected PostgreSQL path: ${databaseDir}`);

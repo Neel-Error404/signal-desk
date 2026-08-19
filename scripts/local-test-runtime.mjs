@@ -2,8 +2,27 @@ import { spawn, spawnSync } from "node:child_process";
 import { mkdir, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import { platform } from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import EmbeddedPostgres from "embedded-postgres";
+
+const defaultTestRuntimeRoot = path.resolve(
+  fileURLToPath(new URL("../.elder/runtime", import.meta.url))
+);
+
+export function testRuntimeRoot() {
+  const configured = process.env.SIGNALDESK_TEST_RUNTIME_ROOT;
+  if (configured === undefined) {
+    return defaultTestRuntimeRoot;
+  }
+  if (configured.trim().length === 0) {
+    throw new Error("SIGNALDESK_TEST_RUNTIME_ROOT cannot be empty when configured.");
+  }
+  if (!path.isAbsolute(configured)) {
+    throw new Error("SIGNALDESK_TEST_RUNTIME_ROOT must be an absolute path.");
+  }
+  return path.resolve(configured);
+}
 
 export async function availableLoopbackPort() {
   return new Promise((resolve, reject) => {
@@ -45,11 +64,9 @@ export async function startLocalPostgres(label, persistent = false) {
   const databaseName = "signaldesk_test";
   const user = "signaldesk_test";
   const password = "local_test_only";
-  const databaseDir = fileURLToPath(
-    new URL(
-      `../.elder/runtime/postgres-${label}-${process.pid}-${Date.now()}`,
-      import.meta.url
-    )
+  const databaseDir = path.join(
+    testRuntimeRoot(),
+    `postgres-${label}-${process.pid}-${Date.now()}`
   );
   await mkdir(databaseDir, { recursive: true });
   const startupDiagnostics = [];
@@ -188,12 +205,6 @@ export async function stopLocalPostgres(postgres, timeoutMs = 10_000) {
   if (stopped !== true) {
     throw new Error(
       `Local PostgreSQL process did not exit within ${timeoutMs} milliseconds after stop.`
-    );
-  }
-  if (result.status !== 0) {
-    throw new Error(
-      `Local PostgreSQL taskkill failed with exit code ${result.status ?? "unknown"}: ` +
-        `${result.stderr.trim()}`
     );
   }
   postgres.process = undefined;

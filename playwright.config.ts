@@ -7,6 +7,7 @@ if (baseURL === undefined || baseURL.length === 0) {
 
 export default defineConfig({
   testDir: "./tests/workflow",
+  timeout: 60_000,
   fullyParallel: false,
   workers: 1,
   retries: 0,

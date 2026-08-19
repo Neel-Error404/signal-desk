@@ -17,6 +17,7 @@ jobs:
     env:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
+      SIGNALDESK_TEST_RUNTIME_ROOT: ${{ runner.temp }}\signaldesk-runtime
     defaults:
       run:
         shell: pwsh
