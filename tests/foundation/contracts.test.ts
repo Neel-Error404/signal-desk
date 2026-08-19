@@ -466,3 +466,75 @@ describe("SD-006 ratified static contracts", () => {
     );
   });
 });
+
+describe("SD-007 hosted review gate contracts", () => {
+  it("binds one infrastructure work item to the exact stacked delivery target", async () => {
+    const workItem = JSON.parse(await text("docs/work-items/SD-007.json")) as {
+      change_class: string;
+      owner: string;
+      ship_target: string;
+      status: string;
+      branch: string;
+      base_branch: string;
+      base_commit: string;
+      required_check: string;
+    };
+    expect(workItem).toMatchObject({
+      change_class: "infrastructure",
+      owner: "Neel",
+      ship_target: "reviewable-pr",
+      branch: "work/sd-007-hosted-review-gate",
+      base_branch: "work/sd-006-release-communication",
+      base_commit: "5879dc0c7285ecdddddcf23b1c4ea632db21b15c",
+      required_check: "signaldesk-ordered-review-gate"
+    });
+    expect(["in_progress", "verified"]).toContain(workItem.status);
+  });
+
+  it("pins a least-privilege Windows pull-request workflow", async () => {
+    const workflow = await text(".github/workflows/hosted-review-gate.yml");
+    expect(workflow).toContain("pull_request:");
+    expect(workflow).not.toContain("pull_request_target");
+    expect(workflow).toContain("contents: read");
+    expect(workflow).not.toContain("contents: write");
+    expect(workflow).not.toContain("secrets.");
+    expect(workflow).toContain("name: signaldesk-ordered-review-gate");
+    expect(workflow).toContain("runs-on: windows-2022");
+    expect(workflow).toContain('node-version: "22.18.0"');
+    expect(workflow).toContain("persist-credentials: false");
+    expect(workflow).toContain(
+      "actions/checkout@11d5960a326750d5838078e36cf38b85af677262"
+    );
+    expect(workflow).toContain(
+      "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
+    );
+    expect(workflow).toContain(
+      "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
+    );
+  });
+
+  it("runs the product-owned checks once and in exact order", async () => {
+    const delivery = JSON.parse(
+      await text("delivery/review-delivery-contract.json")
+    ) as { requiredChecks: Array<{ order: number; command: string }> };
+    const workflow = await text(".github/workflows/hosted-review-gate.yml");
+    const checks = [...delivery.requiredChecks].sort((left, right) => left.order - right.order);
+    let previousIndex = -1;
+    for (const check of checks) {
+      const firstIndex = workflow.indexOf(`run: ${check.command}`);
+      expect(firstIndex).toBeGreaterThan(previousIndex);
+      expect(workflow.indexOf(`run: ${check.command}`, firstIndex + 1)).toBe(-1);
+      previousIndex = firstIndex;
+    }
+  });
+
+  it("keeps the reproduced Windows cleanup bounded and explicit", async () => {
+    const runtime = await text("scripts/local-test-runtime.mjs");
+    const stress = await text("scripts/run-stress.mjs");
+    expect(runtime).toContain("maxRetries: 10");
+    expect(runtime).toContain("retryDelay: 100");
+    expect(stress).toContain("maxRetries: 10");
+    expect(stress).toContain("retryDelay: 100");
+    expect(stress).toContain("Refused to remove unexpected PostgreSQL path");
+  });
+});

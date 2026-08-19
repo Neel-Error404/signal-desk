@@ -198,6 +198,11 @@ export async function stopLocalPostgres(postgres, timeoutMs = 10_000) {
   }
   postgres.process = undefined;
   if (postgres.options.persistent === false) {
-    await rm(postgres.options.databaseDir, { recursive: true, force: true });
+    await rm(postgres.options.databaseDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 100
+    });
   }
 }

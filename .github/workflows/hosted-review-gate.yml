@@ -1,0 +1,66 @@
+name: SignalDesk Hosted Review Gate
+
+on:
+  pull_request:
+    branches:
+      - work/sd-006-release-communication
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  ordered-review-gate:
+    name: signaldesk-ordered-review-gate
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out the exact pull-request revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Install Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+
+      - name: Install Python for the portable Elder capsule
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13.5"
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Foundation
+        run: npm run test:foundation
+
+      - name: Component
+        run: npm run test:component
+
+      - name: Integration
+        run: npm run test:integration
+
+      - name: Workflow
+        run: npm run test:workflow
+
+      - name: Stress
+        run: npm run test:stress
+
+      - name: Build
+        run: npm run build
+
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+
+      - name: Elder validation
+        run: .\elder.ps1 validate

@@ -403,5 +403,10 @@ try {
   if (!databaseDir.startsWith(`${runtimeRoot}${path.sep}`)) {
     throw new Error(`Refused to remove unexpected PostgreSQL path: ${databaseDir}`);
   }
-  await rm(databaseDir, { recursive: true, force: true });
+  await rm(databaseDir, {
+    recursive: true,
+    force: true,
+    maxRetries: 10,
+    retryDelay: 100
+  });
 }
