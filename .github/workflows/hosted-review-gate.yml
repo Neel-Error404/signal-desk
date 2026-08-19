@@ -29,7 +29,10 @@ jobs:
 
       - name: Configure the mutable test runtime
         run: |
-          $runtimeRoot = Join-Path $env:RUNNER_TEMP "signaldesk-runtime"
+          if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+            throw "LOCALAPPDATA is required for the hosted PostgreSQL runtime."
+          }
+          $runtimeRoot = Join-Path $env:LOCALAPPDATA "SignalDesk\test-runtime"
           "SIGNALDESK_TEST_RUNTIME_ROOT=$runtimeRoot" |
             Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
