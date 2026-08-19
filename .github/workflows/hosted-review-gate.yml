@@ -17,7 +17,6 @@ jobs:
     env:
       CI: "true"
       NEXT_TELEMETRY_DISABLED: "1"
-      SIGNALDESK_TEST_RUNTIME_ROOT: ${{ runner.temp }}\signaldesk-runtime
     defaults:
       run:
         shell: pwsh
@@ -27,6 +26,12 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
+
+      - name: Configure the mutable test runtime
+        run: |
+          $runtimeRoot = Join-Path $env:RUNNER_TEMP "signaldesk-runtime"
+          "SIGNALDESK_TEST_RUNTIME_ROOT=$runtimeRoot" |
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install Node.js 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
