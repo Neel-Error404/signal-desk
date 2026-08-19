@@ -47,6 +47,41 @@ jobs:
         with:
           python-version: "3.13.5"
 
+      - name: Prepare the verified Linux Elder runtime layout
+        run: |
+          $manifest = Get-Content -Raw ".elder/capsule/manifest.json" | ConvertFrom-Json
+          $wheel = Join-Path $PWD $manifest.wheel
+          $wheelRecord = $manifest.files.PSObject.Properties[$manifest.wheel].Value
+          $wheelDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath $wheel).Hash.ToLowerInvariant()
+          if ($wheelDigest -ne $wheelRecord.sha256) {
+            throw "The Elder capsule wheel does not match its manifest."
+          }
+
+          $toolingRoot = Join-Path $PWD ".elder/runtime/tooling"
+          python -m venv --clear $toolingRoot
+          if ($LASTEXITCODE -ne 0) { throw "Failed to create the Elder tooling environment." }
+          $runtimePython = Join-Path $toolingRoot "bin/python"
+          & $runtimePython -m pip install --upgrade pip
+          if ($LASTEXITCODE -ne 0) { throw "Failed to update the Elder tooling pip." }
+          & $runtimePython -m pip install `
+            $wheel `
+            "azure-identity>=1.24,<2" `
+            "mem0ai==2.0.17" `
+            "python-dotenv>=1.1,<2" `
+            "qdrant-client==1.19.0"
+          if ($LASTEXITCODE -ne 0) { throw "Failed to install the Elder tooling runtime." }
+
+          $compatibilityDirectory = Join-Path $toolingRoot "Scripts"
+          New-Item -ItemType Directory -Path $compatibilityDirectory -Force | Out-Null
+          New-Item -ItemType SymbolicLink `
+            -Path (Join-Path $compatibilityDirectory "python.exe") `
+            -Target $runtimePython `
+            -Force | Out-Null
+          Set-Content `
+            -LiteralPath (Join-Path $toolingRoot ".elder-wheel.sha256") `
+            -Value $wheelDigest `
+            -Encoding ascii
+
       - name: Install exact dependencies
         run: npm ci
 

@@ -554,4 +554,15 @@ describe("SD-007 hosted review gate contracts", () => {
     expect(playwright).toContain("timeout: 60_000");
     expect(playwright).toContain("retries: 0");
   });
+
+  it("prepares a manifest-bound Linux Elder compatibility layout", async () => {
+    const workflow = await text(".github/workflows/hosted-review-gate.yml");
+    expect(workflow).toContain("Prepare the verified Linux Elder runtime layout");
+    expect(workflow).toContain(".elder/capsule/manifest.json");
+    expect(workflow).toContain("Get-FileHash -Algorithm SHA256");
+    expect(workflow).toContain('Join-Path $toolingRoot "bin/python"');
+    expect(workflow).toContain('Join-Path $compatibilityDirectory "python.exe"');
+    expect(workflow).toContain("New-Item -ItemType SymbolicLink");
+    expect(workflow).toContain(".elder-wheel.sha256");
+  });
 });

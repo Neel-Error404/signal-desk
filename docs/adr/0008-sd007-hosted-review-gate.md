@@ -50,6 +50,13 @@ PostgreSQL permission changes, and its user-owned `C:` path allowed initializati
 then explicitly refused the administrative runner account. Retaining Windows would therefore
 make the hosted gate structurally unreliable.
 
+The installed 0.5.1 capsule launcher was generated with a Windows virtual-environment path even
+though its wheel is platform-neutral. Do not mutate those manifest-bound capsule bytes in this
+slice. Before the ordered ladder, verify the wheel against its installed manifest, create an
+ignored Linux tooling environment with the same bootstrap dependencies, and expose the Linux
+interpreter through the launcher's expected `Scripts/python.exe` compatibility symlink. The
+unchanged `./elder.ps1 validate` command must then verify the versioned capsule normally.
+
 After the private hosted check is real, make SignalDesk public and install one active GitHub
 ruleset on `main` and the exact SD-007 base branch. Require pull requests and the observed exact
 check, prohibit deletion and non-fast-forward updates, enforce strict check freshness, and grant
