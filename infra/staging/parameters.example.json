@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "centralindia" },
+    "resourcePrefix": { "value": "signaldesk-stg-cin" },
+    "imageReference": { "value": "ghcr.io/neel-error404/signaldesk@sha256:<64-lowercase-hex>" },
+    "releaseCommit": { "value": "<40-lowercase-hex>" },
+    "deploymentRunId": { "value": "<github-run-id>" },
+    "revisionSuffix": { "value": "sd008-<shortsha>-<run-id>" },
+    "entraClientId": { "value": "<signaldesk-staging-entra-application-id>" },
+    "authorizedProvisionClientId": { "value": "<github-oidc-provision-application-id>" },
+    "authorizedTrafficClientId": { "value": "<github-oidc-traffic-application-id>" },
+    "entraClientSecret": { "value": "<supply-at-approved-deployment-only>" },
+    "administratorPassword": { "value": "<generate-inside-approved-workflow>" },
+    "migrationPassword": { "value": "<generate-inside-approved-workflow>" },
+    "runtimePassword": { "value": "<generate-inside-approved-workflow>" }
+  }
+}
