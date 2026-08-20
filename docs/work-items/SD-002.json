@@ -1,0 +1,35 @@
+{
+  "id": "SD-002",
+  "outcome_ids": [
+    ".elder/project-profile.json#/outcomes/success/2"
+  ],
+  "change_class": "public-contract",
+  "objective": "Let a local product owner promote one accepted Signal into one immutable prioritized Product Issue with explicit rationale and preserved Feedback and Signal lineage.",
+  "scope": [
+    "Add the Product Issues bounded context and signal-to-issue workflow.",
+    "Create one immutable Product Issue only from a currently accepted Signal at an exact expected revision.",
+    "Persist unique Signal lineage, manual priority, rationale, unverified operator label, and source Signal revision in PostgreSQL.",
+    "Add POST /api/v1/signals/{signalId}/product-issue and the additive productIssue Signal-detail projection.",
+    "Expose manual promotion and the persisted Product Issue through the local product interface.",
+    "Apply existing acknowledgement, input-bound, restricted-content, privacy, and fail-closed storage rules.",
+    "Produce ordered Foundation, Component, Integration, Workflow, and Stress evidence without advancing past a failed level."
+  ],
+  "non_goals": [
+    "Automatic prioritization, probabilistic inference, feedback grouping, deduplication, or synthesis.",
+    "Product Issue editing, deletion, status workflow, assignment, implementation tracking, or release communication.",
+    "Authentication, authorization, verified identity, tenancy, shared hosting, staging, production, deployment, merge, or release.",
+    "Elder infrastructure not required by a reproduced SD-002 blocker, Gate G continuation, L2 promotion, or L3 work."
+  ],
+  "ship_target": "reviewable-pr",
+  "session_boundary": "Stop when SD-002 is verified at the Git authorization boundary or when one reproduced product or Elder blocker is verified; do not begin another slice or gate.",
+  "evidence_plan": [
+    "Foundation: validate the SD-002 ADR, contract, work item, Prisma schema, migration, source layout, dependency boundaries, types, lint, and closed route surface.",
+    "Component: prove deterministic Product Issue validation, acknowledgement, priority and text bounds, restricted-content rejection, and explicit eligibility errors.",
+    "Integration: prove accepted-state and revision eligibility, source row locking, one Signal to one immutable Product Issue, exact lineage, duplicate rejection, and transaction rollback in PostgreSQL.",
+    "Workflow: use only the local UI to create and accept a Signal, promote it to a prioritized Product Issue, inspect lineage, reload, and observe persistence at desktop and mobile widths.",
+    "Stress: prove concurrent promotion has one winner, stale and non-accepted promotion fail closed, database outage and recovery are explicit, and submitted issue content is absent from logs.",
+    "Delivery: attempt the existing Elder supervised path to a reviewable PR and record every human intervention and exact blocker."
+  ],
+  "owner": "Neel",
+  "status": "verified"
+}

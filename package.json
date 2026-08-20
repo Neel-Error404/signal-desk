@@ -1,0 +1,45 @@
+{
+  "name": "signaldesk",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1",
+    "lockfile:check": "node scripts/check-lockfile.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "node scripts/validate-prisma-schema.mjs",
+    "contracts": "vitest run --config vitest.foundation.config.ts",
+    "source-layout": "node scripts/check-source-layout.mjs",
+    "boundaries": "npm run source-layout && depcruise --config .dependency-cruiser.cjs src tests",
+    "test:component": "vitest run --config vitest.component.config.ts",
+    "test:integration": "node scripts/run-integration.mjs",
+    "test:workflow": "node scripts/run-workflow.mjs",
+    "test:stress": "node scripts/run-stress.mjs",
+    "test:foundation": "npm run lockfile:check && npm run prisma:generate && npm run typecheck && npm run lint && npm run prisma:validate && npm run contracts && npm run boundaries"
+  },
+  "dependencies": {
+    "@prisma/client": "6.11.1",
+    "next": "16.3.1",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "24.10.1",
+    "@types/react": "19.0.8",
+    "@types/react-dom": "19.0.3",
+    "dependency-cruiser": "16.10.4",
+    "embedded-postgres": "18.4.0-beta.17",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.1",
+    "prisma": "6.11.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

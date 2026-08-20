@@ -1,0 +1,40 @@
+{
+  "id": "SD-007A",
+  "outcome_ids": [
+    ".elder/project-profile.json#/outcomes/success/4"
+  ],
+  "change_class": "infrastructure",
+  "objective": "Close the SD-007 mainline integration gap by making the existing product-owned hosted review gate run for pull requests targeting main and proving the exact required check on one cumulative main pull request.",
+  "scope": [
+    "Add main to the existing pull_request base-branch filter without changing the required-check name, ordered product commands, permissions, runner, pins, or test semantics.",
+    "Preserve work/sd-006-release-communication as the exact protected stacked base for SignalDesk PR #5.",
+    "Finalize the product-owned SD-007 evidence with the corrected green revision and the independently evaluated non-mutating learning packet.",
+    "Open one cumulative pull request from work/sd-007a-mainline-gate to main and prove that the active ruleset requires the exact hosted check.",
+    "Leave the cumulative main pull request open and unmerged after proof."
+  ],
+  "non_goals": [
+    "Merging or closing SignalDesk PR #4, PR #5, the cumulative SD-007A pull request, or Elder PR #6.",
+    "Changing any product feature, test command, required-check name, ruleset bypass, or protected-delivery policy.",
+    "SD-008, staging, production, deployment, release, rollback, P5.2 activation, canonical L2, L3, or canary work.",
+    "Applying the approved SD-007 learning candidate or mutating trusted memory, skills, policy, evaluators, architecture, or maturity."
+  ],
+  "ship_target": "reviewable-pr",
+  "branch": "work/sd-007a-mainline-gate",
+  "base_branch": "main",
+  "base_commit": "5a7b43aa29e50e8eae0e91938a8aa747f19b9177",
+  "required_check": "signaldesk-ordered-review-gate",
+  "evidence_plan": [
+    "Foundation: validate the separate work item and both exact workflow base branches while preserving least privilege, immutable action pins, the exact check name, and the exact ordered commands.",
+    "Component, Integration, Workflow, Stress, Build, Audit, and Elder: rerun the unchanged product-owned ladder one level at a time.",
+    "Hosted: bind the cumulative main pull request, exact base and head objects, workflow run, job, check, active ruleset, no-bypass state, and final open unmerged state.",
+    "Traceability: finalize SD-007 product evidence and issue a bounded SD-007A handoff without starting deployment or SD-008."
+  ],
+  "failure_conditions": [
+    "A pull request targeting main does not create signaldesk-ordered-review-gate.",
+    "The hosted command order, check name, permissions, runner, action pins, ruleset targets, or bypass state drifts.",
+    "The cumulative pull request is not bound to the declared main base and exact correction head.",
+    "Any SignalDesk or Elder pull request is merged, or staging, production, deployment, release, rollback, SD-008, P5.2, or L3 begins."
+  ],
+  "owner": "Neel",
+  "status": "verified"
+}

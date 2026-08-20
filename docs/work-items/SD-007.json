@@ -1,0 +1,41 @@
+{
+  "id": "SD-007",
+  "outcome_ids": [
+    ".elder/project-profile.json#/outcomes/success/4"
+  ],
+  "change_class": "infrastructure",
+  "objective": "Make SignalDesk's exact product-owned verification ladder visible on a real GitHub pull request and require its hosted check before protected delivery can be satisfied.",
+  "scope": [
+    "Add one least-privilege GitHub Actions pull-request workflow with one sequential Ubuntu 24.04 job.",
+    "Run every command from delivery/review-delivery-contract.json in exact order after deterministic npm ci.",
+    "Correct the reproduced bounded Windows Stress runtime-directory cleanup race without hiding failures.",
+    "Open one stacked SD-007 pull request against work/sd-006-release-communication.",
+    "After hosted execution and privacy proof, make SignalDesk public and enforce the observed required check on main and the exact SD-007 base branch.",
+    "Prove one controlled failing revision is blocked, then prove the corrected exact revision is green without weakening the gate.",
+    "Analyse the actual trace through one quarantined Prime candidate, independent evaluation, exact human decision, and at most one non-mutating promotion packet."
+  ],
+  "non_goals": [
+    "Another SignalDesk end-user feature or modification of PR #4's feature concern.",
+    "Merging SignalDesk PR #4, the SD-007 PR, or Elder PR #6.",
+    "Staging, production, application deployment, release, rollback, P5.2 activation, L3, or canary work.",
+    "Canonical L2, authority-source activation, certification, learning application, or counting the 20-item/30-day qualification period."
+  ],
+  "ship_target": "reviewable-pr",
+  "branch": "work/sd-007-hosted-review-gate",
+  "base_branch": "work/sd-006-release-communication",
+  "base_commit": "5879dc0c7285ecdddddcf23b1c4ea632db21b15c",
+  "required_check": "signaldesk-ordered-review-gate",
+  "evidence_plan": [
+    "Foundation: validate the work item, ADR, workflow pins, least privilege, exact required-check name, exact ordered commands, and bounded Stress cleanup.",
+    "Component: rerun the unchanged product component suite.",
+    "Integration: prove migrations and product integration against embedded PostgreSQL.",
+    "Workflow: prove both owner flows with installed Chrome and embedded PostgreSQL.",
+    "Stress: rerun the reproduced cleanup failure level and prove concurrency, outage recovery, redaction, and bounded runtime cleanup.",
+    "Build and audit: produce the optimized application build and reject high-severity dependency findings.",
+    "Elder: validate the portable project capsule.",
+    "Hosted: bind the real PR, workflow run, job, check, exact revision, public visibility, active ruleset, controlled failure, blocked merge state, correction, and final green state.",
+    "Learning: bind one quarantined candidate to the actual trace, run two replay and two shadow cases, independent evaluation, exact human decision, and non-mutating promotion only when approved."
+  ],
+  "owner": "Neel",
+  "status": "verified"
+}

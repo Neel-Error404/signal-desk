@@ -1,0 +1,36 @@
+{
+  "id": "SD-004",
+  "outcome_ids": [
+    ".elder/project-profile.json#/outcomes/success/3"
+  ],
+  "change_class": "public-contract",
+  "objective": "Let a local product owner attach one immutable operator-supplied review delivery to an approved Implementation Brief and let Elder consume the product-owned Git delivery contract without bypassing authority.",
+  "scope": [
+    "Add the Review Deliveries bounded context and brief-to-delivery workflow.",
+    "Create at most one immutable delivery for an existing Implementation Brief in a locked PostgreSQL transaction.",
+    "Persist the exact repository, base and head branches, commit SHA, pull-request number and URL, verification summary, unverified local submitter label, and server time.",
+    "Add POST /api/v1/implementation-briefs/{implementationBriefId}/review-delivery and an additive reviewDelivery Signal-detail projection.",
+    "Expose the implementation-to-review trace through the local product interface without claiming hosted-provider verification.",
+    "Add and validate a product-owned machine-readable Git delivery contract with ordered checks and retained authority.",
+    "Attempt Elder consumption and hosted delivery under current authority, correct only a reproduced consumption blocker, record actor attribution, close the learning loop, and stop."
+  ],
+  "non_goals": [
+    "Delivery editing, deletion, multiple attempts, status workflow, release notes, or customer communication.",
+    "GitHub API verification, credentials, commit signing, PR creation from the product, merge, deployment, or release.",
+    "Authentication, authorization, verified identity, tenancy, public hosting, production, L2 or L3 promotion, or constitutional changes.",
+    "SD-005, merge of Elder PR #3 or #4, or a change to the canonical observation threshold."
+  ],
+  "ship_target": "reviewable-pr",
+  "branch": "work/sd-004-review-delivery",
+  "base_branch": "work/sd-003-approved-implementation-brief",
+  "evidence_plan": [
+    "Foundation: validate ADR, contract, work item, delivery policy, Prisma schema, migration, source layout, boundaries, types, lint, and route surface.",
+    "Component: prove deterministic delivery-policy validation, branch, commit, URL, acknowledgement, bounds, content checks, and server identity/time binding.",
+    "Integration: prove source brief locking, one immutable delivery per brief, exact lineage, concurrency rejection, policy-derived repository, and PostgreSQL constraints.",
+    "Workflow: create the complete feedback-to-review-delivery trace through the local UI and observe persistence after reload at desktop and mobile widths.",
+    "Stress: prove concurrent delivery creation has one winner, malformed and missing sources fail closed, database outage recovers with lineage intact, and delivery content is absent from logs.",
+    "Factory: validate contract consumption, record P5.2 readiness truth and actor attribution, deliver only under explicit owner authority, and propose candidate learning without promotion."
+  ],
+  "owner": "Neel",
+  "status": "verified"
+}

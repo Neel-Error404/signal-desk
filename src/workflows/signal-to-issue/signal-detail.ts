@@ -1,0 +1,69 @@
+import type { GetProductIssueBySignal } from "@/modules/product-issues/application";
+import type { GetSignal, SignalDetail } from "@/modules/signal-inbox/application";
+import type { ProductIssueRecord } from "@/modules/product-issues/application";
+import type {
+  GetImplementationBriefByProductIssue,
+  ImplementationBriefRecord
+} from "@/modules/implementation-briefs/application";
+import type {
+  GetReviewDeliveryByImplementationBrief,
+  ReviewDeliveryRecord
+} from "@/modules/review-deliveries/application";
+import type {
+  CompletedFixRecord,
+  GetCompletedFixByReviewDelivery
+} from "@/modules/completed-fixes/application";
+import type {
+  GetReleaseCommunicationByCompletedFix,
+  ReleaseCommunicationRecord
+} from "@/modules/release-communications/application";
+
+export interface SignalDetailWithIssue extends SignalDetail {
+  readonly productIssue: ProductIssueRecord | null;
+  readonly implementationBrief: ImplementationBriefRecord | null;
+  readonly reviewDelivery: ReviewDeliveryRecord | null;
+  readonly completedFix: CompletedFixRecord | null;
+  readonly releaseCommunication: ReleaseCommunicationRecord | null;
+}
+
+export class GetSignalDetailWithIssue {
+  constructor(
+    private readonly getSignal: GetSignal,
+    private readonly getProductIssueBySignal: GetProductIssueBySignal,
+    private readonly getImplementationBriefByProductIssue: GetImplementationBriefByProductIssue,
+    private readonly getReviewDeliveryByImplementationBrief: GetReviewDeliveryByImplementationBrief,
+    private readonly getCompletedFixByReviewDelivery: GetCompletedFixByReviewDelivery,
+    private readonly getReleaseCommunicationByCompletedFix: GetReleaseCommunicationByCompletedFix
+  ) {}
+
+  async execute(signalId: string): Promise<SignalDetailWithIssue> {
+    const [detail, productIssue] = await Promise.all([
+      this.getSignal.execute(signalId),
+      this.getProductIssueBySignal.execute(signalId)
+    ]);
+    const implementationBrief =
+      productIssue === null
+        ? null
+        : await this.getImplementationBriefByProductIssue.execute(productIssue.id);
+    const reviewDelivery =
+      implementationBrief === null
+        ? null
+        : await this.getReviewDeliveryByImplementationBrief.execute(implementationBrief.id);
+    const completedFix =
+      reviewDelivery === null
+        ? null
+        : await this.getCompletedFixByReviewDelivery.execute(reviewDelivery.id);
+    const releaseCommunication =
+      completedFix === null
+        ? null
+        : await this.getReleaseCommunicationByCompletedFix.execute(completedFix.id);
+    return {
+      ...detail,
+      productIssue,
+      implementationBrief,
+      reviewDelivery,
+      completedFix,
+      releaseCommunication
+    };
+  }
+}

@@ -1,0 +1,77 @@
+# SignalDesk
+
+SignalDesk is Elder Protocol's first independent dogfood product. SD-001 implements local,
+deterministic feedback intake, PostgreSQL Signal lineage, and append-only manual triage. SD-002
+adds manual promotion of one accepted Signal into one immutable prioritized Product Issue. SD-003
+adds one immutable owner-approved Implementation Brief with explicit acceptance criteria while
+preserving the full source lineage. SD-004 adds one immutable, operator-supplied Review Delivery
+and a product-owned Git delivery contract without claiming hosted-provider verification. SD-005
+adds one immutable human-confirmed Completed Fix and product-owned completion context without
+granting merge authority. SD-006 adds one immutable owner-approved Release Communication with
+explicit `not-sent` semantics and complete source lineage without granting publication authority.
+
+## Current Scope
+
+- Capture bounded UTF-8 customer feedback.
+- Require an explicit storage acknowledgement.
+- Reject configured high-confidence credential and payment-card patterns before persistence.
+- Commit one Feedback and one linked Signal in one PostgreSQL transaction.
+- Inspect source lineage and ordered triage history.
+- Append revision-safe manual triage events.
+- Promote one accepted Signal into one manually prioritized Product Issue.
+- Inspect the issue's Feedback, Signal, revision, priority, rationale, and local operator lineage.
+- Approve one immutable implementation objective, acceptance-criteria list, and bounded
+  constraints for one Product Issue.
+- Inspect the brief's Feedback, Signal, Product Issue, approver label, and approval-time lineage.
+- Record one immutable Review Delivery with exact branches, commit, pull request, verification
+  summary, and full Feedback-to-Brief lineage.
+- Declare the trusted SignalDesk repository, PR URL prefix, branch policy, ordered checks, and
+  retained authority in `delivery/review-delivery-contract.json`.
+- Record one immutable Completed Fix with the merged commit, completion summary, human label,
+  server time, and complete Feedback-to-Review lineage.
+- Declare the completion evidence source, retained authority, and next eligible lifecycle stage
+  in `delivery/completed-fix-contract.json`.
+- Approve one immutable Release Communication for a Completed Fix with intended audience, subject,
+  message, unverified local approver label, server time, and complete lineage.
+- Declare the owner-approved but unpublished outcome in
+  `delivery/release-communication-contract.json` without storing credentials or adding a send path.
+
+SD-001 through SD-006 are local-only. They do not provide authentication, authorization, tenancy,
+uploads, complete DLP, hosted-provider verification, production deployment, automatic
+prioritization, or autonomous product decisions, task execution, merge, release, publication, or
+customer contact.
+
+## Local Development
+
+Requirements:
+
+- Node.js 22 or later.
+- Google Chrome for browser Workflow tests.
+
+```powershell
+npm ci
+$env:DATABASE_URL = "postgresql://signaldesk:replace-me@127.0.0.1:5432/signaldesk?schema=public"
+npm exec -- prisma migrate deploy
+npm run dev
+```
+
+The application binds to `127.0.0.1`. Do not expose SD-001 to a shared or public network.
+
+## Verification
+
+Run one level at a time and stop on failure:
+
+```powershell
+npm run test:foundation
+npm run test:component
+npm run test:integration
+npm run test:workflow
+npm run test:stress
+npm run build
+```
+
+Integration, Workflow, and Stress launch real project-scoped PostgreSQL binaries under the ignored
+`.elder/runtime/` directory. Workflow uses installed Chrome at desktop and mobile viewports.
+
+See the per-slice evidence under `docs/evidence/` and the corresponding reproduction records
+under `docs/test-reproduction/`.

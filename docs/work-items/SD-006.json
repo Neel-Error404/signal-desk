@@ -1,0 +1,35 @@
+{
+  "id": "SD-006",
+  "outcome_ids": [
+    ".elder/project-profile.json#/outcomes/success/3"
+  ],
+  "change_class": "public-contract",
+  "objective": "Let a local product owner approve one immutable unsent Release Communication for a Completed Fix while preserving exact source lineage and keeping publication outside SignalDesk and Elder authority.",
+  "scope": [
+    "Add the Release Communications bounded context and completion-to-communication workflow.",
+    "Create at most one immutable Release Communication for an existing Completed Fix in a locked PostgreSQL transaction.",
+    "Persist the intended audience, subject, message, unverified local approver label, and server approval time.",
+    "Add POST /api/v1/completed-fixes/{completedFixId}/release-communication and an additive releaseCommunication Signal-detail projection.",
+    "Expose the complete Feedback-to-Release Communication trace through the local product interface while displaying publicationStatus as not-sent.",
+    "Add a product-owned lifecycle contract connected to the Completed Fix lifecycle stage.",
+    "Attempt the reviewable-PR target through Elder and correct only one reproduced generalized blocker."
+  ],
+  "non_goals": [
+    "Sending, publishing, scheduling, customer contact integration, provider credentials, deployment, release execution, or delivery tracking.",
+    "Editing, deletion, multiple communications per fix, authentication, verified identity, tenancy, or public hosting.",
+    "L2 or L3 promotion, constitutional changes, another product slice, or changes to institutional qualification thresholds."
+  ],
+  "ship_target": "reviewable-pr",
+  "branch": "work/sd-006-release-communication",
+  "base_branch": "work/sd-005-completed-fix",
+  "evidence_plan": [
+    "Foundation: validate ADR, contract, work item, connected lifecycle context, Prisma schema, migration, source layout, boundaries, types, lint, and route surface.",
+    "Component: prove explicit approval, text bounds, deterministic content checks, server identity/time binding, and not-sent response semantics.",
+    "Integration: prove source locking, one immutable communication per fix, exact lineage, concurrency rejection, and PostgreSQL constraints.",
+    "Workflow: create the complete feedback-to-approved-communication trace through the local UI and observe persistence after reload at desktop and mobile widths.",
+    "Stress: prove concurrent approval has one winner, malformed and missing sources fail closed, database outage recovers with lineage intact, and communication content is absent from logs.",
+    "Factory: validate lifecycle-chain continuity, attempt the real reviewable-PR path, record human intervention and active L2 blockers, and preserve authority separation."
+  ],
+  "owner": "Neel",
+  "status": "verified"
+}

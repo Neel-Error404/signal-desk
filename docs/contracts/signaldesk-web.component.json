@@ -1,0 +1,282 @@
+{
+  "version": "0.7.0",
+  "id": "signaldesk-web",
+  "owner": "Neel",
+  "purpose": "Operate the local deterministic SD-001 through SD-006 feedback-intake, signal-inbox, manual-triage, prioritized-product-issue, approved-implementation-brief, immutable-review-delivery, completed-fix, and approved-unsent-release-communication slices inside one Next.js modular monolith.",
+  "execution_kind": "deterministic",
+  "inputs": [
+    {
+      "name": "capture-feedback-http-request",
+      "schema": "docs/contracts/SD-001.md#post-apiv1feedback",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "list-or-read-signals-http-request",
+      "schema": "docs/contracts/SD-001.md#endpoints",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "append-manual-triage-http-request",
+      "schema": "docs/contracts/SD-001.md#post-apiv1signalssignalidtriage-events",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "promote-signal-to-product-issue-http-request",
+      "schema": "docs/contracts/SD-002.md#post-apiv1signalssignalidproduct-issue",
+      "error_contract": "docs/contracts/SD-002.md#error-additions"
+    },
+    {
+      "name": "approve-implementation-brief-http-request",
+      "schema": "docs/contracts/SD-003.md#post-apiv1product-issuesproductissueidimplementation-brief",
+      "error_contract": "docs/contracts/SD-003.md#error-additions"
+    },
+    {
+      "name": "record-review-delivery-http-request",
+      "schema": "docs/contracts/SD-004.md#post-apiv1implementation-briefsimplementationbriefidreview-delivery",
+      "error_contract": "docs/contracts/SD-004.md#error-additions"
+    },
+    {
+      "name": "record-completed-fix-http-request",
+      "schema": "docs/contracts/SD-005.md#post-apiv1review-deliveriesreviewdeliveryidcompleted-fix",
+      "error_contract": "docs/contracts/SD-005.md#errors"
+    },
+    {
+      "name": "approve-release-communication-http-request",
+      "schema": "docs/contracts/SD-006.md#post-apiv1completed-fixescompletedfixidrelease-communication",
+      "error_contract": "docs/contracts/SD-006.md#errors"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "feedback-and-signal-http-response",
+      "schema": "docs/contracts/SD-001.md#post-apiv1feedback",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "signal-inbox-http-response",
+      "schema": "docs/contracts/SD-001.md#get-apiv1signals",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "triage-event-http-response",
+      "schema": "docs/contracts/SD-001.md#post-apiv1signalssignalidtriage-events",
+      "error_contract": "docs/contracts/SD-001.md#error-contract"
+    },
+    {
+      "name": "prioritized-product-issue-http-response",
+      "schema": "docs/contracts/SD-002.md#post-apiv1signalssignalidproduct-issue",
+      "error_contract": "docs/contracts/SD-002.md#error-additions"
+    },
+    {
+      "name": "approved-implementation-brief-http-response",
+      "schema": "docs/contracts/SD-003.md#post-apiv1product-issuesproductissueidimplementation-brief",
+      "error_contract": "docs/contracts/SD-003.md#error-additions"
+    },
+    {
+      "name": "immutable-review-delivery-http-response",
+      "schema": "docs/contracts/SD-004.md#post-apiv1implementation-briefsimplementationbriefidreview-delivery",
+      "error_contract": "docs/contracts/SD-004.md#error-additions"
+    },
+    {
+      "name": "immutable-completed-fix-http-response",
+      "schema": "docs/contracts/SD-005.md#post-apiv1review-deliveriesreviewdeliveryidcompleted-fix",
+      "error_contract": "docs/contracts/SD-005.md#errors"
+    },
+    {
+      "name": "approved-unsent-release-communication-http-response",
+      "schema": "docs/contracts/SD-006.md#post-apiv1completed-fixescompletedfixidrelease-communication",
+      "error_contract": "docs/contracts/SD-006.md#errors"
+    }
+  ],
+  "dependencies": {
+    "allowed": [
+      "Next.js local application runtime",
+      "Feedback Intake public application ports",
+      "Signal Inbox public application ports",
+      "Product Issues public application ports",
+      "Implementation Briefs public application ports",
+      "Review Deliveries public application ports",
+      "Completed Fixes public application ports",
+      "Release Communications public application ports",
+      "SD-001 feedback-to-signal workflow",
+      "SD-002 signal-to-issue workflow",
+      "SD-003 issue-to-brief workflow",
+      "SD-004 brief-to-delivery workflow",
+      "SD-005 delivery-to-completion workflow",
+      "SD-006 completion-to-communication workflow",
+      "Prisma client through bounded repository adapters",
+      "PostgreSQL through Prisma"
+    ],
+    "forbidden": [
+      "Cross-context domain imports",
+      "Direct HTTP-to-Prisma access",
+      "Domain imports from HTTP or infrastructure",
+      "External network services",
+      "File or object storage and upload libraries",
+      "Probabilistic model inference",
+      "Production code imports from test modules",
+      "Unauthenticated local identity represented as verified identity"
+    ]
+  },
+  "side_effects": [
+    {
+      "effect": "Persist one accepted Feedback and exactly one linked Signal in a single local PostgreSQL transaction.",
+      "reversible": false,
+      "approval": "policy"
+    },
+    {
+      "effect": "Append an immutable TriageEvent after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
+    },
+    {
+      "effect": "Create one immutable prioritized Product Issue from one currently accepted Signal at its exact revision after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
+    },
+    {
+      "effect": "Create one immutable owner-approved Implementation Brief for one Product Issue after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
+    },
+    {
+      "effect": "Create one immutable operator-supplied Review Delivery for one Implementation Brief after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
+    },
+    {
+      "effect": "Create one immutable operator-confirmed Completed Fix for one Review Delivery after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
+    },
+    {
+      "effect": "Create one immutable owner-approved but unsent Release Communication for one Completed Fix after an explicit manual local request.",
+      "reversible": false,
+      "approval": "human"
+    }
+  ],
+  "authority": {
+    "identity_mode": "none",
+    "credentials": [
+      "Local DATABASE_URL supplied by the operator environment and never stored in repository content"
+    ],
+    "tool_scopes": [
+      "Serve bounded local HTTP requests",
+      "Read and write the local SignalDesk PostgreSQL schema through Prisma"
+    ]
+  },
+  "data": {
+    "classification": "confidential",
+    "retention": "Local prototype retention is operator-controlled; SD-001 through SD-006 provide no public deletion endpoint, hosted retention guarantee, backup claim, or recovery claim.",
+    "lineage": "Each committed Feedback has exactly one committed Signal through unique Signal.feedbackId; every TriageEvent retains its Signal ID and immutable sequence; each Product Issue retains one unique source Signal and its exact promotion revision; each Implementation Brief retains one unique source Product Issue; each Review Delivery retains one unique source Implementation Brief and exact Git review reference; each Completed Fix retains one unique source Review Delivery and merged commit reference; each Release Communication retains one unique source Completed Fix and explicit not-sent semantics."
+  },
+  "failure_modes": [
+    {
+      "condition": "The body is not bounded UTF-8 JSON or violates a closed request schema.",
+      "signal": "A structured 400, 413, or 415 HTTP error code with bounded correlation ID.",
+      "response": "Reject before domain execution and do not persist content."
+    },
+    {
+      "condition": "Explicit content acknowledgement is absent or not true.",
+      "signal": "content_acknowledgement_required with HTTP 422.",
+      "response": "Reject before restricted-content evaluation or persistence."
+    },
+    {
+      "condition": "A configured high-confidence secret or regulated-data rule matches.",
+      "signal": "restricted_content_detected with HTTP 422 and non-sensitive rule identifiers.",
+      "response": "Fail closed without echoing, logging, sanitizing, or persisting the matched content."
+    },
+    {
+      "condition": "Feedback and Signal cannot both commit or the unique lineage constraint conflicts.",
+      "signal": "storage_unavailable or lineage_conflict with no success response.",
+      "response": "Roll back the entire transaction so no partial lineage is visible."
+    },
+    {
+      "condition": "A manual triage append uses a stale expected revision.",
+      "signal": "revision_conflict with HTTP 409.",
+      "response": "Preserve existing events and require the operator to reload before another explicit append."
+    },
+    {
+      "condition": "Product Issue promotion uses a missing, non-accepted, stale, or already-promoted Signal.",
+      "signal": "signal_not_found, signal_not_accepted, revision_conflict, or product_issue_exists.",
+      "response": "Reject without creating or mutating a Product Issue and require an explicit corrected operator request."
+    },
+    {
+      "condition": "Implementation Brief approval uses a missing or already-briefed Product Issue.",
+      "signal": "product_issue_not_found or implementation_brief_exists.",
+      "response": "Reject without creating or mutating an Implementation Brief and require an explicit corrected operator request."
+    },
+    {
+      "condition": "Review Delivery recording uses a missing or already-delivered brief or a Git reference outside product policy.",
+      "signal": "implementation_brief_not_found, review_delivery_exists, or invalid_request.",
+      "response": "Reject without creating or mutating a Review Delivery and require an explicit corrected operator request."
+    },
+    {
+      "condition": "Completed Fix recording uses a missing or already-completed Review Delivery, lacks external merge confirmation, or contains invalid evidence.",
+      "signal": "review_delivery_not_found, completed_fix_exists, external_merge_confirmation_required, or invalid_request.",
+      "response": "Reject without creating or mutating a Completed Fix and require an explicit corrected operator request."
+    },
+    {
+      "condition": "Release Communication approval uses a missing or already-communicated Completed Fix, lacks explicit approval, or contains invalid content.",
+      "signal": "completed_fix_not_found, release_communication_exists, release_approval_required, or invalid_request.",
+      "response": "Reject without creating or mutating a Release Communication and never imply publication."
+    },
+    {
+      "condition": "Restricted-content evaluation is unavailable or fails unexpectedly.",
+      "signal": "A structured internal failure with bounded correlation and no raw content.",
+      "response": "Fail the write closed; do not bypass detection or use a fallback."
+    }
+  ],
+  "telemetry": {
+    "traces": [
+      "Planned route-template spans without request or response content",
+      "Planned transaction outcome spans without database values"
+    ],
+    "metrics": [
+      "Planned request count, status class, latency, and aggregate rejection rule count"
+    ],
+    "logs": [
+      "Planned structured operational errors without submitted content, credentials, cookies, or authorization values"
+    ],
+    "correlation": "Use a validated or server-replaced bounded correlation ID for diagnostics only; never use it as a metric dimension or authority token."
+  },
+  "cost": {
+    "unit": "local HTTP request",
+    "budget": 0,
+    "meter": "No paid external service is allowed in SD-001; planned local request counters measure volume only."
+  },
+  "verification": {
+    "tests": [
+      "Planned Foundation contract, TypeScript, Prisma schema, and dependency-cruiser checks",
+      "Planned Component validation, detector, domain, append-only triage, Product Issue, Implementation Brief, Review Delivery, Completed Fix, and Release Communication decision checks",
+      "Planned Integration PostgreSQL atomicity, uniqueness, revision, immutable issue, immutable brief, immutable delivery, immutable completion, immutable communication, and repository checks",
+      "Planned Workflow feedback-to-inbox-to-manual-triage-to-prioritized-issue-to-approved-brief-to-review-delivery-to-completed-fix-to-approved-communication check",
+      "Planned Stress input-bound, concurrency, failure-recovery, and telemetry-redaction checks"
+    ],
+    "evals": [
+      "Human public-contract and security-limitation review by Neel before merge",
+      "Independent evidence review that does not grant approval or promotion authority"
+    ],
+    "fitness_functions": [
+      "dependency-cruiser must fail closed on undeclared modules and forbidden dependency direction",
+      "Prisma schema must enforce unique Signal.feedbackId and unique TriageEvent signal sequence",
+      "Prisma and PostgreSQL must enforce unique immutable ProductIssue.signalId lineage",
+      "Prisma and PostgreSQL must enforce unique immutable ImplementationBrief.productIssueId lineage and bounded text arrays",
+      "Prisma and PostgreSQL must enforce unique immutable ReviewDelivery.implementationBriefId lineage and exact product Git policy",
+      "Prisma and PostgreSQL must enforce unique immutable CompletedFix.reviewDeliveryId lineage and merged commit bounds",
+      "Prisma and PostgreSQL must enforce unique immutable ReleaseCommunication.completedFixId lineage and content bounds",
+      "HTTP contract fixtures must preserve closed schemas, bounds, acknowledgements, and explicit errors",
+      "Telemetry checks must prove submitted confidential content is absent from logs, traces, and metrics"
+    ]
+  },
+  "deployment": {
+    "artifact": "Planned immutable Next.js build artifact; no product artifact exists in SD-001A.",
+    "environment": "Local operator-controlled process with local PostgreSQL only; no hosted or production claim.",
+    "health_check": "Planned local health check proving process and database readiness without claiming workflow correctness."
+  },
+  "rollback": {
+    "trigger": "A contract, ordered validation level, lineage invariant, content-control, or confidential-telemetry check fails.",
+    "procedure": "Stop before advancing validation or merge, preserve append-only data, revert the separately reviewed implementation change, and use only a human-approved corrective migration when database repair is required.",
+    "owner": "Neel"
+  }
+}
