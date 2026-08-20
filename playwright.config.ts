@@ -4,6 +4,7 @@ const baseURL = process.env.SIGNALDESK_BASE_URL;
 if (baseURL === undefined || baseURL.length === 0) {
   throw new Error("SIGNALDESK_BASE_URL is required for Workflow tests.");
 }
+const authorization = process.env.SIGNALDESK_AUTHORIZATION;
 
 export default defineConfig({
   testDir: "./tests/workflow",
@@ -15,6 +16,9 @@ export default defineConfig({
   outputDir: ".elder/runtime/playwright-results",
   use: {
     baseURL,
+    ...(authorization === undefined
+      ? {}
+      : { extraHTTPHeaders: { authorization } }),
     browserName: "chromium",
     channel: "chrome",
     headless: true,

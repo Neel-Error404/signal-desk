@@ -591,3 +591,154 @@ describe("SD-007 hosted review gate contracts", () => {
     expect(workflow).toContain(".elder-wheel.sha256");
   });
 });
+
+describe("SD-008 ratified Azure staging contracts", () => {
+  it("binds the local implementation to the exact mainline source and mutation boundary", async () => {
+    const workItem = JSON.parse(await text("docs/work-items/SD-008.json")) as {
+      change_class: string;
+      owner: string;
+      status: string;
+      branch: string;
+      base_branch: string;
+      base_commit: string;
+    };
+    const adr = await text("docs/adr/0009-sd008-azure-hosted-staging-baseline.md");
+    expect(workItem).toMatchObject({
+      change_class: "infrastructure",
+      owner: "Neel",
+      status: "in_progress",
+      branch: "work/sd-008-azure-staging-baseline",
+      base_branch: "main",
+      base_commit: "623ff665d2a276c7541622f73e34d15ee6a7d2bf"
+    });
+    expect(adr).toContain("## Status");
+    expect(adr).toContain("Accepted for bounded local implementation");
+    expect(adr).toContain("does not authorize staging, commit, push, pull-request creation");
+    expect(adr).toMatch(/GitHub Environment or\s+identity mutation/);
+    expect(adr).toContain("Azure mutation");
+  });
+
+  it("keeps deployment, traffic, teardown, learning, and production authority explicit", async () => {
+    const contract = JSON.parse(
+      await text("delivery/staging-deployment-contract.json")
+    ) as {
+      approvalEnvironments: string[];
+      artifact: Record<string, unknown>;
+      migration: Record<string, unknown>;
+      learning: Record<string, unknown>;
+      authority: Record<string, string>;
+    };
+    expect(contract.approvalEnvironments).toEqual([
+      "staging-publication",
+      "staging-provision",
+      "staging-traffic",
+      "staging-teardown"
+    ]);
+    expect(contract.artifact).toMatchObject({
+      deploymentReference: "digest-only",
+      requiredCleanBuilds: 2,
+      nonRootUser: "node"
+    });
+    expect(contract.migration).toMatchObject({
+      image: "same-exact-digest-as-application",
+      policy: "expand-contract-forward-only",
+      destructiveMigration: "forbidden"
+    });
+    expect(contract.learning).toMatchObject({
+      maximumCandidates: 1,
+      independentEvaluationRequired: true,
+      exactHumanDecisionRequired: true,
+      output: "non-mutating-promotion-packet-only"
+    });
+    expect(contract.authority).toMatchObject({
+      localImplementation: "owner-authorized",
+      stage: "not-authorized",
+      commit: "not-authorized",
+      push: "not-authorized",
+      openPullRequest: "not-authorized",
+      createGitHubEnvironments: "not-authorized",
+      mutateAzure: "not-authorized",
+      production: "forbidden"
+    });
+  });
+
+  it("pins one non-root standalone image and normalizes the exact clean commit", async () => {
+    const dockerfile = await text("Dockerfile");
+    const dockerignore = await text(".dockerignore");
+    const context = await text("scripts/create-container-context.mjs");
+    const pinnedBase =
+      "node:22.18.0-bookworm-slim@sha256:752ea8a2f758c34002a0461bd9f1cee4f9a3c36d48494586f60ffce1fc708e0e";
+    expect(dockerfile.match(new RegExp(pinnedBase, "g"))).toHaveLength(3);
+    expect(dockerfile).toContain("USER node");
+    expect(dockerfile).toContain('CMD ["node", "server.js"]');
+    expect(dockerfile).toContain("/app/node_modules ./node_modules");
+    expect(dockerfile).not.toContain("DATABASE_URL=");
+    expect(dockerignore).toContain(".env.*");
+    expect(context).toContain('git("status", "--porcelain=v1", "--untracked-files=all")');
+    expect(context).toContain('"archive", "--format=tar"');
+    expect(context).toContain("does not match authorized commit");
+  });
+
+  it("keeps health HTTP adapters outside persistence and redacts release identity", async () => {
+    const liveRoute = await text("src/app/api/v1/health/live/route.ts");
+    const readyRoute = await text("src/app/api/v1/health/ready/route.ts");
+    const metadata = await text(
+      "src/modules/health/application/release-metadata.ts"
+    );
+    const service = await text("src/modules/health/application/health-service.ts");
+    expect(liveRoute).not.toContain("@prisma/client");
+    expect(readyRoute).not.toContain("@prisma/client");
+    expect(metadata).toContain("metadata.commit.slice(0, 12)");
+    expect(metadata).toContain("metadata.imageDigest.slice(7, 19)");
+    expect(metadata).toContain("SIGNALDESK_DEPLOYMENT_RUN_ID");
+    expect(service).toContain("DEFAULT_READINESS_TIMEOUT_MS = 2_000");
+    expect(service).toContain("ReadinessUnavailableError");
+  });
+
+  it("defines private least-privilege Azure resources without production values", async () => {
+    const main = await text("infra/staging/main.bicep");
+    const database = await text("infra/staging/database.bicep");
+    const secrets = await text("infra/staging/secrets.bicep");
+    const apps = await text("infra/staging/container-apps.bicep");
+    expect(main).toContain("targetScope = 'resourceGroup'");
+    expect(main).toContain("'centralindia'");
+    expect(database).toContain("publicNetworkAccess: 'Disabled'");
+    expect(database).toContain("name: 'Standard_B1ms'");
+    expect(secrets).toContain("enablePurgeProtection: true");
+    expect(secrets).toContain("publicNetworkAccess: 'Disabled'");
+    expect(secrets).toContain("deploymentRunId");
+    expect(apps).toContain("'${runtimeIdentityId}': {}");
+    expect(apps).toContain("/api/v1/health/live");
+    expect(apps).toContain("/api/v1/health/ready");
+    expect(apps).toContain("activeRevisionsMode: 'Multiple'");
+    for (const source of [main, database, secrets, apps]) {
+      expect(source.toLowerCase()).not.toContain("production");
+    }
+  });
+
+  it("pins all external actions and separates provision, traffic, and teardown gates", async () => {
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+    expect(workflow).toContain("workflow_dispatch:");
+    expect(workflow).not.toContain("pull_request_target");
+    expect(workflow).toContain("permissions: {}");
+    expect(workflow).toContain("environment: staging-publication");
+    expect(workflow).toContain("environment: staging-provision");
+    expect(workflow).toContain("environment: staging-traffic");
+    expect(workflow).toContain("environment: staging-teardown");
+    expect(workflow).toContain("non_production_confirmation");
+    expect(workflow).toContain("Prove two clean application trees and OCI manifests");
+    expect(workflow).toContain("--revision-weight \"$BASELINE_REVISION=0\" \"$CANDIDATE_REVISION=100\"");
+    expect(workflow).toContain("--revision-weight \"$BASELINE_REVISION=100\" \"$CANDIDATE_REVISION=0\"");
+    expect(workflow).toContain("secrets.ENTRA_CLIENT_SECRET");
+    expect(workflow).not.toContain("secrets.AZURE_CLIENT_SECRET");
+    const uses = [...workflow.matchAll(/^\s*uses:\s*(.+)$/gm)].map(
+      (match) => match[1] ?? ""
+    );
+    for (const action of uses) {
+      if (action.startsWith("./")) {
+        continue;
+      }
+      expect(action).toMatch(/^[^@\s]+@[0-9a-f]{40}$/);
+    }
+  });
+});
