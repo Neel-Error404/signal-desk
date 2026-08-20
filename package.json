@@ -14,6 +14,7 @@
     "lint": "eslint . --max-warnings=0",
     "prisma:generate": "prisma generate",
     "prisma:validate": "node scripts/validate-prisma-schema.mjs",
+    "migration:safety": "node scripts/validate-migration-safety.mjs",
     "contracts": "vitest run --config vitest.foundation.config.ts",
     "source-layout": "node scripts/check-source-layout.mjs",
     "boundaries": "npm run source-layout && depcruise --config .dependency-cruiser.cjs src tests",
@@ -21,11 +22,12 @@
     "test:integration": "node scripts/run-integration.mjs",
     "test:workflow": "node scripts/run-workflow.mjs",
     "test:stress": "node scripts/run-stress.mjs",
-    "test:foundation": "npm run lockfile:check && npm run prisma:generate && npm run typecheck && npm run lint && npm run prisma:validate && npm run contracts && npm run boundaries"
+    "test:foundation": "npm run lockfile:check && npm run prisma:generate && npm run typecheck && npm run lint && npm run prisma:validate && npm run migration:safety && npm run contracts && npm run boundaries"
   },
   "dependencies": {
     "@prisma/client": "6.11.1",
     "next": "16.3.1",
+    "prisma": "6.11.1",
     "react": "19.1.1",
     "react-dom": "19.1.1"
   },
@@ -38,7 +40,6 @@
     "embedded-postgres": "18.4.0-beta.17",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.1",
-    "prisma": "6.11.1",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
   }

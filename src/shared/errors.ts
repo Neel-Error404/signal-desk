@@ -208,6 +208,16 @@ export class StorageUnavailableError extends ApplicationError {
   }
 }
 
+export class ReadinessUnavailableError extends ApplicationError {
+  constructor() {
+    super(
+      "readiness_unavailable",
+      503,
+      "SignalDesk is not ready to accept traffic."
+    );
+  }
+}
+
 export class ContentControlUnavailableError extends ApplicationError {
   constructor() {
     super(

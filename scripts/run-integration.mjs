@@ -41,11 +41,36 @@ function runNodeCli(label, cli, arguments_, environment) {
   }
 }
 
-async function run(databaseUrl) {
+function roleUrl(databaseUrl, role, password) {
+  const url = new URL(databaseUrl);
+  url.username = role;
+  url.password = password;
+  return url.toString();
+}
+
+async function run(databaseUrl, bootstrapRoles = false) {
+  let migrationUrl = databaseUrl;
+  let runtimeUrl = databaseUrl;
+  if (bootstrapRoles) {
+    const bootstrapScript = fileURLToPath(
+      new URL("./bootstrap-database-roles.mjs", import.meta.url)
+    );
+    const migrationPassword = "local_Migration_0123456789abcdef";
+    const runtimePassword = "local_Runtime_0123456789abcdefghi";
+    runNodeCli("Database role bootstrap", bootstrapScript, [], {
+      ...process.env,
+      DATABASE_ADMIN_URL: databaseUrl,
+      SIGNALDESK_MIGRATION_PASSWORD: migrationPassword,
+      SIGNALDESK_RUNTIME_PASSWORD: runtimePassword
+    });
+    migrationUrl = roleUrl(databaseUrl, "signaldesk_migration", migrationPassword);
+    runtimeUrl = roleUrl(databaseUrl, "signaldesk_runtime", runtimePassword);
+  }
   const environment = {
     ...process.env,
-    DATABASE_URL: databaseUrl,
-    TEST_DATABASE_URL: databaseUrl
+    DATABASE_URL: runtimeUrl,
+    TEST_DATABASE_URL: runtimeUrl,
+    TEST_ADMIN_DATABASE_URL: databaseUrl
   };
   const prismaCli = fileURLToPath(
     new URL("../node_modules/prisma/build/index.js", import.meta.url)
@@ -54,7 +79,10 @@ async function run(databaseUrl) {
     new URL("../node_modules/vitest/vitest.mjs", import.meta.url)
   );
 
-  runNodeCli("Prisma migration", prismaCli, ["migrate", "deploy"], environment);
+  runNodeCli("Prisma migration", prismaCli, ["migrate", "deploy"], {
+    ...environment,
+    DATABASE_URL: migrationUrl
+  });
   runNodeCli(
     "Integration tests",
     vitestCli,
@@ -97,7 +125,7 @@ if (typeof suppliedUrl === "string" && suppliedUrl.trim().length > 0) {
     const databaseUrl =
       `postgresql://${user}:${password}@127.0.0.1:${port}/${databaseName}` +
       "?schema=public";
-    await run(databaseUrl);
+    await run(databaseUrl, true);
   } finally {
     await stopLocalPostgres(postgres);
   }
