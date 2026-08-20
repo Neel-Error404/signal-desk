@@ -1,0 +1,568 @@
+name: SD-008 Azure Staging Rehearsal
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Exact reviewed 40-character commit to build and deploy
+        required: true
+        type: string
+      release_note:
+        description: Non-secret owner-approved staging rehearsal note
+        required: true
+        type: string
+      non_production_confirmation:
+        description: Enter exactly SD-008 NON-PRODUCTION
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  ordered-review-gate:
+    uses: ./.github/workflows/hosted-review-gate.yml
+
+  build-and-attest:
+    name: Build, reproduce, publish, and attest exact image
+    needs: ordered-review-gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    outputs:
+      image-digest: ${{ steps.publish.outputs.digest }}
+      image-reference: ${{ steps.identity.outputs.image-reference }}
+      revision-suffix: ${{ steps.identity.outputs.revision-suffix }}
+      source-date-epoch: ${{ steps.identity.outputs.source-date-epoch }}
+    steps:
+      - name: Check out exact workflow revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate exact non-production source identity
+        id: identity
+        shell: bash
+        env:
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+          NON_PRODUCTION_CONFIRMATION: ${{ inputs.non_production_confirmation }}
+          IMAGE_NAME: ghcr.io/neel-error404/signaldesk
+        run: |
+          set -euo pipefail
+          [[ "$NON_PRODUCTION_CONFIRMATION" == "SD-008 NON-PRODUCTION" ]]
+          [[ "$AUTHORIZED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_SHA" == "$AUTHORIZED_COMMIT" ]]
+          short_sha="${AUTHORIZED_COMMIT:0:12}"
+          revision_suffix="sd008-${short_sha}-${GITHUB_RUN_ID}"
+          source_date_epoch="$(git show -s --format=%ct "$AUTHORIZED_COMMIT")"
+          echo "revision-suffix=$revision_suffix" >> "$GITHUB_OUTPUT"
+          echo "image-reference=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "source-date-epoch=$source_date_epoch" >> "$GITHUB_OUTPUT"
+
+      - name: Configure pinned Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+
+      - name: Create normalized exact-commit context
+        shell: bash
+        env:
+          SIGNALDESK_RELEASE_COMMIT: ${{ inputs.source_commit }}
+        run: |
+          set -euo pipefail
+          node scripts/create-container-context.mjs .tmp/container-context
+          mkdir -p .tmp/container-source
+          tar -xf .tmp/container-context/source.tar -C .tmp/container-source
+
+      - name: Prove two clean application trees and OCI manifests are identical
+        shell: bash
+        env:
+          SIGNALDESK_RELEASE_COMMIT: ${{ inputs.source_commit }}
+        run: |
+          set -euo pipefail
+          source_date_epoch="$(node -p "require('./.tmp/container-context/context-manifest.json').sourceDateEpoch")"
+          for build_number in 1 2; do
+            rm -rf ".tmp/proof-${build_number}.tar" ".tmp/proof-${build_number}"
+            docker buildx build \
+              --no-cache \
+              --provenance=false \
+              --sbom=false \
+              --build-arg "SIGNALDESK_RELEASE_COMMIT=$SIGNALDESK_RELEASE_COMMIT" \
+              --build-arg "SOURCE_DATE_EPOCH=$source_date_epoch" \
+              --output "type=oci,dest=.tmp/proof-${build_number}.tar,rewrite-timestamp=true,name=signaldesk:reproducibility-proof" \
+              .tmp/container-source
+            mkdir ".tmp/proof-${build_number}"
+            tar -xf ".tmp/proof-${build_number}.tar" -C ".tmp/proof-${build_number}"
+            node -e "const fs=require('fs'); const index=JSON.parse(fs.readFileSync('.tmp/proof-${build_number}/index.json')); if(index.manifests.length!==1) throw new Error('Expected one OCI manifest'); fs.writeFileSync('.tmp/manifest-${build_number}.txt', index.manifests[0].digest+'\n');"
+            docker load --input ".tmp/proof-${build_number}.tar"
+            docker run --rm --entrypoint sh signaldesk:reproducibility-proof -c \
+              "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
+              | awk '{print $1}' > ".tmp/tree-${build_number}.txt"
+          done
+          diff --strip-trailing-cr .tmp/manifest-1.txt .tmp/manifest-2.txt
+          diff --strip-trailing-cr .tmp/tree-1.txt .tmp/tree-2.txt
+
+      - name: Reject forbidden files and secret-shaped application content
+        shell: bash
+        run: |
+          set -euo pipefail
+          forbidden_files="$(docker run --rm --entrypoint sh signaldesk:reproducibility-proof -c \
+            "find /app -type f \( -name '.env' -o -name '.env.*' -o -name '*.db' -o -name '*.sqlite' -o -name '*.pem' -o -name '*.key' \) -print")"
+          [[ -z "$forbidden_files" ]]
+          ! docker run --rm --entrypoint sh signaldesk:reproducibility-proof -c \
+            "grep -R -E -n 'postgres(ql)?://[^[:space:]]+:[^[:space:]@]+@|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gh[pousr]_[A-Za-z0-9]{20,}' /app/.next /app/prisma /app/scripts"
+
+      - name: Generate exact-image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
+        with:
+          image: signaldesk:reproducibility-proof
+          format: spdx-json
+          output-file: .tmp/signaldesk.spdx.json
+          upload-artifact: false
+
+      - name: Reject fixed high or critical image vulnerabilities
+        uses: anchore/scan-action@1638637db639e0ade3258b51db49a9a137574c3e
+        with:
+          image: signaldesk:reproducibility-proof
+          fail-build: true
+          only-fixed: true
+          severity-cutoff: high
+          output-format: sarif
+          output-file: .tmp/signaldesk-grype.sarif
+
+      - name: Sign in to GHCR without a long-lived credential
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Publish exact digest
+        id: publish
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          context: .tmp/container-source
+          push: true
+          no-cache: true
+          platforms: linux/amd64
+          outputs: type=image,push=true,rewrite-timestamp=true
+          provenance: false
+          sbom: false
+          build-args: |
+            SIGNALDESK_RELEASE_COMMIT=${{ inputs.source_commit }}
+            SOURCE_DATE_EPOCH=${{ steps.identity.outputs.source-date-epoch }}
+          tags: |
+            ghcr.io/neel-error404/signaldesk:sha-${{ inputs.source_commit }}
+            ghcr.io/neel-error404/signaldesk:sd008-${{ github.run_id }}
+
+      - name: Attest exact published digest
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a
+        with:
+          subject-name: ghcr.io/neel-error404/signaldesk
+          subject-digest: ${{ steps.publish.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest exact-image SBOM
+        uses: actions/attest-sbom@4651f806c01d8637787e274ac3bdf724ef169f34
+        with:
+          subject-name: ghcr.io/neel-error404/signaldesk
+          subject-digest: ${{ steps.publish.outputs.digest }}
+          sbom-path: .tmp/signaldesk.spdx.json
+          push-to-registry: true
+
+      - name: Verify authenticated published digest and attestations
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker pull "ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST"
+          docker run --rm --entrypoint sh "ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" -c \
+            "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
+            | awk '{print $1}' > .tmp/published-tree.txt
+          diff --strip-trailing-cr .tmp/tree-2.txt .tmp/published-tree.txt
+          gh attestation verify "oci://ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" \
+            --repo Neel-Error404/signal-desk
+
+      - name: Export non-secret build evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sd008-build-evidence-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            .tmp/container-context/context-manifest.json
+            .tmp/manifest-1.txt
+            .tmp/manifest-2.txt
+            .tmp/tree-1.txt
+            .tmp/tree-2.txt
+            .tmp/published-tree.txt
+            .tmp/signaldesk.spdx.json
+            .tmp/signaldesk-grype.sarif
+
+  staging-publication:
+    name: Verify separately approved public GHCR visibility
+    needs: build-and-attest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: staging-publication
+    permissions:
+      contents: read
+      packages: read
+      attestations: read
+    steps:
+      - name: Download exact build evidence
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: sd008-build-evidence-${{ github.run_id }}
+          path: .tmp/build-evidence
+
+      - name: Prove anonymous digest pull and application-tree identity
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ needs.build-and-attest.outputs.image-digest }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker logout ghcr.io || true
+          docker pull "ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST"
+          docker run --rm --entrypoint sh "ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" -c \
+            "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
+            | awk '{print $1}' > .tmp/public-tree.txt
+          diff --strip-trailing-cr .tmp/build-evidence/published-tree.txt .tmp/public-tree.txt
+          gh attestation verify "oci://ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" \
+            --repo Neel-Error404/signal-desk
+
+  staging-provision:
+    name: Provision, migrate, and verify zero-traffic candidate
+    needs: [build-and-attest, staging-publication]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    environment: staging-provision
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      app-name: ${{ steps.provision.outputs.app-name }}
+      baseline-revision: ${{ steps.provision.outputs.baseline-revision }}
+      candidate-revision: ${{ steps.provision.outputs.candidate-revision }}
+      app-fqdn: ${{ steps.provision.outputs.app-fqdn }}
+      log-analytics-customer-id: ${{ steps.provision.outputs.log-analytics-customer-id }}
+    steps:
+      - name: Check out exact workflow revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Log in to Azure with GitHub OIDC
+        uses: Azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Validate Bicep compiler and exact template
+        shell: bash
+        run: |
+          set -euo pipefail
+          az bicep install --version v0.46.1
+          az bicep version | grep '0.46.1'
+          az bicep build --file infra/staging/main.bicep --stdout >/dev/null
+
+      - name: Provision private staging baseline
+        id: provision
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ needs.build-and-attest.outputs.image-digest }}
+          REVISION_SUFFIX: ${{ needs.build-and-attest.outputs.revision-suffix }}
+          ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
+          PROVISION_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          TRAFFIC_CLIENT_ID: ${{ vars.STAGING_TRAFFIC_CLIENT_ID }}
+          RELEASE_NOTE: ${{ inputs.release_note }}
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+          RESOURCE_GROUP: rg-signaldesk-stg-cin
+          LOCATION: centralindia
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ -n "$ENTRA_CLIENT_SECRET" ]]
+          [[ "$ENTRA_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$PROVISION_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$TRAFFIC_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ ${#RELEASE_NOTE} -ge 1 && ${#RELEASE_NOTE} -le 500 ]]
+          admin_password="$(openssl rand -hex 32)"
+          migration_password="$(openssl rand -hex 32)"
+          runtime_password="$(openssl rand -hex 32)"
+          printf '::add-mask::%s\n' "$admin_password" "$migration_password" "$runtime_password" "$ENTRA_CLIENT_SECRET"
+          image_reference="ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST"
+          baseline_suffix="baseline-${AUTHORIZED_COMMIT:0:12}-${GITHUB_RUN_ID}"
+          [[ "$(az group exists --name "$RESOURCE_GROUP")" == "true" ]]
+          [[ "$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)" == "$LOCATION" ]]
+          [[ "$(az group show --name "$RESOURCE_GROUP" --query tags.environment -o tsv)" == "staging" ]]
+          [[ "$(az group show --name "$RESOURCE_GROUP" --query tags.workItem -o tsv)" == "SD-008" ]]
+          [[ "$(az group show --name "$RESOURCE_GROUP" --query tags.owner -o tsv)" == "Neel" ]]
+          expires_at="$(az group show --name "$RESOURCE_GROUP" --query tags.expiresAt -o tsv)"
+          expires_epoch="$(date --date="$expires_at" +%s)"
+          now_epoch="$(date +%s)"
+          [[ "$expires_epoch" -gt "$now_epoch" ]]
+          [[ "$expires_epoch" -le "$((now_epoch + 28800))" ]]
+          az deployment group what-if \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/staging/main.bicep \
+            --parameters imageReference="$image_reference" releaseCommit="$AUTHORIZED_COMMIT" \
+              deploymentRunId="$GITHUB_RUN_ID" revisionSuffix="$baseline_suffix" \
+              entraClientId="$ENTRA_CLIENT_ID" \
+              authorizedProvisionClientId="$PROVISION_CLIENT_ID" \
+              authorizedTrafficClientId="$TRAFFIC_CLIENT_ID" \
+              entraClientSecret="$ENTRA_CLIENT_SECRET" administratorPassword="$admin_password" \
+              migrationPassword="$migration_password" runtimePassword="$runtime_password" \
+            --no-pretty-print > .tmp-sd008-what-if.json
+          deployment_json="$(az deployment group create \
+            --name "sd008-${GITHUB_RUN_ID}" \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/staging/main.bicep \
+            --parameters imageReference="$image_reference" releaseCommit="$AUTHORIZED_COMMIT" \
+              deploymentRunId="$GITHUB_RUN_ID" revisionSuffix="$baseline_suffix" \
+              entraClientId="$ENTRA_CLIENT_ID" \
+              authorizedProvisionClientId="$PROVISION_CLIENT_ID" \
+              authorizedTrafficClientId="$TRAFFIC_CLIENT_ID" \
+              entraClientSecret="$ENTRA_CLIENT_SECRET" administratorPassword="$admin_password" \
+              migrationPassword="$migration_password" runtimePassword="$runtime_password" \
+            --query properties.outputs -o json)"
+          printf '%s\n' "$deployment_json" > .tmp-sd008-deployment.json
+          app_name="$(jq -r '.appName.value' <<<"$deployment_json")"
+          app_fqdn="$(jq -r '.appFqdn.value' <<<"$deployment_json")"
+          bootstrap_job="$(jq -r '.bootstrapJobName.value' <<<"$deployment_json")"
+          migration_job="$(jq -r '.migrationJobName.value' <<<"$deployment_json")"
+          log_analytics_customer_id="$(jq -r '.logAnalyticsCustomerId.value' <<<"$deployment_json")"
+          wait_for_job() {
+            local job_name="$1"
+            local execution_name
+            local status
+            execution_name="$(az containerapp job start --resource-group "$RESOURCE_GROUP" --name "$job_name" --query name -o tsv)"
+            [[ -n "$execution_name" ]]
+            for attempt in $(seq 1 80); do
+              status="$(az containerapp job execution show --resource-group "$RESOURCE_GROUP" --name "$job_name" --job-execution-name "$execution_name" --query properties.status -o tsv)"
+              if [[ "$status" == "Succeeded" ]]; then
+                jq -n --arg job "$job_name" --arg execution "$execution_name" --arg status "$status" \
+                  '{job:$job,execution:$execution,status:$status}' >> .tmp-sd008-job-executions.jsonl
+                return 0
+              fi
+              if [[ "$status" == "Failed" || "$status" == "Stopped" ]]; then
+                return 1
+              fi
+              sleep 10
+            done
+            return 1
+          }
+          wait_for_job "$bootstrap_job"
+          wait_for_job "$migration_job"
+          baseline_revision="$(az containerapp revision list --resource-group "$RESOURCE_GROUP" --name "$app_name" --query '[0].name' -o tsv)"
+          az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$app_name" --revision-weight "$baseline_revision=100" >/dev/null
+          az containerapp update --resource-group "$RESOURCE_GROUP" --name "$app_name" \
+            --image "$image_reference" --revision-suffix "$REVISION_SUFFIX" \
+            --set-env-vars "SIGNALDESK_REVISION=$REVISION_SUFFIX" >/dev/null
+          candidate_revision="${app_name}--${REVISION_SUFFIX}"
+          candidate_weight="$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$app_name" --query "[?revisionName=='$candidate_revision'].weight | [0]" -o tsv)"
+          [[ -z "$candidate_weight" || "$candidate_weight" == "0" ]]
+          candidate_fqdn="$(az containerapp revision show --resource-group "$RESOURCE_GROUP" --name "$app_name" --revision "$candidate_revision" --query properties.fqdn -o tsv)"
+          access_token="$(az account get-access-token --resource "api://${ENTRA_CLIENT_ID}" --query accessToken -o tsv)"
+          anonymous_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 15 "https://${candidate_fqdn}/api/v1/health/live")"
+          [[ "$anonymous_status" == "401" ]]
+          curl --silent --show-error --fail --max-time 15 --header "Authorization: Bearer $access_token" "https://${candidate_fqdn}/api/v1/health/live" > .tmp-sd008-live.json
+          curl --silent --show-error --fail --max-time 15 --header "Authorization: Bearer $access_token" "https://${candidate_fqdn}/api/v1/health/ready" > .tmp-sd008-ready.json
+          jq -n --arg actor "$GITHUB_ACTOR" --arg run "$GITHUB_RUN_ID" --arg commit "$AUTHORIZED_COMMIT" \
+            --arg image "$image_reference" --arg note "$RELEASE_NOTE" \
+            '{actor:$actor,runId:$run,commit:$commit,image:$image,releaseNote:$note}' > .tmp-sd008-run-identity.json
+          for secret_value in "$admin_password" "$migration_password" "$runtime_password" "$ENTRA_CLIENT_SECRET" "$access_token"; do
+            ! grep -F -R -- "$secret_value" .tmp-sd008-*.json .tmp-sd008-*.jsonl
+          done
+          echo "app-name=$app_name" >> "$GITHUB_OUTPUT"
+          echo "app-fqdn=$app_fqdn" >> "$GITHUB_OUTPUT"
+          echo "baseline-revision=$baseline_revision" >> "$GITHUB_OUTPUT"
+          echo "candidate-revision=$candidate_revision" >> "$GITHUB_OUTPUT"
+          echo "log-analytics-customer-id=$log_analytics_customer_id" >> "$GITHUB_OUTPUT"
+
+      - name: Export non-secret provisioning evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sd008-provision-evidence-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            .tmp-sd008-what-if.json
+            .tmp-sd008-deployment.json
+            .tmp-sd008-job-executions.jsonl
+            .tmp-sd008-live.json
+            .tmp-sd008-ready.json
+            .tmp-sd008-run-identity.json
+
+  staging-traffic:
+    name: Approve traffic, verify, and rehearse rollback
+    needs: [build-and-attest, staging-provision]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: staging-traffic
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out exact workflow revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Install Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.18.0"
+          cache: npm
+
+      - name: Install exact workflow dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npx playwright install --with-deps chrome
+
+      - name: Log in to Azure with GitHub OIDC
+        uses: Azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Shift staging traffic and restore prior healthy revision
+        shell: bash
+        env:
+          APP_NAME: ${{ needs.staging-provision.outputs.app-name }}
+          BASELINE_REVISION: ${{ needs.staging-provision.outputs.baseline-revision }}
+          CANDIDATE_REVISION: ${{ needs.staging-provision.outputs.candidate-revision }}
+          RESOURCE_GROUP: rg-signaldesk-stg-cin
+          APP_FQDN: ${{ needs.staging-provision.outputs.app-fqdn }}
+          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
+          WORKSPACE_CUSTOMER_ID: ${{ needs.staging-provision.outputs.log-analytics-customer-id }}
+        run: |
+          set -euo pipefail
+          [[ "$ENTRA_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          access_token="$(az account get-access-token --resource "api://${ENTRA_CLIENT_ID}" --query accessToken -o tsv)"
+          az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
+            --revision-weight "$BASELINE_REVISION=0" "$CANDIDATE_REVISION=100" >/dev/null
+          [[ "$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[?revisionName=='$CANDIDATE_REVISION'].weight | [0]" -o tsv)" == "100" ]]
+          curl --silent --show-error --fail --max-time 15 --header "Authorization: Bearer $access_token" "https://${APP_FQDN}/api/v1/health/ready" > .tmp-sd008-promoted-ready.json
+          echo "::add-mask::$access_token"
+          SIGNALDESK_BASE_URL="https://${APP_FQDN}" \
+          SIGNALDESK_AUTHORIZATION="Bearer $access_token" \
+            npx playwright test --config playwright.config.ts
+          az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
+            --revision-weight "$BASELINE_REVISION=100" "$CANDIDATE_REVISION=0" >/dev/null
+          [[ "$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[?revisionName=='$BASELINE_REVISION'].weight | [0]" -o tsv)" == "100" ]]
+          curl --silent --show-error --fail --max-time 15 --header "Authorization: Bearer $access_token" "https://${APP_FQDN}/api/v1/health/ready" > .tmp-sd008-rollback-ready.json
+          az containerapp revision list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
+            --query '[].{name:name,active:properties.active,healthState:properties.healthState,trafficWeight:properties.trafficWeight}' \
+            -o json > .tmp-sd008-revisions.json
+          az monitor activity-log list --resource-group "$RESOURCE_GROUP" --offset 2h \
+            --query '[].{time:eventTimestamp,operation:operationName.value,status:status.value,correlationId:correlationId}' \
+            -o json > .tmp-sd008-activity.json
+          logs_ready=false
+          for attempt in $(seq 1 12); do
+            az monitor log-analytics query --workspace "$WORKSPACE_CUSTOMER_ID" \
+              --analytics-query "ContainerAppConsoleLogs_CL | where TimeGenerated > ago(60m) | where ContainerAppName_s == '$APP_NAME' | extend LogSha256=hash_sha256(Log_s) | project TimeGenerated, RevisionName_s, Stream_s, LogSha256 | take 200" \
+              -o json > .tmp-sd008-console-logs.json
+            if jq -e '(if type == "array" then length else ((.tables[0].rows // []) | length) end) > 0' .tmp-sd008-console-logs.json >/dev/null; then
+              logs_ready=true
+              break
+            fi
+            sleep 15
+          done
+          [[ "$logs_ready" == "true" ]]
+          for secret_value in "$access_token"; do
+            ! grep -F -R -- "$secret_value" .tmp-sd008-*.json
+          done
+
+      - name: Export non-secret traffic and rollback evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sd008-traffic-evidence-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            .tmp-sd008-promoted-ready.json
+            .tmp-sd008-rollback-ready.json
+            .tmp-sd008-revisions.json
+            .tmp-sd008-activity.json
+            .tmp-sd008-console-logs.json
+
+  staging-teardown:
+    name: Approve teardown and prove zero active staging resources
+    needs: [staging-provision, staging-traffic]
+    if: ${{ always() && needs.staging-provision.result != 'skipped' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: staging-teardown
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Log in to Azure with GitHub OIDC
+        uses: Azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Delete exact SD-008 resource group and verify absence
+        shell: bash
+        env:
+          RESOURCE_GROUP: rg-signaldesk-stg-cin
+          APP_FQDN: ${{ needs.staging-provision.outputs.app-fqdn }}
+        run: |
+          set -euo pipefail
+          expected_vault_count=0
+          if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "true" ]]; then
+            az keyvault list --resource-group "$RESOURCE_GROUP" \
+              --query '[].{name:name}' -o json > .tmp-sd008-active-vaults-before-delete.json
+            expected_vault_count="$(jq 'length' .tmp-sd008-active-vaults-before-delete.json)"
+            az group delete --name "$RESOURCE_GROUP" --yes --no-wait
+          else
+            printf '[]\n' > .tmp-sd008-active-vaults-before-delete.json
+          fi
+          for attempt in $(seq 1 80); do
+            if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "false" ]]; then
+              break
+            fi
+            sleep 15
+          done
+          [[ "$(az group exists --name "$RESOURCE_GROUP")" == "false" ]]
+          [[ "$(az resource list --query "[?resourceGroup=='$RESOURCE_GROUP'] | length(@)" -o tsv)" == "0" ]]
+          if [[ -n "$APP_FQDN" ]]; then
+            endpoint_status=""
+            for attempt in $(seq 1 40); do
+              endpoint_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 "https://${APP_FQDN}" || true)"
+              if [[ "$endpoint_status" == "000" ]]; then
+                break
+              fi
+              sleep 15
+            done
+            [[ "$endpoint_status" == "000" ]]
+          fi
+          az keyvault list-deleted --query "[?tags.workItem=='SD-008' && tags.deploymentRunId=='$GITHUB_RUN_ID'].{name:name,deletionDate:properties.deletionDate,scheduledPurgeDate:properties.scheduledPurgeDate}" -o json > .tmp-sd008-vault-tombstones.json
+          [[ "$(jq 'length' .tmp-sd008-vault-tombstones.json)" == "$expected_vault_count" ]]
+
+      - name: Export non-secret teardown evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sd008-teardown-evidence-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            .tmp-sd008-active-vaults-before-delete.json
+            .tmp-sd008-vault-tombstones.json

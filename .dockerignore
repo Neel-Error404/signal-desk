@@ -1,0 +1,13 @@
+.git
+.github
+.elder
+.codex
+.next
+.tmp
+node_modules
+docs
+tests
+.env
+.env.*
+*.log
+tsconfig.tsbuildinfo

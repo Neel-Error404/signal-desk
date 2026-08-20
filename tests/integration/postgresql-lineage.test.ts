@@ -48,6 +48,11 @@ import { CreateFeedbackSignal } from "@/workflows/feedback-to-signal/create-feed
 import { PrismaFeedbackSignalUnitOfWork } from "@/workflows/feedback-to-signal/prisma-unit-of-work";
 
 const prisma = new PrismaClient();
+const testAdminUrl = process.env.TEST_ADMIN_DATABASE_URL;
+if (testAdminUrl === undefined || !testAdminUrl.startsWith("postgresql://")) {
+  throw new Error("TEST_ADMIN_DATABASE_URL is required for isolated fixture cleanup.");
+}
+const testAdmin = new PrismaClient({ datasourceUrl: testAdminUrl, log: [] });
 
 function workflow(
   idGenerator: () => string = () => crypto.randomUUID()
@@ -168,22 +173,26 @@ async function createAcceptedSignal(content: string) {
   return created;
 }
 
+async function clearProductData(): Promise<void> {
+  await testAdmin.$executeRawUnsafe(
+    'TRUNCATE TABLE "TriageEvent", "Signal", "Feedback" RESTART IDENTITY CASCADE'
+  );
+}
+
 describe("PostgreSQL feedback-to-signal integration", () => {
   beforeAll(async () => {
+    await testAdmin.$connect();
     await prisma.$connect();
-    await prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE "TriageEvent", "Signal", "Feedback" RESTART IDENTITY CASCADE'
-    );
+    await clearProductData();
   });
 
   afterEach(async () => {
-    await prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE "TriageEvent", "Signal", "Feedback" RESTART IDENTITY CASCADE'
-    );
+    await clearProductData();
   });
 
   afterAll(async () => {
     await prisma.$disconnect();
+    await testAdmin.$disconnect();
   });
 
   it("commits one Feedback and one uniquely linked Signal", async () => {

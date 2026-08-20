@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "projectId": "signaldesk",
+  "workItem": "SD-008",
+  "status": "local-implementation-authorized",
+  "source": {
+    "repository": "https://github.com/Neel-Error404/signal-desk",
+    "branch": "work/sd-008-azure-staging-baseline",
+    "baseBranch": "main",
+    "baseCommit": "623ff665d2a276c7541622f73e34d15ee6a7d2bf",
+    "requiredReviewCheck": "signaldesk-ordered-review-gate"
+  },
+  "capsule": {
+    "activationId": "activation-signaldesk-f119f189c60b698d",
+    "activationDigest": "c5a31bfeeb2ce2723dad36b0ca063f1d659765a3de5dc679786da2430f307a90",
+    "generatedCandidateOnly": true,
+    "installedCapsuleMutation": "not-authorized"
+  },
+  "artifact": {
+    "registry": "ghcr.io",
+    "repository": "ghcr.io/neel-error404/signaldesk",
+    "visibility": "public",
+    "deploymentReference": "digest-only",
+    "nodeVersion": "22.18.0",
+    "baseImage": "node:22.18.0-bookworm-slim@sha256:752ea8a2f758c34002a0461bd9f1cee4f9a3c36d48494586f60ffce1fc708e0e",
+    "nonRootUser": "node",
+    "normalizedContext": "git-archive-exact-commit",
+    "requiredCleanBuilds": 2,
+    "requiredDigestComparison": [
+      "application-tree-sha256",
+      "oci-manifest-sha256"
+    ],
+    "provenance": "github-native-attestation"
+  },
+  "provider": {
+    "name": "azure",
+    "subscriptionId": "<github-environment-variable:AZURE_SUBSCRIPTION_ID>",
+    "region": "centralindia",
+    "resourceGroup": "rg-signaldesk-stg-cin",
+    "environment": "staging",
+    "productionValuesForbidden": true
+  },
+  "approvalEnvironments": [
+    "staging-publication",
+    "staging-provision",
+    "staging-traffic",
+    "staging-teardown"
+  ],
+  "identity": {
+    "deploymentAuthentication": "github-oidc-only",
+    "consequencePrincipals": [
+      "staging-provision-service-principal",
+      "staging-traffic-service-principal",
+      "staging-teardown-service-principal"
+    ],
+    "resourceGroupCreation": "owner-per-session",
+    "longLivedAzureClientSecret": false,
+    "ingress": "microsoft-entra-authenticated-only",
+    "anonymousAccessExpected": "denied",
+    "runtimeIdentity": "user-assigned-managed-identity",
+    "migrationIdentity": "user-assigned-managed-identity"
+  },
+  "network": {
+    "containerAppsIngress": "external-authenticated",
+    "postgresPublicNetworkAccess": "disabled",
+    "keyVaultPublicNetworkAccess": "disabled",
+    "postgresTlsRequired": true,
+    "privateDnsRequired": true
+  },
+  "database": {
+    "service": "Azure Database for PostgreSQL Flexible Server",
+    "sku": "Standard_B1ms",
+    "storageGiB": 32,
+    "highAvailability": "disabled",
+    "backupRetentionDays": 7,
+    "dataClassification": "synthetic-only",
+    "credentials": {
+      "administrator": "generated-and-key-vault-backed",
+      "migration": "separate-generated-and-key-vault-backed",
+      "runtime": "separate-generated-and-key-vault-backed"
+    }
+  },
+  "migration": {
+    "command": "npx prisma migrate deploy",
+    "execution": "azure-container-apps-job",
+    "image": "same-exact-digest-as-application",
+    "policy": "expand-contract-forward-only",
+    "schemaChangeInSd008": false,
+    "destructiveMigration": "forbidden",
+    "failureEffect": "block-candidate-and-traffic"
+  },
+  "health": {
+    "livenessPath": "/api/v1/health/live",
+    "readinessPath": "/api/v1/health/ready",
+    "readinessDependency": "bounded-postgresql-select-1",
+    "unavailableStatus": 503,
+    "releaseFields": [
+      "commit-prefix",
+      "image-digest-prefix",
+      "deployment-run-id",
+      "revision"
+    ],
+    "secretShapedOutput": "forbidden"
+  },
+  "traffic": {
+    "revisionMode": "multiple",
+    "candidateInitialWeight": 0,
+    "promotionWeight": 100,
+    "approvalEnvironment": "staging-traffic",
+    "unhealthyCandidatePromotion": "forbidden",
+    "rollbackTarget": "previous-healthy-revision"
+  },
+  "teardown": {
+    "approvalEnvironment": "staging-teardown",
+    "deleteResourceGroup": true,
+    "verifyZeroActiveResources": true,
+    "verifyEndpointAbsent": true,
+    "accountForProviderTombstones": true
+  },
+  "learning": {
+    "maximumCandidates": 1,
+    "source": "actual-sd008-trace",
+    "quarantineRequired": true,
+    "independentEvaluationRequired": true,
+    "exactHumanDecisionRequired": true,
+    "output": "non-mutating-promotion-packet-only",
+    "directMutation": "forbidden"
+  },
+  "authority": {
+    "localImplementation": "owner-authorized",
+    "stage": "not-authorized",
+    "commit": "not-authorized",
+    "push": "not-authorized",
+    "openPullRequest": "not-authorized",
+    "createGitHubEnvironments": "not-authorized",
+    "mutateAzure": "not-authorized",
+    "merge": "human-only",
+    "deploy": "human-gated",
+    "release": "human-only",
+    "production": "forbidden"
+  }
+}

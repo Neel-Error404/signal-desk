@@ -1,0 +1,68 @@
+{
+  "name": "SignalDesk",
+  "mission": "Help B2B SaaS founders, product teams, and support teams turn customer feedback into traceable product signals, prioritized issues, completed fixes, and release communication.",
+  "success_outcomes": [
+    "An authenticated team member can capture customer feedback and convert it into a traceable canonical signal through the product interface.",
+    "Repeated feedback can be grouped without losing its original sources, customer context, or evidence.",
+    "A product owner can promote a signal into a prioritized issue with an explicit rationale and accountable decision history.",
+    "A team can track an accepted issue through implementation, verification, completion, and customer-facing release communication.",
+    "The first product milestone passes its ordered tests and can be operated through the product interface without database or background-terminal inspection."
+  ],
+  "failure_outcomes": [
+    "SignalDesk loses source evidence or merges unrelated feedback without an owner-visible explanation.",
+    "Customer feedback or workspace data is exposed outside its authorized product boundary.",
+    "An agent merges, releases, deploys, promotes learning, or overrides architecture without the required human decision.",
+    "The product cannot reconstruct why a signal was prioritized, changed, rejected, fixed, or communicated."
+  ],
+  "constraints": [
+    "The initial product accepts customer feedback but must not accept credentials, regulated data, or proprietary source-code uploads.",
+    "Humans retain merge, release, deployment, learning-promotion, and architecture-exception authority.",
+    "The first hosted milestone uses ephemeral low-cost staging infrastructure and does not authorize production deployment.",
+    "The initial product is a single repository using TypeScript, Next.js, and PostgreSQL.",
+    "Billing, enterprise tenant administration, autonomous production deployment, model-weight fine-tuning, and application-user memory are initial non-goals."
+  ],
+  "project_type": "software",
+  "lifecycle": "prototype",
+  "topology": "single-repo",
+  "risk_tier": "moderate",
+  "data_sensitivity": "confidential",
+  "autonomy_ceiling": "L2",
+  "capability_packs": [
+    "core",
+    "web-product",
+    "data",
+    "agentic",
+    "assurance",
+    "learning",
+    "go-to-market"
+  ],
+  "skill_overrides": {
+    "required": [],
+    "forbidden": []
+  },
+  "languages": [
+    "TypeScript",
+    "SQL"
+  ],
+  "deployment_targets": [
+    "local",
+    "Azure Container Apps",
+    "Azure Database for PostgreSQL Flexible Server"
+  ],
+  "knowledge_sources": [
+    {
+      "id": "signaldesk-repository",
+      "type": "repository",
+      "location": ".",
+      "authority": "primary"
+    }
+  ],
+  "human_owners": {
+    "human": "Neel",
+    "product": "Neel",
+    "architecture": "Neel",
+    "security": "Neel",
+    "release": "Neel",
+    "code": "Neel"
+  }
+}
