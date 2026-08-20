@@ -1,0 +1,63 @@
+{
+  "id": "SD-008",
+  "outcome_ids": [
+    ".elder/project-profile.json#/outcomes/success/4"
+  ],
+  "change_class": "infrastructure",
+  "objective": "Establish one owner-approved, identity-protected ephemeral Azure staging baseline that deploys an exact attested SignalDesk container image to Azure Container Apps, uses private Azure PostgreSQL and Key Vault-backed credentials, proves health and rollback, exports evidence, destroys the cost-bearing environment, and remains strictly non-production.",
+  "scope": [
+    "Ratify Azure Container Apps and Azure Database for PostgreSQL Flexible Server as the SignalDesk staging target in place of the generated Vercel assumption.",
+    "Generate an Azure-oriented Elder project profile and capsule candidate under .tmp from project-owned intake answers, review the compiler diff, and do not hand-edit or replace Elder-owned generated files without the separate Git approval gate.",
+    "Define an ephemeral Central India staging resource group through reviewed Bicep with private PostgreSQL connectivity, Key Vault, managed identity, Log Analytics, and Entra-protected ingress.",
+    "Add a pinned, non-root Node.js 22 container build, prove two clean normalized builds produce the same application tree and OCI manifest digests, and bind deployment to an immutable public GitHub Container Registry manifest digest with provenance and security evidence; the image must contain no secret or private runtime data.",
+    "Add separately owner-approved staging-publication, staging-provision, staging-traffic, and staging-teardown GitHub environments and one manual OIDC deployment workflow that accepts only the current protected main revision, reruns the ordered product ladder, and pauses before each distinct consequence.",
+    "Run forward-only Prisma migrations in an Azure Container Apps Job using the same image digest and a separate Key Vault-backed migration credential before application traffic changes.",
+    "Add liveness and database readiness contracts, prove unauthorized ingress denial and authorized owner access, and retain synthetic staging data only.",
+    "Deploy one candidate revision without traffic, verify it, move staging traffic explicitly, and prove a controlled traffic rollback to the previous healthy revision.",
+    "Capture exact Git, workflow, OIDC actor, infrastructure deployment, image digest, attestation, migration job, Container Apps revision, health, authorization, Log Analytics, rollback, cost, destruction, and human-approval evidence.",
+    "Delete the complete cost-bearing Azure staging resource group after the approved proof and verify that no active or billable SignalDesk Azure resource, reachable URL, database server, accessible secret, or log workspace remains; record any provider-retained deletion tombstone and expiry explicitly.",
+    "Analyse the actual hosted SD-008 trace through a quarantined Elder learning lane, independently evaluate at most one bounded candidate, obtain an exact human approval or rejection, and emit only a non-mutating promotion packet."
+  ],
+  "non_goals": [
+    "Production, a production custom domain, customer traffic, real customer feedback, proprietary source uploads, or regulated data.",
+    "A persistent staging URL or retained staging data, Azure Container Registry, a raw Azure VM, Vercel deployment, Azure App Service, multi-region failover, high availability, geo-redundant backup, or production-scale load testing.",
+    "Autonomous deployment, automatic promotion, automatic release, autonomous merge, P5.2 activation, canonical L2, L3, canary authority, or qualification-period credit.",
+    "Product authentication implementation, tenant administration, billing, customer communication, or application-user memory.",
+    "Applying the SD-007 or SD-008 learning candidate or mutating trusted memory, policy, evaluators, architecture, or production."
+  ],
+  "ship_target": "protected-ephemeral-staging-baseline",
+  "branch": "work/sd-008-azure-staging-baseline",
+  "base_branch": "main",
+  "base_commit": "623ff665d2a276c7541622f73e34d15ee6a7d2bf",
+  "required_check": "signaldesk-ordered-review-gate",
+  "provider": {
+    "cloud": "Microsoft Azure",
+    "region": "centralindia",
+    "compute": "Azure Container Apps",
+    "registry": "GitHub Container Registry public package, digest-only",
+    "database": "Azure Database for PostgreSQL Flexible Server 16",
+    "secret_store": "Azure Key Vault",
+    "telemetry": "Azure Log Analytics",
+    "ingress_identity": "Microsoft Entra ID"
+  },
+  "evidence_plan": [
+    "Foundation: validate the ratified ADR, deployment contract, Bicep, Docker, workflow pins and permissions, resource names, non-secret configuration, health contracts, generated-capsule candidate boundary, and forbidden production values.",
+    "Component: prove explicit liveness/readiness results, database-unavailable behavior, redaction, and release-metadata parsing.",
+    "Integration: build the exact normalized container twice, compare application-tree and OCI manifest digests, run it locally, apply all migrations to isolated PostgreSQL, and prove readiness changes from unavailable to available without leaking credentials.",
+    "Workflow: rerun the complete owner flow from the container, validate the Bicep what-if, build and attest the image, execute the migration job, verify the zero-traffic candidate, and move staging traffic only after approval and successful checks.",
+    "Stress: prove unauthorized ingress denial, database outage behavior, bounded restart, concurrent health checks, unhealthy-candidate non-promotion, secret redaction, and controlled traffic rollback.",
+    "Hosted: bind the protected main commit, review run, deployment run, four GitHub environment approvals, three consequence-specific OIDC subjects, Azure deployment operations, public GHCR OCI digest, provenance, migration execution, revision IDs, FQDN, health observations, logs, rollback operation, evidence export, resource-group deletion, final zero-active-resource state, and deletion-tombstone accounting.",
+    "Learning: bind redacted hosted evidence to at most one quarantined candidate, counterfactual and shadow observations, independent evaluation, an exact human decision, a non-mutating promotion packet when approved, and deterministic journal replay."
+  ],
+  "failure_conditions": [
+    "The staging ingress is reachable without the allowed Entra identity, or the environment contains real customer or production data.",
+    "Azure PostgreSQL has public network access, private DNS is unresolved, TLS is not required, or the application/migration credentials are not separated and Key Vault-backed.",
+    "A mutable tag rather than the attested OCI digest reaches Container Apps, or the deployed revision cannot be matched to the protected Git commit and workflow run.",
+    "A migration, readiness, authorization, vulnerability, or smoke check fails and traffic still changes.",
+    "The prior healthy revision is unavailable, rollback cannot restore its traffic, or the evidence cannot prove the post-rollback deployment and health state.",
+    "The cost-bearing Azure resource group remains after evidence acceptance, or destruction cannot prove that the URL, PostgreSQL server, active Key Vault, logs, and application resources are absent and any provider-retained deletion tombstone is inaccessible, non-billable, and expiry-bound.",
+    "Any production, release, customer communication, autonomous authority, maturity promotion, or learning application occurs."
+  ],
+  "owner": "Neel",
+  "status": "in_progress"
+}
