@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "id": "sd008-bootstrap-correction-v1",
+  "projectId": "signaldesk",
+  "workItem": "SD-008",
+  "status": "ratified-local-implementation",
+  "supersedes": [],
+  "amendsOnRatification": "docs/adr/0009-sd008-azure-hosted-staging-baseline.md",
+  "proposedAdr": "docs/adr/0010-sd008-bootstrap-and-learning-corrections.md",
+  "sourceProof": {
+    "requiredBefore": [
+      "package-write",
+      "attestation-write",
+      "provider-mutation"
+    ],
+    "repository": "Neel-Error404/signal-desk",
+    "workflowRef": "refs/heads/main",
+    "defaultBranch": "main",
+    "rulesetId": 21058424,
+    "requiredCheck": "signaldesk-ordered-review-gate",
+    "strictRequiredChecks": true,
+    "bypassActors": 0,
+    "liveMainEqualityRequired": true,
+    "successfulExactCommitCheckRequired": true
+  },
+  "evidence": {
+    "publicRepository": true,
+    "rawProviderArtifactUpload": "forbidden",
+    "publicPacket": "redacted-json",
+    "privatePacket": "owner-encrypted-json-envelope",
+    "privatePacketEncryption": {
+      "content": "AES-256-GCM",
+      "keyWrap": "RSA-OAEP-SHA256",
+      "ownerPrivateKeyInWorkflow": false,
+      "publicKeyVariable": "SD008_EVIDENCE_PUBLIC_KEY_B64"
+    },
+    "forbiddenFields": [
+      "authorization",
+      "clientSecret",
+      "connectionString",
+      "cookie",
+      "password",
+      "refreshToken",
+      "token"
+    ],
+    "sensitiveIdentifierDisposition": "typed-sha256-binding",
+    "publicPrivateDigestBindingRequired": true
+  },
+  "cloudAuthority": {
+    "claim": "declared-effective-provider-envelope",
+    "fieldLevelTrafficRbacClaim": "forbidden",
+    "provision": {
+      "scope": "exact-resource-group",
+      "effectiveContainerAppAction": "Microsoft.App/containerApps/write"
+    },
+    "traffic": {
+      "scope": "exact-container-app",
+      "effectiveContainerAppAction": "Microsoft.App/containerApps/write",
+      "trafficOnlyAtProvider": false,
+      "additionalControls": [
+        "staging-traffic-environment-approval",
+        "short-lived-oidc-token",
+        "exact-workflow-request",
+        "post-operation-provider-reread"
+      ]
+    },
+    "teardown": {
+      "mutationScope": "exact-resource-group",
+      "postDeleteVerification": "minimal-subscription-read-only-assignment"
+    }
+  },
+  "smokeIdentity": {
+    "application": "signaldesk-sd008-smoke",
+    "separateFromDeploymentPrincipals": true,
+    "clientSecret": false,
+    "federatedSubjects": [
+      "repo:Neel-Error404/signal-desk:environment:staging-provision",
+      "repo:Neel-Error404/signal-desk:environment:staging-traffic"
+    ],
+    "tokenExchange": "github-oidc-client-assertion",
+    "ingressApplicationPermissionRequired": true
+  },
+  "expiry": {
+    "tag": "expiresAt",
+    "format": "RFC3339-UTC",
+    "maximumHours": 8,
+    "automaticDeletionClaim": false,
+    "firstRun": "owner-attended-through-teardown",
+    "orphanDisposition": "blocking-incident"
+  },
+  "learning": {
+    "lane1RequiredState": "verified-after-teardown",
+    "postDeleteAuthorityClosureRequired": true,
+    "finalCostClaim": "conservative-retail-upper-bound-not-provider-invoice",
+    "source": "actual-redacted-hosted-sd008-trace-only",
+    "externalQuarantineRequired": true,
+    "maximumCandidates": 1,
+    "candidateOwner": "signaldesk-learning-agent",
+    "independentEvaluator": "signaldesk-evaluator",
+    "minimumCounterfactualReplayCases": 2,
+    "minimumShadowCases": 2,
+    "sideEffects": false,
+    "classifications": [
+      "cloud-neutral",
+      "azure-adapter-specific",
+      "signaldesk-specific",
+      "unresolved"
+    ],
+    "exactHumanDecisionRequired": true,
+    "humanDecisionIdentity": "Neel",
+    "sd007DecisionReuse": "forbidden",
+    "output": "non-mutating-promotion-packet-only",
+    "targetMutation": false,
+    "journalReplayRequired": true
+  },
+  "authority": {
+    "localCorrectionImplementation": "owner-authorized",
+    "adrRatification": "owner-ratified-2026-08-20",
+    "stage": "not-authorized",
+    "commit": "not-authorized",
+    "push": "not-authorized",
+    "openPullRequest": "not-authorized",
+    "githubMutation": "not-authorized",
+    "entraMutation": "not-authorized",
+    "azureMutation": "not-authorized",
+    "learningApplication": "forbidden",
+    "production": "forbidden"
+  }
+}

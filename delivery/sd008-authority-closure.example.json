@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "classification": "public-redacted",
+  "workItem": "SD-008",
+  "repository": "Neel-Error404/signal-desk",
+  "commit": "0000000000000000000000000000000000000000",
+  "runId": "1",
+  "event": "post-delete-verifier-removed",
+  "roleName": "SignalDesk SD008 Post Delete Verifier",
+  "assignmentState": "absent",
+  "assignmentCount": 0,
+  "performedBy": "Neel",
+  "occurredAt": "2026-08-20T00:00:00.000Z",
+  "evidenceSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+}

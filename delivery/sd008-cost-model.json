@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "signaldesk-sd008-centralindia-retail-2026-08-20",
+  "currency": "USD",
+  "region": "centralindia",
+  "capturedAt": "2026-08-20T00:00:00.000Z",
+  "maximumSessionHours": 8,
+  "budgetAlertUsd": 5,
+  "ownerReviewThresholdUsd": 2,
+  "hourly": {
+    "postgresqlB1msCompute": 0.0245,
+    "postgresql32GiBStorage": 0.0057425,
+    "containerAppsQuarterVcpuActive": 0.0216,
+    "containerAppsHalfGiBActive": 0.0054,
+    "privateDnsOneZone": 0.000685,
+    "privateEndpointPlanningAllowance": 0.01
+  },
+  "perSession": {
+    "logAnalyticsPointOneGiB": 0.322,
+    "keyVaultOperationsAllowance": 0.01,
+    "requestsAndRoundingAllowance": 0.01
+  },
+  "limitations": [
+    "This is a conservative retail calculation, not a provider invoice.",
+    "The private-endpoint regional meter was not returned by the retail API and uses a documented planning allowance.",
+    "Actual sponsorship billing can lag teardown and must be reread separately when available."
+  ]
+}
