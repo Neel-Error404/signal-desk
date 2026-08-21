@@ -18,8 +18,130 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: signaldesk-staging
+  cancel-in-progress: false
+
 jobs:
+  protected-main-source:
+    name: Prove exact current protected main before publication
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      checks: read
+      contents: read
+      pull-requests: read
+    outputs:
+      reviewed-head: ${{ steps.source.outputs.reviewed-head }}
+      source-proof-sha256: ${{ steps.source.outputs.source-proof-sha256 }}
+    steps:
+      - name: Check out the dispatched source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify live main, ruleset, merge review, and required check
+        id: source
+        shell: bash
+        env:
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+          GH_TOKEN: ${{ github.token }}
+          REQUIRED_CHECK: signaldesk-ordered-review-gate
+          REQUIRED_RULESET_ID: "21058424"
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          [[ "$GITHUB_REF_TYPE" == "branch" ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$AUTHORIZED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_SHA" == "$AUTHORIZED_COMMIT" ]]
+          [[ "$(git rev-parse HEAD)" == "$AUTHORIZED_COMMIT" ]]
+
+          live_main_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          [[ "$live_main_sha" == "$AUTHORIZED_COMMIT" ]]
+
+          ruleset_json="$(gh api "repos/${GITHUB_REPOSITORY}/rulesets/${REQUIRED_RULESET_ID}")"
+          jq -e '
+            .enforcement == "active" and
+            ((.bypass_actors // []) | length == 0) and
+            ((.conditions.ref_name.include // []) | any(. == "~DEFAULT_BRANCH" or . == "refs/heads/main")) and
+            ([.rules[] | select(
+              .type == "required_status_checks" and
+              .parameters.strict_required_status_checks_policy == true and
+              ([.parameters.required_status_checks[].context] | index("signaldesk-ordered-review-gate") != null)
+            )] | length == 1)
+          ' <<<"$ruleset_json" >/dev/null
+
+          check_succeeded() {
+            local commit="$1"
+            gh api -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/commits/${commit}/check-runs?per_page=100" \
+              | jq -e --arg required "$REQUIRED_CHECK" '
+                  [.check_runs[] | select(
+                    .name == $required and .status == "completed" and .conclusion == "success"
+                  )] | length > 0
+                ' >/dev/null
+          }
+
+          reviewed_head="$AUTHORIZED_COMMIT"
+          if ! check_succeeded "$reviewed_head"; then
+            pull_json="$(gh api -H "Accept: application/vnd.github+json" \
+              "repos/${GITHUB_REPOSITORY}/commits/${AUTHORIZED_COMMIT}/pulls?per_page=100")"
+            reviewed_head="$(jq -r --arg commit "$AUTHORIZED_COMMIT" '
+              [
+                .[] | select(
+                  .merged_at != null and
+                  .base.ref == "main" and
+                  .merge_commit_sha == $commit
+                ) | .head.sha
+              ][0] // empty
+            ' <<<"$pull_json")"
+            [[ "$reviewed_head" =~ ^[0-9a-f]{40}$ ]]
+            check_succeeded "$reviewed_head"
+          fi
+
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg ref "$GITHUB_REF" \
+            --arg commit "$AUTHORIZED_COMMIT" \
+            --arg reviewedHead "$reviewed_head" \
+            --arg rulesetId "$REQUIRED_RULESET_ID" \
+            --arg requiredCheck "$REQUIRED_CHECK" \
+            --arg actor "$GITHUB_ACTOR" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --arg occurredAt "$(node -p 'new Date().toISOString()')" \
+            '{
+              schemaVersion:1,
+              workItem:"SD-008",
+              event:"protected-main-verified",
+              repository:$repository,
+              ref:$ref,
+              commit:$commit,
+              reviewedHead:$reviewedHead,
+              rulesetId:$rulesetId,
+              requiredCheck:$requiredCheck,
+              strict:true,
+              bypassActors:0,
+              actor:$actor,
+              runId:$runId,
+              occurredAt:$occurredAt
+            }' > .tmp-sd008-source-proof.json
+          source_proof_sha256="$(sha256sum .tmp-sd008-source-proof.json | cut -d' ' -f1)"
+          echo "reviewed-head=$reviewed_head" >> "$GITHUB_OUTPUT"
+          echo "source-proof-sha256=$source_proof_sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Export public protected-source proof
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sd008-source-proof-${{ github.run_id }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          path: .tmp-sd008-source-proof.json
+
   ordered-review-gate:
+    needs: protected-main-source
     uses: ./.github/workflows/hosted-review-gate.yml
 
   build-and-attest:
@@ -188,11 +310,44 @@ jobs:
           gh attestation verify "oci://ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" \
             --repo Neel-Error404/signal-desk
 
+      - name: Bind public build evidence
+        shell: bash
+        env:
+          IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg commit "$AUTHORIZED_COMMIT" \
+            --arg runId "$GITHUB_RUN_ID" \
+            --arg imageDigest "$IMAGE_DIGEST" \
+            --arg occurredAt "$(node -p 'new Date().toISOString()')" \
+            --arg applicationTreeSha256 "$(tr -d '\r\n' < .tmp/published-tree.txt)" \
+            --arg ociManifestDigest "$(tr -d '\r\n' < .tmp/manifest-2.txt)" \
+            --arg sbomSha256 "$(sha256sum .tmp/signaldesk.spdx.json | cut -d' ' -f1)" \
+            --arg vulnerabilityReportSha256 "$(sha256sum .tmp/signaldesk-grype.sarif | cut -d' ' -f1)" \
+            '{
+              schemaVersion:1,
+              workItem:"SD-008",
+              event:"artifact-published",
+              commit:$commit,
+              runId:$runId,
+              occurredAt:$occurredAt,
+              imageDigest:$imageDigest,
+              applicationTreeSha256:$applicationTreeSha256,
+              ociManifestDigest:$ociManifestDigest,
+              sbomSha256:$sbomSha256,
+              vulnerabilityReportSha256:$vulnerabilityReportSha256,
+              reproducibleBuilds:2,
+              secretScan:"passed"
+            }' > .tmp-sd008-build-public.json
+
       - name: Export non-secret build evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: sd008-build-evidence-${{ github.run_id }}
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
           path: |
             .tmp/container-context/context-manifest.json
@@ -203,6 +358,7 @@ jobs:
             .tmp/published-tree.txt
             .tmp/signaldesk.spdx.json
             .tmp/signaldesk-grype.sarif
+            .tmp-sd008-build-public.json
 
   staging-publication:
     name: Verify separately approved public GHCR visibility
@@ -253,6 +409,7 @@ jobs:
       candidate-revision: ${{ steps.provision.outputs.candidate-revision }}
       app-fqdn: ${{ steps.provision.outputs.app-fqdn }}
       log-analytics-customer-id: ${{ steps.provision.outputs.log-analytics-customer-id }}
+      session-started-at: ${{ steps.provision.outputs.session-started-at }}
     steps:
       - name: Check out exact workflow revision
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -266,6 +423,18 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Acquire dedicated secretless provision-smoke token
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
+          STAGING_SMOKE_CLIENT_ID: ${{ vars.STAGING_SMOKE_CLIENT_ID }}
+          STAGING_SMOKE_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID }}
+          SD008_ENVIRONMENT: staging-provision
+        run: |
+          set -euo pipefail
+          node scripts/get-entra-smoke-token.mjs
 
       - name: Validate Bicep compiler and exact template
         shell: bash
@@ -283,8 +452,11 @@ jobs:
           REVISION_SUFFIX: ${{ needs.build-and-attest.outputs.revision-suffix }}
           ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
           ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
-          PROVISION_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-          TRAFFIC_CLIENT_ID: ${{ vars.STAGING_TRAFFIC_CLIENT_ID }}
+          ENTRA_OWNER_OBJECT_ID: ${{ vars.ENTRA_OWNER_OBJECT_ID }}
+          PROVISION_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_PROVISION_PRINCIPAL_OBJECT_ID }}
+          SMOKE_CLIENT_ID: ${{ vars.STAGING_SMOKE_CLIENT_ID }}
+          SMOKE_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID }}
+          SMOKE_ACCESS_TOKEN: ${{ env.SMOKE_ACCESS_TOKEN }}
           RELEASE_NOTE: ${{ inputs.release_note }}
           AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
           RESOURCE_GROUP: rg-signaldesk-stg-cin
@@ -294,8 +466,11 @@ jobs:
           [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
           [[ -n "$ENTRA_CLIENT_SECRET" ]]
           [[ "$ENTRA_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
-          [[ "$PROVISION_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
-          [[ "$TRAFFIC_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$ENTRA_OWNER_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$PROVISION_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$SMOKE_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$SMOKE_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ -n "$SMOKE_ACCESS_TOKEN" ]]
           [[ ${#RELEASE_NOTE} -ge 1 && ${#RELEASE_NOTE} -le 500 ]]
           admin_password="$(openssl rand -hex 32)"
           migration_password="$(openssl rand -hex 32)"
@@ -308,19 +483,37 @@ jobs:
           [[ "$(az group show --name "$RESOURCE_GROUP" --query tags.environment -o tsv)" == "staging" ]]
           [[ "$(az group show --name "$RESOURCE_GROUP" --query tags.workItem -o tsv)" == "SD-008" ]]
           [[ "$(az group show --name "$RESOURCE_GROUP" --query tags.owner -o tsv)" == "Neel" ]]
+          resource_group_id="$(az group show --name "$RESOURCE_GROUP" --query id -o tsv)"
+          provision_assignments="$(az role assignment list \
+            --assignee-object-id "$PROVISION_PRINCIPAL_OBJECT_ID" \
+            --scope "$resource_group_id" --include-inherited \
+            --fill-principal-name false -o json)"
+          jq -e --arg scope "$resource_group_id" --arg vaultPrefix "${resource_group_id}/providers/Microsoft.KeyVault/vaults/" '
+            [.[] | select(
+              (.scope | ascii_downcase) == ($scope | ascii_downcase) and
+              .roleDefinitionName == "SignalDesk SD008 Provision" and
+              .conditionVersion == "2.0" and
+              (.condition | contains("4633458b-17de-408a-b874-0445c86b69e6")) and
+              (.condition | ascii_downcase | contains($vaultPrefix | ascii_downcase))
+            )] | length == 1
+          ' <<<"$provision_assignments" >/dev/null
           expires_at="$(az group show --name "$RESOURCE_GROUP" --query tags.expiresAt -o tsv)"
+          created_at="$(az group show --name "$RESOURCE_GROUP" --query tags.createdAt -o tsv)"
           expires_epoch="$(date --date="$expires_at" +%s)"
+          created_epoch="$(date --date="$created_at" +%s)"
           now_epoch="$(date +%s)"
+          [[ "$created_epoch" -le "$now_epoch" ]]
           [[ "$expires_epoch" -gt "$now_epoch" ]]
-          [[ "$expires_epoch" -le "$((now_epoch + 28800))" ]]
+          [[ "$expires_epoch" -le "$((created_epoch + 28800))" ]]
           az deployment group what-if \
             --resource-group "$RESOURCE_GROUP" \
             --template-file infra/staging/main.bicep \
             --parameters imageReference="$image_reference" releaseCommit="$AUTHORIZED_COMMIT" \
               deploymentRunId="$GITHUB_RUN_ID" revisionSuffix="$baseline_suffix" \
               entraClientId="$ENTRA_CLIENT_ID" \
-              authorizedProvisionClientId="$PROVISION_CLIENT_ID" \
-              authorizedTrafficClientId="$TRAFFIC_CLIENT_ID" \
+              authorizedOwnerObjectId="$ENTRA_OWNER_OBJECT_ID" \
+              authorizedSmokeClientId="$SMOKE_CLIENT_ID" \
+              authorizedSmokePrincipalObjectId="$SMOKE_PRINCIPAL_OBJECT_ID" \
               entraClientSecret="$ENTRA_CLIENT_SECRET" administratorPassword="$admin_password" \
               migrationPassword="$migration_password" runtimePassword="$runtime_password" \
             --no-pretty-print > .tmp-sd008-what-if.json
@@ -331,8 +524,9 @@ jobs:
             --parameters imageReference="$image_reference" releaseCommit="$AUTHORIZED_COMMIT" \
               deploymentRunId="$GITHUB_RUN_ID" revisionSuffix="$baseline_suffix" \
               entraClientId="$ENTRA_CLIENT_ID" \
-              authorizedProvisionClientId="$PROVISION_CLIENT_ID" \
-              authorizedTrafficClientId="$TRAFFIC_CLIENT_ID" \
+              authorizedOwnerObjectId="$ENTRA_OWNER_OBJECT_ID" \
+              authorizedSmokeClientId="$SMOKE_CLIENT_ID" \
+              authorizedSmokePrincipalObjectId="$SMOKE_PRINCIPAL_OBJECT_ID" \
               entraClientSecret="$ENTRA_CLIENT_SECRET" administratorPassword="$admin_password" \
               migrationPassword="$migration_password" runtimePassword="$runtime_password" \
             --query properties.outputs -o json)"
@@ -365,7 +559,7 @@ jobs:
           wait_for_job "$bootstrap_job"
           wait_for_job "$migration_job"
           baseline_revision="$(az containerapp revision list --resource-group "$RESOURCE_GROUP" --name "$app_name" --query '[0].name' -o tsv)"
-          az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$app_name" --revision-weight "$baseline_revision=100" >/dev/null
+          [[ "$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$app_name" --query "[?revisionName=='$baseline_revision'].weight | [0]" -o tsv)" == "100" ]]
           az containerapp update --resource-group "$RESOURCE_GROUP" --name "$app_name" \
             --image "$image_reference" --revision-suffix "$REVISION_SUFFIX" \
             --set-env-vars "SIGNALDESK_REVISION=$REVISION_SUFFIX" >/dev/null
@@ -373,7 +567,7 @@ jobs:
           candidate_weight="$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$app_name" --query "[?revisionName=='$candidate_revision'].weight | [0]" -o tsv)"
           [[ -z "$candidate_weight" || "$candidate_weight" == "0" ]]
           candidate_fqdn="$(az containerapp revision show --resource-group "$RESOURCE_GROUP" --name "$app_name" --revision "$candidate_revision" --query properties.fqdn -o tsv)"
-          access_token="$(az account get-access-token --resource "api://${ENTRA_CLIENT_ID}" --query accessToken -o tsv)"
+          access_token="$SMOKE_ACCESS_TOKEN"
           anonymous_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 15 "https://${candidate_fqdn}/api/v1/health/live")"
           [[ "$anonymous_status" == "401" ]]
           curl --silent --show-error --fail --max-time 15 --header "Authorization: Bearer $access_token" "https://${candidate_fqdn}/api/v1/health/live" > .tmp-sd008-live.json
@@ -381,7 +575,21 @@ jobs:
           jq -n --arg actor "$GITHUB_ACTOR" --arg run "$GITHUB_RUN_ID" --arg commit "$AUTHORIZED_COMMIT" \
             --arg image "$image_reference" --arg note "$RELEASE_NOTE" \
             '{actor:$actor,runId:$run,commit:$commit,image:$image,releaseNote:$note}' > .tmp-sd008-run-identity.json
-          for secret_value in "$admin_password" "$migration_password" "$runtime_password" "$ENTRA_CLIENT_SECRET" "$access_token"; do
+          jq -n \
+            --arg verifiedAt "$(node -p 'new Date().toISOString()')" \
+            --arg baselineRevision "$baseline_revision" \
+            --arg candidateRevision "$candidate_revision" \
+            '{
+              candidateZeroTraffic:true,
+              candidateZeroTrafficVerifiedAt:$verifiedAt,
+              baselineRevision:$baselineRevision,
+              candidateRevision:$candidateRevision,
+              bootstrapJob:"Succeeded",
+              migrationJob:"Succeeded",
+              anonymousDenied:true,
+              authorizedSmoke:true
+            }' > .tmp-sd008-provision-summary.json
+          for secret_value in "$admin_password" "$migration_password" "$runtime_password" "$ENTRA_CLIENT_SECRET" "$SMOKE_ACCESS_TOKEN"; do
             ! grep -F -R -- "$secret_value" .tmp-sd008-*.json .tmp-sd008-*.jsonl
           done
           echo "app-name=$app_name" >> "$GITHUB_OUTPUT"
@@ -389,20 +597,42 @@ jobs:
           echo "baseline-revision=$baseline_revision" >> "$GITHUB_OUTPUT"
           echo "candidate-revision=$candidate_revision" >> "$GITHUB_OUTPUT"
           echo "log-analytics-customer-id=$log_analytics_customer_id" >> "$GITHUB_OUTPUT"
+          echo "session-started-at=$created_at" >> "$GITHUB_OUTPUT"
 
-      - name: Export non-secret provisioning evidence
+      - name: Export redacted provisioning evidence and owner-encrypted identifiers
+        shell: bash
+        env:
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+          EVIDENCE_PUBLIC_KEY_B64: ${{ vars.SD008_EVIDENCE_PUBLIC_KEY_B64 }}
+        run: |
+          set -euo pipefail
+          [[ -n "$EVIDENCE_PUBLIC_KEY_B64" ]]
+          node scripts/sd008-evidence.mjs \
+            --phase provision \
+            --commit "$AUTHORIZED_COMMIT" \
+            --run-id "$GITHUB_RUN_ID" \
+            --created-at "$(node -p 'new Date().toISOString()')" \
+            --public-key-base64 "$EVIDENCE_PUBLIC_KEY_B64" \
+            --public-output .tmp-sd008-provision-public.json \
+            --private-envelope-output .tmp-sd008-provision-private-envelope.json \
+            --input what-if=.tmp-sd008-what-if.json \
+            --input deployment=.tmp-sd008-deployment.json \
+            --input job-executions=.tmp-sd008-job-executions.jsonl \
+            --input live=.tmp-sd008-live.json \
+            --input ready=.tmp-sd008-ready.json \
+            --input run-identity=.tmp-sd008-run-identity.json \
+            --input summary=.tmp-sd008-provision-summary.json
+
+      - name: Export only redacted and encrypted provisioning evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: sd008-provision-evidence-${{ github.run_id }}
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
           path: |
-            .tmp-sd008-what-if.json
-            .tmp-sd008-deployment.json
-            .tmp-sd008-job-executions.jsonl
-            .tmp-sd008-live.json
-            .tmp-sd008-ready.json
-            .tmp-sd008-run-identity.json
+            .tmp-sd008-provision-public.json
+            .tmp-sd008-provision-private-envelope.json
 
   staging-traffic:
     name: Approve traffic, verify, and rehearse rollback
@@ -440,6 +670,52 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Acquire dedicated secretless traffic-smoke token
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
+          STAGING_SMOKE_CLIENT_ID: ${{ vars.STAGING_SMOKE_CLIENT_ID }}
+          STAGING_SMOKE_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID }}
+          SD008_ENVIRONMENT: staging-traffic
+        run: |
+          set -euo pipefail
+          node scripts/get-entra-smoke-token.mjs
+
+      - name: Prove provision authority is revoked and traffic authority is exact-app scoped
+        shell: bash
+        env:
+          APP_NAME: ${{ needs.staging-provision.outputs.app-name }}
+          RESOURCE_GROUP: rg-signaldesk-stg-cin
+          PROVISION_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_PROVISION_PRINCIPAL_OBJECT_ID }}
+          TRAFFIC_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TRAFFIC_PRINCIPAL_OBJECT_ID }}
+        run: |
+          set -euo pipefail
+          [[ "$PROVISION_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$TRAFFIC_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          resource_group_id="$(az group show --name "$RESOURCE_GROUP" --query id -o tsv)"
+          app_id="$(az containerapp show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query id -o tsv)"
+          provision_count="$(az role assignment list \
+            --assignee-object-id "$PROVISION_PRINCIPAL_OBJECT_ID" \
+            --scope "$resource_group_id" --include-inherited \
+            --fill-principal-name false -o json \
+            | jq '[.[] | select(.roleDefinitionName == "SignalDesk SD008 Provision")] | length')"
+          [[ "$provision_count" == "0" ]]
+          traffic_assignments="$(az role assignment list \
+            --assignee-object-id "$TRAFFIC_PRINCIPAL_OBJECT_ID" \
+            --all \
+            --fill-principal-name false -o json)"
+          jq -e --arg app "$app_id" --arg group "$resource_group_id" '
+            ([.[] | select(
+              .roleDefinitionName == "SignalDesk SD008 Traffic" and
+              (.scope | ascii_downcase) == ($app | ascii_downcase)
+            )] | length == 1) and
+            ([.[] | select(
+              .roleDefinitionName == "SignalDesk SD008 Evidence Reader" and
+              (.scope | ascii_downcase) == ($group | ascii_downcase)
+            )] | length == 1)
+          ' <<<"$traffic_assignments" >/dev/null
+
       - name: Shift staging traffic and restore prior healthy revision
         shell: bash
         env:
@@ -449,11 +725,13 @@ jobs:
           RESOURCE_GROUP: rg-signaldesk-stg-cin
           APP_FQDN: ${{ needs.staging-provision.outputs.app-fqdn }}
           ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
+          SMOKE_ACCESS_TOKEN: ${{ env.SMOKE_ACCESS_TOKEN }}
           WORKSPACE_CUSTOMER_ID: ${{ needs.staging-provision.outputs.log-analytics-customer-id }}
         run: |
           set -euo pipefail
           [[ "$ENTRA_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
-          access_token="$(az account get-access-token --resource "api://${ENTRA_CLIENT_ID}" --query accessToken -o tsv)"
+          [[ -n "$SMOKE_ACCESS_TOKEN" ]]
+          access_token="$SMOKE_ACCESS_TOKEN"
           az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
             --revision-weight "$BASELINE_REVISION=0" "$CANDIDATE_REVISION=100" >/dev/null
           [[ "$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[?revisionName=='$CANDIDATE_REVISION'].weight | [0]" -o tsv)" == "100" ]]
@@ -487,19 +765,55 @@ jobs:
           for secret_value in "$access_token"; do
             ! grep -F -R -- "$secret_value" .tmp-sd008-*.json
           done
+          jq -n \
+            --arg rollbackVerifiedAt "$(node -p 'new Date().toISOString()')" \
+            --arg baselineRevision "$BASELINE_REVISION" \
+            --arg candidateRevision "$CANDIDATE_REVISION" \
+            '{
+              trafficApproved:true,
+              candidatePromoted:true,
+              rollbackVerified:true,
+              rollbackVerifiedAt:$rollbackVerifiedAt,
+              finalRevision:$baselineRevision,
+              candidateRevision:$candidateRevision,
+              finalBaselineWeight:100,
+              finalCandidateWeight:0,
+              authorizedSmoke:true
+            }' > .tmp-sd008-traffic-summary.json
 
-      - name: Export non-secret traffic and rollback evidence
+      - name: Export redacted traffic evidence and owner-encrypted identifiers
+        shell: bash
+        env:
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+          EVIDENCE_PUBLIC_KEY_B64: ${{ vars.SD008_EVIDENCE_PUBLIC_KEY_B64 }}
+        run: |
+          set -euo pipefail
+          [[ -n "$EVIDENCE_PUBLIC_KEY_B64" ]]
+          node scripts/sd008-evidence.mjs \
+            --phase traffic \
+            --commit "$AUTHORIZED_COMMIT" \
+            --run-id "$GITHUB_RUN_ID" \
+            --created-at "$(node -p 'new Date().toISOString()')" \
+            --public-key-base64 "$EVIDENCE_PUBLIC_KEY_B64" \
+            --public-output .tmp-sd008-traffic-public.json \
+            --private-envelope-output .tmp-sd008-traffic-private-envelope.json \
+            --input promoted-ready=.tmp-sd008-promoted-ready.json \
+            --input rollback-ready=.tmp-sd008-rollback-ready.json \
+            --input revisions=.tmp-sd008-revisions.json \
+            --input activity=.tmp-sd008-activity.json \
+            --input console-logs=.tmp-sd008-console-logs.json \
+            --input summary=.tmp-sd008-traffic-summary.json
+
+      - name: Export only redacted and encrypted traffic evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: sd008-traffic-evidence-${{ github.run_id }}
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
           path: |
-            .tmp-sd008-promoted-ready.json
-            .tmp-sd008-rollback-ready.json
-            .tmp-sd008-revisions.json
-            .tmp-sd008-activity.json
-            .tmp-sd008-console-logs.json
+            .tmp-sd008-traffic-public.json
+            .tmp-sd008-traffic-private-envelope.json
 
   staging-teardown:
     name: Approve teardown and prove zero active staging resources
@@ -509,9 +823,16 @@ jobs:
     timeout-minutes: 45
     environment: staging-teardown
     permissions:
+      actions: read
       contents: read
       id-token: write
     steps:
+      - name: Check out exact workflow revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Log in to Azure with GitHub OIDC
         uses: Azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6
         with:
@@ -519,13 +840,66 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Prove mutation leases are separated before teardown
+        shell: bash
+        env:
+          RESOURCE_GROUP: rg-signaldesk-stg-cin
+          PROVISION_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_PROVISION_PRINCIPAL_OBJECT_ID }}
+          TRAFFIC_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TRAFFIC_PRINCIPAL_OBJECT_ID }}
+          TEARDOWN_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TEARDOWN_PRINCIPAL_OBJECT_ID }}
+        run: |
+          set -euo pipefail
+          for principal in "$PROVISION_PRINCIPAL_OBJECT_ID" "$TRAFFIC_PRINCIPAL_OBJECT_ID" "$TEARDOWN_PRINCIPAL_OBJECT_ID"; do
+            [[ "$principal" =~ ^[0-9a-fA-F-]{36}$ ]]
+          done
+          resource_group_id="$(az group show --name "$RESOURCE_GROUP" --query id -o tsv)"
+          subscription_id="$(az account show --query id -o tsv)"
+          subscription_scope="/subscriptions/${subscription_id}"
+          for revoked_principal in "$PROVISION_PRINCIPAL_OBJECT_ID" "$TRAFFIC_PRINCIPAL_OBJECT_ID"; do
+            revoked_count="$(az role assignment list \
+              --assignee-object-id "$revoked_principal" --all \
+              --fill-principal-name false -o json \
+              | jq '[.[] | select(
+                  .roleDefinitionName == "SignalDesk SD008 Provision" or
+                  .roleDefinitionName == "SignalDesk SD008 Traffic" or
+                  .roleDefinitionName == "SignalDesk SD008 Evidence Reader"
+                )] | length')"
+            [[ "$revoked_count" == "0" ]]
+          done
+          teardown_assignments="$(az role assignment list \
+            --assignee-object-id "$TEARDOWN_PRINCIPAL_OBJECT_ID" --all \
+            --fill-principal-name false -o json)"
+          jq -e --arg group "$resource_group_id" --arg subscription "$subscription_scope" '
+            ([.[] | select(
+              .roleDefinitionName == "SignalDesk SD008 Teardown" and
+              (.scope | ascii_downcase) == ($group | ascii_downcase)
+            )] | length == 1) and
+            ([.[] | select(
+              .roleDefinitionName == "SignalDesk SD008 Post Delete Verifier" and
+              (.scope | ascii_downcase) == ($subscription | ascii_downcase)
+            )] | length == 1)
+          ' <<<"$teardown_assignments" >/dev/null
+
       - name: Delete exact SD-008 resource group and verify absence
+        id: teardown
         shell: bash
         env:
           RESOURCE_GROUP: rg-signaldesk-stg-cin
           APP_FQDN: ${{ needs.staging-provision.outputs.app-fqdn }}
+          SESSION_STARTED_AT: ${{ needs.staging-provision.outputs.session-started-at }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          session_started_at="$SESSION_STARTED_AT"
+          if [[ -z "$session_started_at" ]]; then
+            if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "true" ]]; then
+              session_started_at="$(az group show --name "$RESOURCE_GROUP" --query tags.createdAt -o tsv)"
+            else
+              session_started_at="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" --jq '.run_started_at')"
+            fi
+          fi
+          [[ -n "$session_started_at" ]]
+          date --date="$session_started_at" +%s >/dev/null
           expected_vault_count=0
           if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "true" ]]; then
             az keyvault list --resource-group "$RESOURCE_GROUP" \
@@ -542,7 +916,9 @@ jobs:
             sleep 15
           done
           [[ "$(az group exists --name "$RESOURCE_GROUP")" == "false" ]]
-          [[ "$(az resource list --query "[?resourceGroup=='$RESOURCE_GROUP'] | length(@)" -o tsv)" == "0" ]]
+          active_resource_count="$(az resource list --query "[?resourceGroup=='$RESOURCE_GROUP'] | length(@)" -o tsv)"
+          [[ "$active_resource_count" == "0" ]]
+          endpoint_absent=true
           if [[ -n "$APP_FQDN" ]]; then
             endpoint_status=""
             for attempt in $(seq 1 40); do
@@ -556,13 +932,139 @@ jobs:
           fi
           az keyvault list-deleted --query "[?tags.workItem=='SD-008' && tags.deploymentRunId=='$GITHUB_RUN_ID'].{name:name,deletionDate:properties.deletionDate,scheduledPurgeDate:properties.scheduledPurgeDate}" -o json > .tmp-sd008-vault-tombstones.json
           [[ "$(jq 'length' .tmp-sd008-vault-tombstones.json)" == "$expected_vault_count" ]]
+          session_ended_at="$(node -p 'new Date().toISOString()')"
+          node scripts/calculate-sd008-session-cost.mjs \
+            --start "$session_started_at" \
+            --end "$session_ended_at" \
+            --output .tmp-sd008-session-cost.json
+          jq -n \
+            --arg deletedAt "$session_ended_at" \
+            --arg absenceVerifiedAt "$(node -p 'new Date().toISOString()')" \
+            --argjson tombstoneCount "$expected_vault_count" \
+            '{
+              resourceGroupDeleted:true,
+              resourceGroupDeletedAt:$deletedAt,
+              activeResources:0,
+              endpointAbsent:true,
+              absenceVerifiedAt:$absenceVerifiedAt,
+              unexpectedChargesDetected:false,
+              tombstoneCount:$tombstoneCount
+            }' > .tmp-sd008-teardown-summary.json
 
-      - name: Export non-secret teardown evidence
+      - name: Export redacted teardown evidence and owner-encrypted identifiers
+        shell: bash
+        env:
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+          EVIDENCE_PUBLIC_KEY_B64: ${{ vars.SD008_EVIDENCE_PUBLIC_KEY_B64 }}
+        run: |
+          set -euo pipefail
+          [[ -n "$EVIDENCE_PUBLIC_KEY_B64" ]]
+          node scripts/sd008-evidence.mjs \
+            --phase teardown \
+            --commit "$AUTHORIZED_COMMIT" \
+            --run-id "$GITHUB_RUN_ID" \
+            --created-at "$(node -p 'new Date().toISOString()')" \
+            --public-key-base64 "$EVIDENCE_PUBLIC_KEY_B64" \
+            --public-output .tmp-sd008-teardown-public.json \
+            --private-envelope-output .tmp-sd008-teardown-private-envelope.json \
+            --input active-vaults-before-delete=.tmp-sd008-active-vaults-before-delete.json \
+            --input vault-tombstones=.tmp-sd008-vault-tombstones.json \
+            --input cost=.tmp-sd008-session-cost.json \
+            --input summary=.tmp-sd008-teardown-summary.json
+
+      - name: Export only redacted and encrypted teardown evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: sd008-teardown-evidence-${{ github.run_id }}
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
           path: |
-            .tmp-sd008-active-vaults-before-delete.json
-            .tmp-sd008-vault-tombstones.json
+            .tmp-sd008-teardown-public.json
+            .tmp-sd008-teardown-private-envelope.json
+
+  hosted-trace-inputs:
+    name: Assemble public hosted trace inputs for owner authority closure
+    needs:
+      - protected-main-source
+      - build-and-attest
+      - staging-provision
+      - staging-traffic
+      - staging-teardown
+    if: ${{ always() && needs.staging-teardown.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out exact workflow revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Download exact public evidence sources
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          pattern: sd008-*-evidence-${{ github.run_id }}
+          path: .tmp-sd008-downloads
+
+      - name: Download protected-main source proof
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: sd008-source-proof-${{ github.run_id }}
+          path: .tmp-sd008-source
+
+      - name: Normalize approvals and job results without provider identifiers
+        shell: bash
+        env:
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$AUTHORIZED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          mkdir .tmp-sd008-trace-inputs
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/approvals" > .tmp-sd008-approvals-raw.json
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?per_page=100" > .tmp-sd008-jobs-raw.json
+          node scripts/normalize-sd008-github-trace-inputs.mjs \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --approvals .tmp-sd008-approvals-raw.json \
+            --jobs .tmp-sd008-jobs-raw.json \
+            --output .tmp-sd008-trace-inputs/github-proof.json
+          cp .tmp-sd008-source/.tmp-sd008-source-proof.json .tmp-sd008-trace-inputs/source-proof.json
+          cp .tmp-sd008-downloads/sd008-build-evidence-${GITHUB_RUN_ID}/.tmp-sd008-build-public.json .tmp-sd008-trace-inputs/build-proof.json
+          cp .tmp-sd008-downloads/sd008-provision-evidence-${GITHUB_RUN_ID}/.tmp-sd008-provision-public.json .tmp-sd008-trace-inputs/provision-public.json
+          cp .tmp-sd008-downloads/sd008-traffic-evidence-${GITHUB_RUN_ID}/.tmp-sd008-traffic-public.json .tmp-sd008-trace-inputs/traffic-public.json
+          cp .tmp-sd008-downloads/sd008-teardown-evidence-${GITHUB_RUN_ID}/.tmp-sd008-teardown-public.json .tmp-sd008-trace-inputs/teardown-public.json
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg commit "$AUTHORIZED_COMMIT" \
+            --arg runId "$GITHUB_RUN_ID" \
+            '{
+              schemaVersion:1,
+              classification:"public-redacted",
+              workItem:"SD-008",
+              repository:$repository,
+              commit:$commit,
+              runId:$runId,
+              event:"post-delete-verifier-removed",
+              roleName:"SignalDesk SD008 Post Delete Verifier",
+              assignmentState:"OWNER_MUST_VERIFY_ABSENT",
+              assignmentCount:null,
+              performedBy:"Neel",
+              occurredAt:null,
+              evidenceSha256:null
+            }' > .tmp-sd008-trace-inputs/authority-closure-template.json
+          (cd .tmp-sd008-trace-inputs && sha256sum *.json | sort) > .tmp-sd008-trace-inputs/SHA256SUMS
+          rm .tmp-sd008-approvals-raw.json .tmp-sd008-jobs-raw.json
+
+      - name: Export public trace inputs only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sd008-hosted-trace-inputs-${{ github.run_id }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          path: .tmp-sd008-trace-inputs

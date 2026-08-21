@@ -17,8 +17,9 @@ param releaseCommit string
 param deploymentRunId string
 param revisionSuffix string
 param entraClientId string
-param authorizedProvisionClientId string
-param authorizedTrafficClientId string
+param authorizedOwnerObjectId string
+param authorizedSmokeClientId string
+param authorizedSmokePrincipalObjectId string
 
 @secure()
 param entraClientSecret string
@@ -101,8 +102,9 @@ module containerApps 'container-apps.bicep' = {
     revisionSuffix: revisionSuffix
     entraClientId: entraClientId
     entraTenantId: tenant().tenantId
-    authorizedProvisionClientId: authorizedProvisionClientId
-    authorizedTrafficClientId: authorizedTrafficClientId
+    authorizedOwnerObjectId: authorizedOwnerObjectId
+    authorizedSmokeClientId: authorizedSmokeClientId
+    authorizedSmokePrincipalObjectId: authorizedSmokePrincipalObjectId
     bootstrapIdentityId: identities.outputs.bootstrapIdentityId
     migrationIdentityId: identities.outputs.migrationIdentityId
     runtimeIdentityId: identities.outputs.runtimeIdentityId
