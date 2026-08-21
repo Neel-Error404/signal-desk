@@ -742,3 +742,182 @@ describe("SD-008 ratified Azure staging contracts", () => {
     }
   });
 });
+
+describe("SD-008 ratified local bootstrap and learning corrections", () => {
+  it("binds ADR 0010 ratification while keeping every external mutation separately gated", async () => {
+    const adr = await text("docs/adr/0010-sd008-bootstrap-and-learning-corrections.md");
+    const correction = JSON.parse(
+      await text("delivery/sd008-bootstrap-correction-contract.json")
+    ) as {
+      status: string;
+      evidence: Record<string, unknown>;
+      cloudAuthority: { traffic: Record<string, unknown> };
+      smokeIdentity: Record<string, unknown>;
+      authority: Record<string, string>;
+    };
+    expect(adr).toContain("exact ratification on August 20, 2026");
+    expect(adr).toContain("does not authorize\nstaging, commit, push, pull-request creation");
+    expect(correction.status).toBe("ratified-local-implementation");
+    expect(correction.evidence).toMatchObject({
+      rawProviderArtifactUpload: "forbidden",
+      publicPacket: "redacted-json",
+      privatePacket: "owner-encrypted-json-envelope"
+    });
+    expect(correction.cloudAuthority.traffic).toMatchObject({
+      effectiveContainerAppAction: "Microsoft.App/containerApps/write",
+      trafficOnlyAtProvider: false
+    });
+    expect(correction.smokeIdentity).toMatchObject({
+      application: "signaldesk-sd008-smoke",
+      separateFromDeploymentPrincipals: true,
+      clientSecret: false
+    });
+    expect(correction.authority).toMatchObject({
+      localCorrectionImplementation: "owner-authorized",
+      adrRatification: "owner-ratified-2026-08-20",
+      stage: "not-authorized",
+      githubMutation: "not-authorized",
+      entraMutation: "not-authorized",
+      azureMutation: "not-authorized",
+      learningApplication: "forbidden",
+      production: "forbidden"
+    });
+  });
+
+  it("proves exact protected main before any package or attestation write", async () => {
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+    const sourceIndex = workflow.indexOf("  protected-main-source:");
+    const buildIndex = workflow.indexOf("  build-and-attest:");
+    expect(sourceIndex).toBeGreaterThan(0);
+    expect(buildIndex).toBeGreaterThan(sourceIndex);
+    expect(workflow).toContain('[[ "$GITHUB_REF" == "refs/heads/main" ]]');
+    expect(workflow).toContain('[[ "$live_main_sha" == "$AUTHORIZED_COMMIT" ]]');
+    expect(workflow).toContain('REQUIRED_RULESET_ID: "21058424"');
+    expect(workflow).toContain("strict_required_status_checks_policy == true");
+    expect(workflow).toContain("(.bypass_actors // []) | length == 0");
+    expect(workflow).toContain('.name == $required and .status == "completed"');
+    expect(workflow).toContain('needs: protected-main-source');
+    expect(workflow).toContain("group: signaldesk-staging");
+    expect(workflow).toContain("cancel-in-progress: false");
+  });
+
+  it("uploads redacted public packets and owner-encrypted envelopes instead of raw provider evidence", async () => {
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+    for (const phase of ["provision", "traffic", "teardown"]) {
+      expect(workflow).toContain(`.tmp-sd008-${phase}-public.json`);
+      expect(workflow).toContain(`.tmp-sd008-${phase}-private-envelope.json`);
+    }
+    expect(workflow).toContain("scripts/sd008-evidence.mjs");
+    expect(workflow).toContain("vars.SD008_EVIDENCE_PUBLIC_KEY_B64");
+    const uploadBlocks = workflow
+      .split("uses: actions/upload-artifact@")
+      .slice(1)
+      .map((block) => block.split(/\n\s{6}- name:/, 1)[0] ?? "")
+      .join("\n");
+    expect(workflow.match(/include-hidden-files: true/g)).toHaveLength(6);
+    for (const rawArtifact of [
+      ".tmp-sd008-what-if.json",
+      ".tmp-sd008-deployment.json",
+      ".tmp-sd008-job-executions.jsonl",
+      ".tmp-sd008-revisions.json",
+      ".tmp-sd008-activity.json",
+      ".tmp-sd008-console-logs.json",
+      ".tmp-sd008-vault-tombstones.json"
+    ]) {
+      expect(uploadBlocks).not.toContain(rawArtifact);
+    }
+  });
+
+  it("makes the actual teardown-complete trace the only learning entrypoint", async () => {
+    const contract = JSON.parse(
+      await text("delivery/sd008-learning-contract.json")
+    ) as {
+      status: string;
+      lane1Eligibility: { traceType: string; state: string; requiredEventOrder: string[] };
+      candidate: Record<string, unknown>;
+      evaluation: Record<string, unknown>;
+      decision: Record<string, unknown>;
+      promotion: Record<string, unknown>;
+    };
+    const driver = await text("scripts/invoke-sd008-learning.ps1");
+    const validator = await text("scripts/validate-sd008-learning-trace.mjs");
+    expect(contract.status).toBe("implemented-local-scaffold-hosted-trace-required");
+    expect(contract.lane1Eligibility).toMatchObject({
+      traceType: "actual-hosted-sd008",
+      state: "verified-after-teardown"
+    });
+    expect(contract.lane1Eligibility.requiredEventOrder.at(-1)).toBe(
+      "post-delete-verifier-removed"
+    );
+    expect(contract.candidate).toMatchObject({
+      maximumPerTrace: 1,
+      createdBy: "signaldesk-learning-agent",
+      sd007CandidateReuse: false
+    });
+    expect(contract.evaluation).toMatchObject({
+      evaluatorId: "signaldesk-evaluator",
+      candidateOwnerMayEvaluate: false
+    });
+    expect(contract.promotion).toMatchObject({
+      packetOnly: true,
+      appliesTargetMutation: false,
+      journalReplayRequired: true
+    });
+    expect(driver).toContain("scripts/validate-sd008-learning-trace.mjs");
+    expect(driver).toContain("trace:sha256:$traceDigest");
+    expect(driver).toContain("SD-008 permits at most one candidate");
+    expect(driver).toContain("--evaluator-id', 'signaldesk-evaluator'");
+    expect(driver).toContain("applies_target_mutation");
+    expect(validator).toContain('trace.traceType === "actual-hosted-sd008"');
+    expect(validator).toContain('trace.lane1?.status === "verified-after-teardown"');
+    expect(validator).toContain("candidateCreated === false");
+  });
+
+  it("uses a dedicated federated smoke identity and excludes deployment principals from ingress", async () => {
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+    const main = await text("infra/staging/main.bicep");
+    const apps = await text("infra/staging/container-apps.bicep");
+    const smoke = await text("scripts/get-entra-smoke-token.mjs");
+    expect(workflow).toContain("scripts/get-entra-smoke-token.mjs");
+    expect(workflow).toContain("vars.STAGING_SMOKE_CLIENT_ID");
+    expect(workflow).toContain("vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID");
+    expect(workflow).not.toContain("az account get-access-token");
+    expect(main).toContain("authorizedSmokeClientId");
+    expect(main).toContain("authorizedSmokePrincipalObjectId");
+    expect(apps).toContain("allowedApplications: [");
+    expect(apps).toContain("entraClientId\n              authorizedSmokeClientId");
+    expect(apps).toContain("authorizedSmokePrincipalObjectId");
+    expect(apps).not.toContain("authorizedProvisionClientId");
+    expect(apps).not.toContain("authorizedTrafficClientId");
+    expect(smoke).toContain("client_assertion_type");
+    expect(smoke).toContain("client_assertion: githubResponse.value");
+    expect(smoke).toContain("repo:Neel-Error404/signal-desk:environment:${environment}");
+  });
+
+  it("pins baseline traffic, declares exact effective roles, and requires post-delete authority closure", async () => {
+    const apps = await text("infra/staging/container-apps.bicep");
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+    const authority = JSON.parse(
+      await text("delivery/sd008-azure-authority-contract.json")
+    ) as { status: string; roles: Array<Record<string, unknown>>; sessionOrder: string[] };
+    expect(apps).toContain("latestRevision: false");
+    expect(apps).toContain("revisionName: '${resourcePrefix}-app--${revisionSuffix}'");
+    expect(authority.status).toBe("ratified-local-implementation");
+    expect(authority.roles.map((role) => role.name)).toEqual([
+      "SignalDesk SD008 Provision",
+      "SignalDesk SD008 Traffic",
+      "SignalDesk SD008 Evidence Reader",
+      "SignalDesk SD008 Teardown",
+      "SignalDesk SD008 Post Delete Verifier"
+    ]);
+    expect(authority.sessionOrder.at(-1)).toBe("owner-removes-post-delete-read-only-assignment");
+    expect(workflow).toContain("SignalDesk SD008 Post Delete Verifier");
+    expect(workflow).toContain("hosted-trace-inputs:");
+    expect(workflow).toContain("authority-closure-template.json");
+    expect(workflow).toContain("unexpectedChargesDetected:false");
+    expect(workflow).toContain('session_started_at="$SESSION_STARTED_AT"');
+    expect(workflow).toContain('tags.createdAt -o tsv');
+    expect(workflow).toContain("actions/runs/${GITHUB_RUN_ID}");
+    expect(workflow).toContain('--start "$session_started_at"');
+  });
+});

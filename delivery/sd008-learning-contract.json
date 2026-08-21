@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "signaldesk-sd008-two-lane-learning-v1",
+  "projectId": "signaldesk",
+  "workItem": "SD-008",
+  "status": "implemented-local-scaffold-hosted-trace-required",
+  "lane1Eligibility": {
+    "traceType": "actual-hosted-sd008",
+    "state": "verified-after-teardown",
+    "requiredEventOrder": [
+      "protected-main-verified",
+      "ordered-gate-passed",
+      "artifact-published",
+      "publication-approved",
+      "provision-approved",
+      "candidate-zero-traffic-verified",
+      "traffic-approved",
+      "rollback-verified",
+      "evidence-exported",
+      "teardown-approved",
+      "resource-group-deleted",
+      "absence-verified",
+      "post-delete-verifier-removed"
+    ],
+    "resourceGroupDeleted": true,
+    "endpointAbsent": true,
+    "activeResources": 0,
+    "unexpectedChargesDetected": false,
+    "rawProviderArtifactsUploaded": false,
+    "exactIdentifiers": "owner-encrypted-only"
+  },
+  "quarantine": {
+    "storeRoot": ".elder/runtime/sd008-learning",
+    "trustedStateMutation": false,
+    "source": "redacted-trace-only",
+    "candidateArtifactCopiedByElder": true
+  },
+  "candidate": {
+    "maximumPerTrace": 1,
+    "createdBy": "signaldesk-learning-agent",
+    "createdRole": "learning-agent",
+    "sourceEvidenceBinding": "trace:sha256:<64-lowercase-hex>",
+    "expiryRequired": true,
+    "sd007CandidateReuse": false
+  },
+  "observations": {
+    "counterfactualReplay": {
+      "minimumCases": 2,
+      "environment": "quarantine",
+      "sideEffects": false
+    },
+    "shadow": {
+      "minimumCases": 2,
+      "environment": "shadow",
+      "sideEffects": false
+    },
+    "providerNeutralClassificationRequired": true,
+    "classifications": [
+      "cloud-neutral",
+      "azure-adapter-specific",
+      "signaldesk-specific",
+      "unresolved"
+    ]
+  },
+  "evaluation": {
+    "evaluatorId": "signaldesk-evaluator",
+    "candidateOwnerMayEvaluate": false,
+    "advisoryOnly": true,
+    "maximumCriticalRegressions": 0,
+    "maximumWorseCases": 0,
+    "minimumBetterCases": 1
+  },
+  "decision": {
+    "identity": "Neel",
+    "exactApprovalTemplate": "APPROVE SD-008 candidate <candidate-id> at candidate SHA-256 <candidate-sha256> and evaluation SHA-256 <evaluation-sha256> for a non-mutating promotion packet only.",
+    "exactRejectionTemplate": "REJECT SD-008 candidate <candidate-id> at candidate SHA-256 <candidate-sha256> and evaluation SHA-256 <evaluation-sha256>.",
+    "candidateAndEvaluationDigestBindingRequired": true,
+    "sd007DecisionReuse": false
+  },
+  "promotion": {
+    "promotedBy": "Neel",
+    "packetOnly": true,
+    "appliesTargetMutation": false,
+    "journalReplayRequired": true,
+    "targetApplicationWorkItem": "separate-future-authorization"
+  },
+  "commands": {
+    "entrypoint": "scripts/invoke-sd008-learning.ps1",
+    "orderedActions": [
+      "validate",
+      "init",
+      "propose",
+      "observe-counterfactual",
+      "observe-shadow",
+      "evaluate",
+      "decide",
+      "promote-if-approved",
+      "replay"
+    ]
+  },
+  "forbiddenClaims": [
+    "candidate-from-plan",
+    "candidate-from-sd007",
+    "self-evaluation",
+    "inferred-human-approval",
+    "direct-trusted-state-mutation",
+    "learning-application",
+    "canonical-l2",
+    "l3",
+    "production"
+  ]
+}

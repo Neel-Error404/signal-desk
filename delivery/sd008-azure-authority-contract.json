@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "signaldesk-sd008-azure-authority-v1",
+  "status": "ratified-local-implementation",
+  "projectId": "signaldesk",
+  "workItem": "SD-008",
+  "provider": "Microsoft Azure",
+  "assignmentBoundary": {
+    "production": "forbidden",
+    "tenantWide": "forbidden",
+    "persistentAssignmentWithoutSession": "forbidden",
+    "roleDefinitionScope": "subscription-definition-only",
+    "runtimeMutationScopes": [
+      "exact-resource-group",
+      "exact-container-app",
+      "minimal-subscription-read-only"
+    ]
+  },
+  "roles": [
+    {
+      "id": "sd008-provision-v1",
+      "name": "SignalDesk SD008 Provision",
+      "principal": "signaldesk-sd008-provision",
+      "assignmentScope": "exact-resource-group",
+      "actions": [
+        "Microsoft.Resources/subscriptions/resourceGroups/read",
+        "Microsoft.Resources/subscriptions/resourcegroups/resources/read",
+        "Microsoft.Resources/subscriptions/resourcegroups/deployments/read",
+        "Microsoft.Resources/subscriptions/resourcegroups/deployments/write",
+        "Microsoft.Resources/subscriptions/resourcegroups/deployments/operations/read",
+        "Microsoft.Network/virtualNetworks/read",
+        "Microsoft.Network/virtualNetworks/write",
+        "Microsoft.Network/virtualNetworks/delete",
+        "Microsoft.Network/virtualNetworks/subnets/read",
+        "Microsoft.Network/virtualNetworks/subnets/write",
+        "Microsoft.Network/privateDnsZones/read",
+        "Microsoft.Network/privateDnsZones/write",
+        "Microsoft.Network/privateDnsZones/delete",
+        "Microsoft.Network/privateDnsZones/virtualNetworkLinks/read",
+        "Microsoft.Network/privateDnsZones/virtualNetworkLinks/write",
+        "Microsoft.Network/privateDnsZones/virtualNetworkLinks/delete",
+        "Microsoft.Network/privateEndpoints/read",
+        "Microsoft.Network/privateEndpoints/write",
+        "Microsoft.Network/privateEndpoints/delete",
+        "Microsoft.Network/privateEndpoints/privateDnsZoneGroups/read",
+        "Microsoft.Network/privateEndpoints/privateDnsZoneGroups/write",
+        "Microsoft.Network/privateEndpoints/privateDnsZoneGroups/delete",
+        "Microsoft.ManagedIdentity/userAssignedIdentities/read",
+        "Microsoft.ManagedIdentity/userAssignedIdentities/write",
+        "Microsoft.ManagedIdentity/userAssignedIdentities/delete",
+        "Microsoft.DBforPostgreSQL/flexibleServers/read",
+        "Microsoft.DBforPostgreSQL/flexibleServers/write",
+        "Microsoft.DBforPostgreSQL/flexibleServers/delete",
+        "Microsoft.DBforPostgreSQL/flexibleServers/databases/read",
+        "Microsoft.DBforPostgreSQL/flexibleServers/databases/write",
+        "Microsoft.DBforPostgreSQL/flexibleServers/databases/delete",
+        "Microsoft.KeyVault/vaults/read",
+        "Microsoft.KeyVault/vaults/write",
+        "Microsoft.KeyVault/vaults/delete",
+        "Microsoft.KeyVault/vaults/secrets/read",
+        "Microsoft.KeyVault/vaults/secrets/write",
+        "Microsoft.OperationalInsights/workspaces/read",
+        "Microsoft.OperationalInsights/workspaces/write",
+        "Microsoft.OperationalInsights/workspaces/delete",
+        "Microsoft.OperationalInsights/workspaces/sharedKeys/action",
+        "Microsoft.App/managedEnvironments/read",
+        "Microsoft.App/managedEnvironments/write",
+        "Microsoft.App/managedEnvironments/delete",
+        "Microsoft.App/jobs/read",
+        "Microsoft.App/jobs/write",
+        "Microsoft.App/jobs/delete",
+        "Microsoft.App/jobs/start/action",
+        "Microsoft.App/jobs/executions/read",
+        "Microsoft.App/containerApps/read",
+        "Microsoft.App/containerApps/write",
+        "Microsoft.App/containerApps/delete",
+        "Microsoft.App/containerApps/authConfigs/read",
+        "Microsoft.App/containerApps/authConfigs/write",
+        "Microsoft.App/containerApps/authConfigs/delete",
+        "Microsoft.App/containerApps/revisions/read",
+        "Microsoft.Authorization/roleDefinitions/read",
+        "Microsoft.Authorization/roleAssignments/read",
+        "Microsoft.Authorization/roleAssignments/write",
+        "Microsoft.Authorization/roleAssignments/delete"
+      ],
+      "roleAssignmentDelegation": {
+        "conditionVersion": "2.0",
+        "allowedRoleDefinitionId": "4633458b-17de-408a-b874-0445c86b69e6",
+        "allowedRoleName": "Key Vault Secrets User",
+        "selfAssignment": "forbidden",
+        "scopePrefix": "exact-resource-group/providers/Microsoft.KeyVault/vaults/",
+        "deleteConstrainedToAllowedRole": true
+      }
+    },
+    {
+      "id": "sd008-traffic-v1",
+      "name": "SignalDesk SD008 Traffic",
+      "principal": "signaldesk-sd008-traffic",
+      "assignmentScope": "exact-container-app",
+      "actions": [
+        "Microsoft.App/containerApps/read",
+        "Microsoft.App/containerApps/write",
+        "Microsoft.App/containerApps/revisions/read"
+      ],
+      "effectiveProviderLimit": "containerApps/write can mutate more than traffic weights",
+      "trafficOnlyAtProvider": false,
+      "compensatingControls": [
+        "staging-traffic-environment-approval",
+        "exact-app-assignment-scope",
+        "short-lived-environment-bound-oidc",
+        "workflow-request-digest",
+        "post-operation-provider-reread",
+        "controlled-rollback"
+      ]
+    },
+    {
+      "id": "sd008-evidence-reader-v1",
+      "name": "SignalDesk SD008 Evidence Reader",
+      "principal": "signaldesk-sd008-traffic",
+      "assignmentScope": "exact-resource-group",
+      "actions": [
+        "Microsoft.Resources/subscriptions/resourceGroups/read",
+        "Microsoft.Resources/subscriptions/resourcegroups/resources/read",
+        "Microsoft.App/containerApps/read",
+        "Microsoft.App/containerApps/revisions/read",
+        "Microsoft.Insights/eventtypes/values/read",
+        "Microsoft.OperationalInsights/workspaces/read",
+        "Microsoft.OperationalInsights/workspaces/query/read",
+        "Microsoft.OperationalInsights/workspaces/tables/query/read",
+        "Microsoft.Authorization/roleDefinitions/read",
+        "Microsoft.Authorization/roleAssignments/read"
+      ]
+    },
+    {
+      "id": "sd008-teardown-v1",
+      "name": "SignalDesk SD008 Teardown",
+      "principal": "signaldesk-sd008-teardown",
+      "assignmentScope": "exact-resource-group",
+      "actions": [
+        "Microsoft.Resources/subscriptions/resourceGroups/read",
+        "Microsoft.Resources/subscriptions/resourceGroups/delete",
+        "Microsoft.Resources/subscriptions/resourcegroups/resources/read",
+        "Microsoft.KeyVault/vaults/read"
+      ]
+    },
+    {
+      "id": "sd008-post-delete-verifier-v1",
+      "name": "SignalDesk SD008 Post Delete Verifier",
+      "principal": "signaldesk-sd008-teardown",
+      "assignmentScope": "subscription-read-only",
+      "actions": [
+        "Microsoft.Resources/subscriptions/resourceGroups/read",
+        "Microsoft.Resources/subscriptions/resources/read",
+        "Microsoft.KeyVault/deletedVaults/read",
+        "Microsoft.KeyVault/locations/deletedVaults/read",
+        "Microsoft.Authorization/roleDefinitions/read",
+        "Microsoft.Authorization/roleAssignments/read"
+      ],
+      "mutationActions": 0,
+      "requiredAfterResourceGroupDeletion": true
+    }
+  ],
+  "sessionOrder": [
+    "owner-creates-tagged-resource-group",
+    "owner-assigns-provision-teardown-and-post-delete-roles",
+    "owner-approves-staging-provision",
+    "workflow-provisions-zero-traffic-candidate",
+    "owner-assigns-traffic-role-to-created-exact-app",
+    "owner-removes-provision-assignment",
+    "workflow-verifies-provision-assignment-absent",
+    "owner-approves-staging-traffic",
+    "workflow-rehearses-traffic-and-rollback",
+    "owner-removes-traffic-and-evidence-reader-assignments",
+    "owner-approves-staging-teardown",
+    "workflow-deletes-resource-group",
+    "post-delete-read-only-assignment-proves-absence",
+    "owner-removes-post-delete-read-only-assignment"
+  ],
+  "forbidden": [
+    "Owner",
+    "Contributor",
+    "User Access Administrator",
+    "subscription-scope-mutation",
+    "traffic-only-provider-claim",
+    "provision-and-traffic-assignments-active-together",
+    "automatic-role-renewal",
+    "production-scope"
+  ]
+}

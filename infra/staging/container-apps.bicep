@@ -9,8 +9,9 @@ param deploymentRunId string
 param revisionSuffix string
 param entraClientId string
 param entraTenantId string
-param authorizedProvisionClientId string
-param authorizedTrafficClientId string
+param authorizedOwnerObjectId string
+param authorizedSmokeClientId string
+param authorizedSmokePrincipalObjectId string
 param bootstrapIdentityId string
 param migrationIdentityId string
 param runtimeIdentityId string
@@ -192,7 +193,8 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         transport: 'http'
         traffic: [
           {
-            latestRevision: true
+            latestRevision: false
+            revisionName: '${resourcePrefix}-app--${revisionSuffix}'
             weight: 100
           }
         ]
@@ -304,9 +306,14 @@ resource authentication 'Microsoft.App/containerApps/authConfigs@2024-03-01' = {
           defaultAuthorizationPolicy: {
             allowedApplications: [
               entraClientId
-              authorizedProvisionClientId
-              authorizedTrafficClientId
+              authorizedSmokeClientId
             ]
+            allowedPrincipals: {
+              identities: [
+                authorizedOwnerObjectId
+                authorizedSmokePrincipalObjectId
+              ]
+            }
           }
         }
       }
