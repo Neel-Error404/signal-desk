@@ -87,9 +87,20 @@
         "conditionVersion": "2.0",
         "allowedRoleDefinitionId": "4633458b-17de-408a-b874-0445c86b69e6",
         "allowedRoleName": "Key Vault Secrets User",
+        "supportedConditionAttributes": [
+          "RoleDefinitionId",
+          "PrincipalId",
+          "PrincipalType"
+        ],
+        "targetPrincipalTypes": [
+          "ServicePrincipal"
+        ],
         "selfAssignment": "forbidden",
-        "scopePrefix": "exact-resource-group/providers/Microsoft.KeyVault/vaults/",
-        "deleteConstrainedToAllowedRole": true
+        "selfAssignmentOperator": "ForAnyOfAllValues:GuidNotEquals",
+        "scopeEnforcement": "outer-assignment-exact-resource-group",
+        "targetScopeCondition": "unsupported-by-provider",
+        "effectiveDelegationLimit": "Key Vault Secrets User assignments to non-provision service principals within the exact resource-group outer scope",
+        "deleteConstrainedToAllowedRoleAndPrincipalType": true
       }
     },
     {
