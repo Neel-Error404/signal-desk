@@ -253,7 +253,7 @@ describe("SD-008 learning trace eligibility", () => {
       actualBillingClaim: false
     });
     const driver = spawnSync(
-      "powershell.exe",
+      process.platform === "win32" ? "powershell.exe" : "pwsh",
       [
         "-NoProfile",
         "-File",
