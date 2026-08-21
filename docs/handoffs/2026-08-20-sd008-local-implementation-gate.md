@@ -1,5 +1,8 @@
 # SD-008 Local Implementation Gate Handoff
 
+> Superseded by `docs/handoffs/2026-08-20-sd008-adr0010-local-correction-gate.md` after ADR 0010
+> corrected smoke identity, effective authority, post-delete verification, and trace assembly.
+
 **Date:** August 20, 2026
 
 **Result:** BLOCKED at separately required mutation gates; local implementation is complete
