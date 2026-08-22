@@ -669,6 +669,9 @@ describe("SD-008 ratified Azure staging contracts", () => {
     const pinnedBase =
       "node:22.18.0-bookworm-slim@sha256:752ea8a2f758c34002a0461bd9f1cee4f9a3c36d48494586f60ffce1fc708e0e";
     expect(dockerfile.match(new RegExp(pinnedBase, "g"))).toHaveLength(3);
+    expect(dockerfile.indexOf("ARG SOURCE_DATE_EPOCH")).toBeLessThan(
+      dockerfile.indexOf("FROM ")
+    );
     expect(dockerfile).toContain("USER node");
     expect(dockerfile).toContain('CMD ["node", "server.js"]');
     expect(dockerfile).toContain("/app/node_modules ./node_modules");
@@ -727,6 +730,14 @@ describe("SD-008 ratified Azure staging contracts", () => {
     expect(workflow).toContain("environment: staging-teardown");
     expect(workflow).toContain("non_production_confirmation");
     expect(workflow).toContain("Prove two clean application trees and OCI manifests");
+    expect(
+      workflow.match(
+        /SOURCE_DATE_EPOCH: \$\{\{ steps\.identity\.outputs\.source-date-epoch \}\}/g
+      )
+    ).toHaveLength(2);
+    expect(workflow).toContain(
+      '[[ "$SOURCE_DATE_EPOCH" == "$context_source_date_epoch" ]]'
+    );
     expect(workflow).toContain(
       '--output "type=oci,dest=.tmp/proof-${build_number}.tar,rewrite-timestamp=true,name=signaldesk:reproducibility-proof"'
     );
