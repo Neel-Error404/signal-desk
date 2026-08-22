@@ -204,9 +204,11 @@ jobs:
         shell: bash
         env:
           SIGNALDESK_RELEASE_COMMIT: ${{ inputs.source_commit }}
+          SOURCE_DATE_EPOCH: ${{ steps.identity.outputs.source-date-epoch }}
         run: |
           set -euo pipefail
-          source_date_epoch="$(node -p "require('./.tmp/container-context/context-manifest.json').sourceDateEpoch")"
+          context_source_date_epoch="$(node -p "require('./.tmp/container-context/context-manifest.json').sourceDateEpoch")"
+          [[ "$SOURCE_DATE_EPOCH" == "$context_source_date_epoch" ]]
           for build_number in 1 2; do
             rm -rf ".tmp/proof-${build_number}.tar" ".tmp/proof-${build_number}"
             docker buildx build \
@@ -214,7 +216,7 @@ jobs:
               --provenance=false \
               --sbom=false \
               --build-arg "SIGNALDESK_RELEASE_COMMIT=$SIGNALDESK_RELEASE_COMMIT" \
-              --build-arg "SOURCE_DATE_EPOCH=$source_date_epoch" \
+              --build-arg "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH" \
               --output "type=oci,dest=.tmp/proof-${build_number}.tar,rewrite-timestamp=true,name=signaldesk:reproducibility-proof" \
               --output "type=docker,name=signaldesk:reproducibility-proof" \
               .tmp/container-source
@@ -266,6 +268,8 @@ jobs:
       - name: Publish exact digest
         id: publish
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        env:
+          SOURCE_DATE_EPOCH: ${{ steps.identity.outputs.source-date-epoch }}
         with:
           context: .tmp/container-source
           push: true
