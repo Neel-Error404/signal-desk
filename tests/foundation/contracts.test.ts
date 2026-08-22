@@ -831,7 +831,9 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     expect(workflow).toContain("strict_required_status_checks_policy == true");
     expect(workflow).toContain("(.bypass_actors // []) | length == 0");
     expect(workflow).toContain('.name == $required and .status == "completed"');
-    expect(workflow).toContain('needs: protected-main-source');
+    expect(workflow).toContain(
+      "  ordered-review-gate:\n    needs: protected-main-source\n    permissions:\n      contents: read\n    uses: ./.github/workflows/hosted-review-gate.yml"
+    );
     expect(workflow).toContain("group: signaldesk-staging");
     expect(workflow).toContain("cancel-in-progress: false");
   });
