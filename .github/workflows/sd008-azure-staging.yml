@@ -216,11 +216,11 @@ jobs:
               --build-arg "SIGNALDESK_RELEASE_COMMIT=$SIGNALDESK_RELEASE_COMMIT" \
               --build-arg "SOURCE_DATE_EPOCH=$source_date_epoch" \
               --output "type=oci,dest=.tmp/proof-${build_number}.tar,rewrite-timestamp=true,name=signaldesk:reproducibility-proof" \
+              --output "type=docker,name=signaldesk:reproducibility-proof" \
               .tmp/container-source
             mkdir ".tmp/proof-${build_number}"
             tar -xf ".tmp/proof-${build_number}.tar" -C ".tmp/proof-${build_number}"
             node -e "const fs=require('fs'); const index=JSON.parse(fs.readFileSync('.tmp/proof-${build_number}/index.json')); if(index.manifests.length!==1) throw new Error('Expected one OCI manifest'); fs.writeFileSync('.tmp/manifest-${build_number}.txt', index.manifests[0].digest+'\n');"
-            docker load --input ".tmp/proof-${build_number}.tar"
             docker run --rm --entrypoint sh signaldesk:reproducibility-proof -c \
               "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
               | awk '{print $1}' > ".tmp/tree-${build_number}.txt"
