@@ -142,6 +142,8 @@ jobs:
 
   ordered-review-gate:
     needs: protected-main-source
+    permissions:
+      contents: read
     uses: ./.github/workflows/hosted-review-gate.yml
 
   build-and-attest:
