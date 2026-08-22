@@ -30,10 +30,9 @@ const uuidV5 = (namespace, name) => {
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
-const delegationCondition = ({ provisionPrincipalId, resourceGroupScope }) => {
+const delegationCondition = ({ provisionPrincipalId }) => {
   const allowedRole = "4633458b-17de-408a-b874-0445c86b69e6";
-  const vaultPrefix = `${resourceGroupScope}/providers/Microsoft.KeyVault/vaults/`;
-  return `((!(ActionMatches{'Microsoft.Authorization/roleAssignments/write'})) OR ((@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {${allowedRole}}) AND (@Request[Microsoft.Authorization/roleAssignments:PrincipalId] ForAnyOfAnyValues:GuidNotEquals {${provisionPrincipalId}}) AND (@Request[Microsoft.Authorization/roleAssignments:RoleAssignmentScope] StringStartsWithIgnoreCase '${vaultPrefix}'))) AND ((!(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR ((@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {${allowedRole}}) AND (@Resource[Microsoft.Authorization/roleAssignments:RoleAssignmentScope] StringStartsWithIgnoreCase '${vaultPrefix}')))`;
+  return `((!(ActionMatches{'Microsoft.Authorization/roleAssignments/write'})) OR ((@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {${allowedRole}}) AND (@Request[Microsoft.Authorization/roleAssignments:PrincipalId] ForAnyOfAllValues:GuidNotEquals {${provisionPrincipalId}}) AND (@Request[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'ServicePrincipal'}))) AND ((!(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR ((@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {${allowedRole}}) AND (@Resource[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'ServicePrincipal'})))`;
 };
 
 const main = async () => {
@@ -107,8 +106,7 @@ const main = async () => {
     if (role.id === "sd008-provision-v1") {
       assignment.conditionVersion = "2.0";
       assignment.condition = delegationCondition({
-        provisionPrincipalId: principalByName[role.principal],
-        resourceGroupScope
+        provisionPrincipalId: principalByName[role.principal]
       });
     }
     return assignment;

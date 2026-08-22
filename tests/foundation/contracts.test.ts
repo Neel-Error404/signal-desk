@@ -784,6 +784,41 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     });
   });
 
+  it("binds the ratified ADR 0011 provider-valid delegation boundary", async () => {
+    const adr = await text(
+      "docs/adr/0011-sd008-provider-valid-delegated-role-assignment-condition.md"
+    );
+    const authority = JSON.parse(
+      await text("delivery/sd008-azure-authority-contract.json")
+    ) as {
+      roles: Array<{
+        id: string;
+        assignmentScope: string;
+        roleAssignmentDelegation?: Record<string, unknown>;
+      }>;
+    };
+    const delegation = authority.roles.find(
+      (role) => role.id === "sd008-provision-v1"
+    )?.roleAssignmentDelegation;
+    expect(adr).toContain("exact ratification on August 22, 2026");
+    expect(adr).toContain("does not authorize staging, commit, push, pull-request creation");
+    expect(delegation).toMatchObject({
+      allowedRoleDefinitionId: "4633458b-17de-408a-b874-0445c86b69e6",
+      allowedRoleName: "Key Vault Secrets User",
+      supportedConditionAttributes: ["RoleDefinitionId", "PrincipalId", "PrincipalType"],
+      targetPrincipalTypes: ["ServicePrincipal"],
+      selfAssignment: "forbidden",
+      selfAssignmentOperator: "ForAnyOfAllValues:GuidNotEquals",
+      scopeEnforcement: "outer-assignment-exact-resource-group",
+      targetScopeCondition: "unsupported-by-provider",
+      deleteConstrainedToAllowedRoleAndPrincipalType: true
+    });
+    expect(authority.roles.find((role) => role.id === "sd008-provision-v1")?.assignmentScope).toBe(
+      "exact-resource-group"
+    );
+    expect(delegation).not.toHaveProperty("scopePrefix");
+  });
+
   it("proves exact protected main before any package or attestation write", async () => {
     const workflow = await text(".github/workflows/sd008-azure-staging.yml");
     const sourceIndex = workflow.indexOf("  protected-main-source:");
@@ -919,5 +954,9 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     expect(workflow).toContain('tags.createdAt -o tsv');
     expect(workflow).toContain("actions/runs/${GITHUB_RUN_ID}");
     expect(workflow).toContain('--start "$session_started_at"');
+    expect(workflow).toContain('contains("ForAnyOfAllValues:GuidNotEquals")');
+    expect(workflow).toContain('contains("ServicePrincipal")');
+    expect(workflow).toContain('contains("RoleAssignmentScope")) | not');
+    expect(workflow).not.toContain("vaultPrefix");
   });
 });

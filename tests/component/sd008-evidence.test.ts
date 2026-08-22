@@ -543,9 +543,18 @@ describe("SD-008 cost and authority packets", () => {
     expect(packet.assignments.find((item) => item.roleName === "SignalDesk SD008 Traffic")?.scope).toContain(
       "/providers/Microsoft.App/containerApps/signaldesk-stg-app"
     );
-    expect(
-      packet.assignments.find((item) => item.roleName === "SignalDesk SD008 Provision")
-    ).toMatchObject({ conditionVersion: "2.0" });
+    const provision = packet.assignments.find(
+      (item) => item.roleName === "SignalDesk SD008 Provision"
+    ) as { conditionVersion?: string; condition?: string };
+    expect(provision).toMatchObject({ conditionVersion: "2.0" });
+    expect(provision.condition).toContain("4633458b-17de-408a-b874-0445c86b69e6");
+    expect(provision.condition).toContain("ForAnyOfAllValues:GuidNotEquals");
+    expect(provision.condition).toContain("21111111-2222-4333-8444-555555555555");
+    expect(provision.condition).toContain(
+      "Microsoft.Authorization/roleAssignments:PrincipalType"
+    );
+    expect(provision.condition).toContain("ServicePrincipal");
+    expect(provision.condition).not.toContain("RoleAssignmentScope");
   });
 });
 

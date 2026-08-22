@@ -488,13 +488,19 @@ jobs:
             --assignee-object-id "$PROVISION_PRINCIPAL_OBJECT_ID" \
             --scope "$resource_group_id" --include-inherited \
             --fill-principal-name false -o json)"
-          jq -e --arg scope "$resource_group_id" --arg vaultPrefix "${resource_group_id}/providers/Microsoft.KeyVault/vaults/" '
+          jq -e --arg scope "$resource_group_id" --arg provision "$PROVISION_PRINCIPAL_OBJECT_ID" '
             [.[] | select(
               (.scope | ascii_downcase) == ($scope | ascii_downcase) and
               .roleDefinitionName == "SignalDesk SD008 Provision" and
               .conditionVersion == "2.0" and
               (.condition | contains("4633458b-17de-408a-b874-0445c86b69e6")) and
-              (.condition | ascii_downcase | contains($vaultPrefix | ascii_downcase))
+              (.condition | contains("Microsoft.Authorization/roleAssignments:PrincipalId")) and
+              (.condition | contains("ForAnyOfAllValues:GuidNotEquals")) and
+              (.condition | ascii_downcase | contains($provision | ascii_downcase)) and
+              (.condition | contains("Microsoft.Authorization/roleAssignments:PrincipalType")) and
+              (.condition | contains("ForAnyOfAnyValues:StringEqualsIgnoreCase")) and
+              (.condition | contains("ServicePrincipal")) and
+              ((.condition | contains("RoleAssignmentScope")) | not)
             )] | length == 1
           ' <<<"$provision_assignments" >/dev/null
           expires_at="$(az group show --name "$RESOURCE_GROUP" --query tags.expiresAt -o tsv)"
