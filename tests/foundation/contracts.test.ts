@@ -738,6 +738,13 @@ describe("SD-008 ratified Azure staging contracts", () => {
     expect(workflow).toContain(
       '[[ "$SOURCE_DATE_EPOCH" == "$context_source_date_epoch" ]]'
     );
+    expect(workflow).toContain("application-tree-1=");
+    expect(workflow.indexOf("diff --strip-trailing-cr .tmp/tree-1.txt")).toBeLessThan(
+      workflow.indexOf("diff --strip-trailing-cr .tmp/oci-config-1.json")
+    );
+    expect(workflow.indexOf("diff --strip-trailing-cr .tmp/oci-config-1.json")).toBeLessThan(
+      workflow.indexOf("diff --strip-trailing-cr .tmp/oci-manifest-1.json")
+    );
     expect(workflow).toContain(
       '--output "type=oci,dest=.tmp/proof-${build_number}.tar,rewrite-timestamp=true,name=signaldesk:reproducibility-proof"'
     );

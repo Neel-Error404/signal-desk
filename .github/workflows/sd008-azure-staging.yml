@@ -223,12 +223,17 @@ jobs:
             mkdir ".tmp/proof-${build_number}"
             tar -xf ".tmp/proof-${build_number}.tar" -C ".tmp/proof-${build_number}"
             node -e "const fs=require('fs'); const index=JSON.parse(fs.readFileSync('.tmp/proof-${build_number}/index.json')); if(index.manifests.length!==1) throw new Error('Expected one OCI manifest'); fs.writeFileSync('.tmp/manifest-${build_number}.txt', index.manifests[0].digest+'\n');"
+            node -e "const fs=require('fs'); const root='.tmp/proof-${build_number}'; const index=JSON.parse(fs.readFileSync(root+'/index.json')); const manifestDigest=index.manifests[0].digest.slice(7); const manifest=JSON.parse(fs.readFileSync(root+'/blobs/sha256/'+manifestDigest)); const configDigest=manifest.config.digest.slice(7); const config=JSON.parse(fs.readFileSync(root+'/blobs/sha256/'+configDigest)); fs.writeFileSync('.tmp/oci-manifest-${build_number}.json',JSON.stringify(manifest,null,2)+'\n'); fs.writeFileSync('.tmp/oci-config-${build_number}.json',JSON.stringify(config,null,2)+'\n');"
             docker run --rm --entrypoint sh signaldesk:reproducibility-proof -c \
               "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
               | awk '{print $1}' > ".tmp/tree-${build_number}.txt"
           done
-          diff --strip-trailing-cr .tmp/manifest-1.txt .tmp/manifest-2.txt
+          echo "application-tree-1=$(tr -d '\r\n' < .tmp/tree-1.txt)"
+          echo "application-tree-2=$(tr -d '\r\n' < .tmp/tree-2.txt)"
           diff --strip-trailing-cr .tmp/tree-1.txt .tmp/tree-2.txt
+          diff --strip-trailing-cr .tmp/oci-config-1.json .tmp/oci-config-2.json
+          diff --strip-trailing-cr .tmp/oci-manifest-1.json .tmp/oci-manifest-2.json
+          diff --strip-trailing-cr .tmp/manifest-1.txt .tmp/manifest-2.txt
 
       - name: Reject forbidden files and secret-shaped application content
         shell: bash
