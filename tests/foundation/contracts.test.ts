@@ -727,6 +727,13 @@ describe("SD-008 ratified Azure staging contracts", () => {
     expect(workflow).toContain("environment: staging-teardown");
     expect(workflow).toContain("non_production_confirmation");
     expect(workflow).toContain("Prove two clean application trees and OCI manifests");
+    expect(workflow).toContain(
+      '--output "type=oci,dest=.tmp/proof-${build_number}.tar,rewrite-timestamp=true,name=signaldesk:reproducibility-proof"'
+    );
+    expect(workflow).toContain(
+      '--output "type=docker,name=signaldesk:reproducibility-proof"'
+    );
+    expect(workflow).not.toContain('docker load --input ".tmp/proof-${build_number}.tar"');
     expect(workflow).toContain("--revision-weight \"$BASELINE_REVISION=0\" \"$CANDIDATE_REVISION=100\"");
     expect(workflow).toContain("--revision-weight \"$BASELINE_REVISION=100\" \"$CANDIDATE_REVISION=0\"");
     expect(workflow).toContain("secrets.ENTRA_CLIENT_SECRET");
