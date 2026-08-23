@@ -1,8 +1,7 @@
-import { appendFile } from "node:fs/promises";
-import { createHash, randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const JWT = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const ENVIRONMENTS = new Set(["staging-provision", "staging-traffic"]);
 
 const requiredEnvironment = (name) => {
@@ -13,13 +12,11 @@ const requiredEnvironment = (name) => {
   return value;
 };
 
-const sha256 = (value) => createHash("sha256").update(value).digest("hex");
-
 const decodeJwtPayload = (token, label) => {
-  const parts = token.split(".");
-  if (parts.length !== 3) {
-    throw new Error(`${label} is not a three-part JWT.`);
+  if (!JWT.test(token)) {
+    throw new Error(`${label} must contain exactly three nonempty base64url segments.`);
   }
+  const parts = token.split(".");
   try {
     return JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
   } catch (error) {
@@ -86,7 +83,6 @@ const main = async () => {
     "STAGING_SMOKE_PRINCIPAL_OBJECT_ID"
   ).toLowerCase();
   const environment = requiredEnvironment("SD008_ENVIRONMENT");
-  const githubEnvironmentPath = requiredEnvironment("GITHUB_ENV");
   for (const [name, value] of Object.entries({
     AZURE_TENANT_ID: tenantId,
     ENTRA_CLIENT_ID: ingressClientId,
@@ -159,24 +155,7 @@ const main = async () => {
   ) {
     throw new Error("Entra access token lifetime is invalid for the bounded smoke check.");
   }
-  const delimiter = `SD008_SMOKE_${randomBytes(16).toString("hex")}`;
-  await appendFile(
-    githubEnvironmentPath,
-    `SMOKE_ACCESS_TOKEN<<${delimiter}\n${entraResponse.access_token}\n${delimiter}\n`,
-    "utf8"
-  );
-  console.log(`::add-mask::${entraResponse.access_token}`);
-  console.log(
-    JSON.stringify({
-      status: "dedicated-smoke-token-ready",
-      environment,
-      subjectSha256: sha256(Buffer.from(expectedSubject, "utf8")),
-      ingressClientIdSha256: sha256(Buffer.from(ingressClientId, "utf8")),
-      smokeClientIdSha256: sha256(Buffer.from(smokeClientId, "utf8")),
-      smokePrincipalObjectIdSha256: sha256(Buffer.from(smokePrincipalObjectId, "utf8")),
-      expiresAt: new Date(accessClaims.exp * 1000).toISOString()
-    })
-  );
+  process.stdout.write(`${entraResponse.access_token}\n`);
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

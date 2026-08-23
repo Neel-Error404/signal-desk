@@ -9,7 +9,20 @@
   "roleName": "SignalDesk SD008 Post Delete Verifier",
   "assignmentState": "absent",
   "assignmentCount": 0,
+  "teardownRoleAssignmentState": "absent",
+  "teardownRoleAssignmentCount": 0,
+  "teardownRoleRemovedAt": "2026-08-20T00:00:01.000Z",
+  "ingressCredentialState": "revoked",
+  "ingressCredentialRevokedAt": "2026-08-20T00:00:02.000Z",
+  "stagingProvisionEnvironmentSecretState": "removed",
+  "stagingProvisionEnvironmentSecretRemovedAt": "2026-08-20T00:00:03.000Z",
+  "requiredRemovalOrder": [
+    "SignalDesk SD008 Teardown",
+    "ingress-credential",
+    "staging-provision:ENTRA_CLIENT_SECRET",
+    "SignalDesk SD008 Post Delete Verifier"
+  ],
   "performedBy": "Neel",
-  "occurredAt": "2026-08-20T00:00:00.000Z",
+  "occurredAt": "2026-08-20T00:00:04.000Z",
   "evidenceSha256": "0000000000000000000000000000000000000000000000000000000000000000"
 }

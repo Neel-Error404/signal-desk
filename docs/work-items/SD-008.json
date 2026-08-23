@@ -9,7 +9,7 @@
     "Ratify Azure Container Apps and Azure Database for PostgreSQL Flexible Server as the SignalDesk staging target in place of the generated Vercel assumption.",
     "Generate an Azure-oriented Elder project profile and capsule candidate under .tmp from project-owned intake answers, review the compiler diff, and do not hand-edit or replace Elder-owned generated files without the separate Git approval gate.",
     "Define an ephemeral Central India staging resource group through reviewed Bicep with private PostgreSQL connectivity, Key Vault, managed identity, Log Analytics, and Entra-protected ingress.",
-    "Add a pinned, non-root Node.js 22 container build, prove two clean normalized builds produce the same application tree and OCI manifest digests, and bind deployment to an immutable public GitHub Container Registry manifest digest with provenance and security evidence; the image must contain no secret or private runtime data.",
+    "Add a pinned, non-root Node.js 22 canonical container build, run, scan, SBOM, privately publish, attest, registry-verify, and later deploy that exact artifact by immutable digest; compare one independent build for blocking application-tree equality and advisory OCI config, manifest/layer, and final-digest identity without claiming reproducibility on mismatch; the image must contain no secret or private runtime data.",
     "Add separately owner-approved staging-publication, staging-provision, staging-traffic, and staging-teardown GitHub environments and one manual OIDC deployment workflow that accepts only the current protected main revision, reruns the ordered product ladder, and pauses before each distinct consequence.",
     "Run forward-only Prisma migrations in an Azure Container Apps Job using the same image digest and a separate Key Vault-backed migration credential before application traffic changes.",
     "Add liveness and database readiness contracts, prove unauthorized ingress denial and authorized owner access, and retain synthetic staging data only.",
@@ -30,11 +30,76 @@
   "base_branch": "main",
   "base_commit": "623ff665d2a276c7541622f73e34d15ee6a7d2bf",
   "required_check": "signaldesk-ordered-review-gate",
+  "artifact_gate": {
+    "canonicalDeployableBuilds": 1,
+    "independentAdvisoryBuilds": 1,
+    "canonicalLifecycle": [
+      "build-once",
+      "real-cmd-http-liveness",
+      "forbidden-file-and-secret-scan",
+      "vulnerability-rejection",
+      "sbom",
+      "private-publication-without-rebuild",
+      "registry-digest-and-config-verification",
+      "provenance-and-sbom-attestation",
+      "digest-only-deployment"
+    ],
+    "applicationTreeEquality": "blocking",
+    "ociBitIdentity": "advisory",
+    "diagnosticRetention": "always-after-generation",
+    "diagnosticDetail": "sanitized-digests-comparison-booleans-and-claim-suppression",
+    "advisoryDiagnostics": [
+      "application-tree",
+      "oci-config",
+      "oci-manifest-and-layers",
+      "final-digest"
+    ],
+    "reproducibilityClaimOnOciMismatch": "suppressed",
+    "initialPublication": "private",
+    "publicVisibility": "separate-owner-approved-staging-publication-gate",
+    "deploymentReference": "registry-digest-only"
+  },
+  "authority_sequence": [
+    "exact-artifact-publication-evidence",
+    "staging-publication-approval-and-verification",
+    "owner-approved-staging-provisioning",
+    "cloud-authority"
+  ],
+  "jit_authority": {
+    "packetMode": "one-phase-at-a-time",
+    "maximumLeaseMinutes": 480,
+    "providerEnforcedExpiry": false,
+    "assignmentExpiryEvidence": "procedural-owner-record-and-workflow-reread",
+    "approvalBinding": "exact-owner-controlled-protected-environment-reference-digest-and-time",
+    "approvalBindingLimitation": "local-validator-does-not-query-or-cryptographically-verify-github-review-event",
+    "authenticatedIdentityBinding": "protected-environment-client-and-tenant-to-current-arm-token-appid-oid-and-tid",
+    "continuousAuthority": "immediate-exact-scope-direct-and-inherited-custom-role-reread-plus-current-arm-token-group-and-overage-signal-rejection-before-every-mutation",
+    "phaseOrder": [
+      "provision-only",
+      "traffic-plus-evidence-reader-after-exact-app-and-provision-revocation",
+      "fresh-teardown-plus-post-delete-verifier-after-bound-traffic-authority-removal"
+    ],
+    "minimumRemainingMinutes": {
+      "provision": 90,
+      "traffic": 45,
+      "rollback": 15,
+      "teardown": 60
+    },
+    "ingressCredential": "per-session-jit-and-owner-cleaned",
+    "closure": "schema-v1-teardown-role-absent-credential-revoked-environment-secret-removed-and-verifier-last",
+    "partialBootstrapFailureCleanup": "bounded-fifteen-minute-compensation-or-fresh-approved-teardown-authority"
+  },
+  "completion_requires": [
+    "complete-staging-proof",
+    "controlled-rollback-proof",
+    "approved-teardown-and-absence-proof",
+    "hosted-trace-and-governed-learning-decision"
+  ],
   "provider": {
     "cloud": "Microsoft Azure",
     "region": "centralindia",
     "compute": "Azure Container Apps",
-    "registry": "GitHub Container Registry public package, digest-only",
+    "registry": "GitHub Container Registry private initial publication, separately approved public visibility, digest-only deployment",
     "database": "Azure Database for PostgreSQL Flexible Server 16",
     "secret_store": "Azure Key Vault",
     "telemetry": "Azure Log Analytics",
@@ -43,7 +108,7 @@
   "evidence_plan": [
     "Foundation: validate the ratified ADR, deployment contract, Bicep, Docker, workflow pins and permissions, resource names, non-secret configuration, health contracts, generated-capsule candidate boundary, and forbidden production values.",
     "Component: prove explicit liveness/readiness results, database-unavailable behavior, redaction, and release-metadata parsing.",
-    "Integration: build the exact normalized container twice, compare application-tree and OCI manifest digests, run it locally, apply all migrations to isolated PostgreSQL, and prove readiness changes from unavailable to available without leaking credentials.",
+    "Integration: build the exact canonical normalized container once, run it locally, compare one independent build for blocking application-tree equality and advisory OCI config, manifest/layer, and final-digest identity, and apply all migrations to isolated PostgreSQL while proving readiness changes from unavailable to available without leaking credentials.",
     "Workflow: rerun the complete owner flow from the container, validate the Bicep what-if, build and attest the image, execute the migration job, verify the zero-traffic candidate, and move staging traffic only after approval and successful checks.",
     "Stress: prove unauthorized ingress denial, database outage behavior, bounded restart, concurrent health checks, unhealthy-candidate non-promotion, secret redaction, and controlled traffic rollback.",
     "Hosted: bind the protected main commit, review run, deployment run, four GitHub environment approvals, three consequence-specific OIDC subjects, Azure deployment operations, public GHCR OCI digest, provenance, migration execution, revision IDs, FQDN, health observations, logs, rollback operation, evidence export, resource-group deletion, final zero-active-resource state, and deletion-tombstone accounting.",
@@ -53,6 +118,7 @@
     "The staging ingress is reachable without the allowed Entra identity, or the environment contains real customer or production data.",
     "Azure PostgreSQL has public network access, private DNS is unresolved, TLS is not required, or the application/migration credentials are not separated and Key Vault-backed.",
     "A mutable tag rather than the attested OCI digest reaches Container Apps, or the deployed revision cannot be matched to the protected Git commit and workflow run.",
+    "The canonical and independent application trees differ, or an OCI advisory mismatch is omitted or represented as a successful reproducibility claim.",
     "A migration, readiness, authorization, vulnerability, or smoke check fails and traffic still changes.",
     "The prior healthy revision is unavailable, rollback cannot restore its traffic, or the evidence cannot prove the post-rollback deployment and health state.",
     "The cost-bearing Azure resource group remains after evidence acceptance, or destruction cannot prove that the URL, PostgreSQL server, active Key Vault, logs, and application resources are absent and any provider-retained deletion tombstone is inaccessible, non-billable, and expiry-bound.",

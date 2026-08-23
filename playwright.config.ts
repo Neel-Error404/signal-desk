@@ -23,7 +23,7 @@ export default defineConfig({
     channel: "chrome",
     headless: true,
     screenshot: "only-on-failure",
-    trace: "retain-on-failure"
+    trace: authorization === undefined ? "retain-on-failure" : "off"
   },
   projects: [
     {

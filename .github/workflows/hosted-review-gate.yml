@@ -87,6 +87,22 @@ jobs:
       - name: Install exact dependencies
         run: npm ci
 
+      - name: Install exact actionlint
+        shell: bash
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+        run: |
+          set -euo pipefail
+          install_dir="$RUNNER_TEMP/actionlint-bin"
+          mkdir -p "$install_dir"
+          GOBIN="$install_dir" go install github.com/rhysd/actionlint/cmd/actionlint@v${ACTIONLINT_VERSION}
+          installed_version="$("$install_dir/actionlint" -version | head -n 1)"
+          [[ "$installed_version" == "$ACTIONLINT_VERSION" ]]
+          printf '%s\n' "$install_dir" >> "$GITHUB_PATH"
+
+      - name: SD-008 Docker archive adapter smoke
+        run: npm run sd008:artifact-adapter -- --format text --mode hosted
+
       - name: Foundation
         run: npm run test:foundation
 

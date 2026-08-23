@@ -1,5 +1,10 @@
-import { readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { join } from "node:path";
+import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
+
+const execFileAsync = promisify(execFile);
 
 async function text(path: string): Promise<string> {
   return readFile(path, "utf8");
@@ -635,8 +640,11 @@ describe("SD-008 ratified Azure staging contracts", () => {
       "staging-teardown"
     ]);
     expect(contract.artifact).toMatchObject({
-      deploymentReference: "digest-only",
-      requiredCleanBuilds: 2,
+      deploymentReference: "registry-digest-only",
+      canonicalDeployableBuilds: 1,
+      independentAdvisoryBuilds: 1,
+      applicationTreeEquality: "blocking",
+      ociBitIdentity: "advisory",
       nonRootUser: "node"
     });
     expect(contract.migration).toMatchObject({
@@ -729,29 +737,27 @@ describe("SD-008 ratified Azure staging contracts", () => {
     expect(workflow).toContain("environment: staging-traffic");
     expect(workflow).toContain("environment: staging-teardown");
     expect(workflow).toContain("non_production_confirmation");
-    expect(workflow).toContain("Prove two clean application trees and OCI manifests");
+    expect(workflow).toContain("Build canonical image once and emit OCI diagnostics");
     expect(
       workflow.match(
         /SOURCE_DATE_EPOCH: \$\{\{ steps\.identity\.outputs\.source-date-epoch \}\}/g
       )
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     expect(workflow).toContain(
       '[[ "$SOURCE_DATE_EPOCH" == "$context_source_date_epoch" ]]'
     );
-    expect(workflow).toContain("application-tree-1=");
-    expect(workflow.indexOf("diff --strip-trailing-cr .tmp/tree-1.txt")).toBeLessThan(
-      workflow.indexOf("diff --strip-trailing-cr .tmp/oci-config-1.json")
-    );
-    expect(workflow.indexOf("diff --strip-trailing-cr .tmp/oci-config-1.json")).toBeLessThan(
-      workflow.indexOf("diff --strip-trailing-cr .tmp/oci-manifest-1.json")
+    expect(workflow).toContain('status: applicationTreeEqual ? "blocking-pass" : "blocking-failure"');
+    expect(workflow).toContain("configBitIdentical");
+    expect(workflow).toContain("manifestBitIdentical");
+    expect(workflow).toContain("layersIdentical");
+    expect(workflow).toContain("finalDigestIdentical");
+    expect(workflow).toContain(
+      '--output "type=oci,dest=.tmp/canonical.tar,rewrite-timestamp=true,name=$CANONICAL_IMAGE"'
     );
     expect(workflow).toContain(
-      '--output "type=oci,dest=.tmp/proof-${build_number}.tar,rewrite-timestamp=true,name=signaldesk:reproducibility-proof"'
+      '--output "type=docker,name=$CANONICAL_IMAGE"'
     );
-    expect(workflow).toContain(
-      '--output "type=docker,name=signaldesk:reproducibility-proof"'
-    );
-    expect(workflow).not.toContain('docker load --input ".tmp/proof-${build_number}.tar"');
+    expect(workflow).not.toContain("docker load --input");
     expect(workflow).toContain("--revision-weight \"$BASELINE_REVISION=0\" \"$CANDIDATE_REVISION=100\"");
     expect(workflow).toContain("--revision-weight \"$BASELINE_REVISION=100\" \"$CANDIDATE_REVISION=0\"");
     expect(workflow).toContain("secrets.ENTRA_CLIENT_SECRET");
@@ -765,6 +771,642 @@ describe("SD-008 ratified Azure staging contracts", () => {
       }
       expect(action).toMatch(/^[^@\s]+@[0-9a-f]{40}$/);
     }
+  });
+});
+
+describe("SD-008 ADR 0012 rescue artifact contract", () => {
+  it("records the ADR 0012 phase-proportional artifact boundary", async () => {
+    const adr = await text(
+      "docs/adr/0012-sd008-phase-proportional-artifact-evidence.md"
+    );
+    const workItem = JSON.parse(await text("docs/work-items/SD-008.json")) as {
+      artifact_gate: Record<string, unknown>;
+      authority_sequence: string[];
+      completion_requires: string[];
+    };
+    const contract = JSON.parse(
+      await text("delivery/staging-deployment-contract.json")
+    ) as {
+      artifact: Record<string, unknown>;
+      authority: Record<string, unknown>;
+    };
+
+    expect(adr).toContain("ADR 0012");
+    expect(adr).toContain("amends ADRs 0009, 0010, and 0011");
+    expect(adr).toContain("Application-tree equality remains blocking");
+    expect(adr).toContain("OCI config, manifest/layer, and final-digest bit identity is advisory");
+    expect(adr).toContain("suppresses every reproducibility success claim");
+    expect(adr).toContain("private initial publication");
+    expect(adr).toContain("owner approval of staging provisioning");
+    expect(adr).toContain("rollback, teardown, protected environments, separated identities");
+
+    expect(workItem.artifact_gate).toMatchObject({
+      canonicalDeployableBuilds: 1,
+      independentAdvisoryBuilds: 1,
+      applicationTreeEquality: "blocking",
+      ociBitIdentity: "advisory",
+      diagnosticRetention: "always-after-generation",
+      diagnosticDetail: "sanitized-digests-comparison-booleans-and-claim-suppression",
+      reproducibilityClaimOnOciMismatch: "suppressed",
+      initialPublication: "private",
+      deploymentReference: "registry-digest-only"
+    });
+    expect(workItem.artifact_gate.canonicalLifecycle).toEqual(
+      expect.arrayContaining(["real-cmd-http-liveness"])
+    );
+    expect(workItem.authority_sequence).toEqual([
+      "exact-artifact-publication-evidence",
+      "staging-publication-approval-and-verification",
+      "owner-approved-staging-provisioning",
+      "cloud-authority"
+    ]);
+    expect(workItem.completion_requires).toEqual(
+      expect.arrayContaining([
+        "complete-staging-proof",
+        "controlled-rollback-proof",
+        "approved-teardown-and-absence-proof",
+        "hosted-trace-and-governed-learning-decision"
+      ])
+    );
+    expect(contract.artifact).toMatchObject(workItem.artifact_gate);
+    expect(contract.authority).toMatchObject({
+      cloudAuthorityBeginsAfter:
+        "exact-artifact-publication-evidence-then-separately-owner-approved-staging-publication-visibility-change-and-verification-then-owner-approved-staging-provision"
+    });
+  });
+
+  it("defines phase-scoped JIT authority and guards every Azure mutation window", async () => {
+    const adr = await text(
+      "docs/adr/0012-sd008-phase-proportional-artifact-evidence.md"
+    );
+    const authority = JSON.parse(
+      await text("delivery/sd008-azure-authority-contract.json")
+    ) as {
+      justInTimeAuthority: {
+        packetMode: string;
+        maximumLeaseMinutes: number;
+        providerEnforcedAssignmentExpiry: boolean;
+        assignmentExpiryEvidence: string;
+        minimumRemainingMinutesByMutation: Record<string, number>;
+        phases: {
+          provision: { roleIds: string[]; preconditions: string[] };
+          traffic: { roleIds: string[]; preconditions: string[] };
+          teardown: { roleIds: string[]; preconditions: string[]; removalOrder: string[] };
+        };
+        ingressCredential: Record<string, unknown>;
+        partialBootstrapCompensation: Record<string, unknown>;
+      };
+      sessionOrder: string[];
+    };
+    const workItem = JSON.parse(await text("docs/work-items/SD-008.json")) as {
+      jit_authority: Record<string, unknown>;
+    };
+    const deployment = JSON.parse(
+      await text("delivery/staging-deployment-contract.json")
+    ) as { authority: { justInTime: Record<string, unknown> } };
+    const closure = JSON.parse(
+      await text("delivery/sd008-authority-closure.example.json")
+    ) as Record<string, unknown>;
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+
+    expect(adr).toContain("one phase-specific, non-mutating authority packet");
+    expect(adr).toContain("Azure RBAC assignment expiry is procedural evidence");
+    expect(adr).toContain("maximum eight-hour lease");
+    expect(adr).toContain("bounded compensating cleanup");
+    expect(authority.justInTimeAuthority).toMatchObject({
+      packetMode: "exactly-one-requested-phase",
+      maximumLeaseMinutes: 480,
+      providerEnforcedAssignmentExpiry: false,
+      assignmentExpiryEvidence: "procedural",
+      minimumRemainingMinutesByMutation: {
+        "provision-deployment": 90,
+        "provision-bootstrap-job-start": 90,
+        "provision-migration-job-start": 90,
+        "provision-app-update": 90,
+        "traffic-promotion": 45,
+        "traffic-rollback": 15,
+        "traffic-restore": 15,
+        "teardown-delete": 60,
+        "teardown-closure": 60
+      }
+    });
+    expect(authority.justInTimeAuthority.phases.provision.roleIds).toEqual([
+      "sd008-provision-v1"
+    ]);
+    expect(authority.justInTimeAuthority.phases.traffic.roleIds).toEqual([
+      "sd008-traffic-v1",
+      "sd008-evidence-reader-v1"
+    ]);
+    expect(authority.justInTimeAuthority.phases.traffic.preconditions).toEqual(
+      expect.arrayContaining(["exact-container-app-exists", "provision-assignment-absent"])
+    );
+    expect(authority.justInTimeAuthority.phases.teardown.roleIds).toEqual([
+      "sd008-teardown-v1",
+      "sd008-post-delete-verifier-v1"
+    ]);
+    expect(authority.justInTimeAuthority.phases.teardown.removalOrder?.at(-1)).toBe(
+      "sd008-post-delete-verifier-v1"
+    );
+    expect(authority.justInTimeAuthority.ingressCredential).toMatchObject({
+      justInTime: true,
+      longLived: false,
+      githubEnvironment: "staging-provision"
+    });
+    expect(authority.justInTimeAuthority.partialBootstrapCompensation).toMatchObject({
+      bounded: true,
+      automaticAuthorityRenewal: false,
+      maximumCleanupMinutes: 15
+    });
+    expect(authority.sessionOrder).not.toContain(
+      "owner-assigns-provision-teardown-and-post-delete-roles"
+    );
+    expect(workItem.jit_authority).toMatchObject({
+      packetMode: "one-phase-at-a-time",
+      maximumLeaseMinutes: 480,
+      providerEnforcedExpiry: false
+    });
+    expect(deployment.authority.justInTime).toMatchObject(workItem.jit_authority);
+    expect(closure.schemaVersion).toBe(1);
+
+    expect(workflow).toContain("publication-evidence-sha256:");
+    expect(workflow.match(/SD008_AUTHORITY_PACKET_B64/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+    expect(workflow.match(/SD008_AUTHORITY_PACKET_SHA256/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+    for (const mutation of [
+      "provision-deployment",
+      "provision-app-update",
+      "traffic-promotion",
+      "teardown-delete",
+      "teardown-closure"
+    ]) {
+      expect(workflow).toContain(`validate_authority ${mutation}`);
+    }
+    for (const placement of [
+      /validate_authority provision-deployment\s+deployment_json="\$\(az deployment group create/,
+      /validate_authority "\$mutation"\s+execution_name="\$\(az containerapp job start/,
+      /validate_authority provision-app-update\s+az containerapp update/,
+      /validate_authority traffic-promotion\s+traffic_shifted=true\s+az containerapp ingress traffic set/,
+      /validate_authority teardown-delete\s+az group delete/
+    ]) {
+      expect(workflow).toMatch(placement);
+    }
+    expect(workflow).toContain("restore_traffic traffic-rollback");
+    expect(workflow).toContain("restore_traffic traffic-restore");
+    expect(workflow).toContain('validate_authority "$mutation"');
+    expect(workflow).toContain('wait_for_job "$bootstrap_job" provision-bootstrap-job-start');
+    expect(workflow).toContain('wait_for_job "$migration_job" provision-migration-job-start');
+    for (const binding of [
+      '--source-commit "$AUTHORIZED_COMMIT"',
+      '--image-digest "$IMAGE_DIGEST"',
+      '--publication-evidence-digest "$PUBLICATION_EVIDENCE_DIGEST"',
+      '--session-run-id "$GITHUB_RUN_ID"'
+    ]) {
+      expect(workflow).toContain(binding);
+    }
+    expect(workflow).toContain("Authority revalidation failed immediately before Azure mutation");
+    expect(workflow).toContain("app-name: ${{ steps.staging-names.outputs.app-name }}");
+    expect(workflow.indexOf("id: staging-names")).toBeLessThan(
+      workflow.indexOf("id: provision")
+    );
+    expect(workflow).toContain('[[ "$app_name" == "$APP_NAME" ]]');
+    expect(workflow).toContain('[[ "$bootstrap_job" == "$BOOTSTRAP_JOB_NAME" ]]');
+    expect(workflow).toContain('[[ "$migration_job" == "$MIGRATION_JOB_NAME" ]]');
+    const teardownPrecheckStart = workflow.indexOf("- name: Prove mutation leases are separated before teardown");
+    const teardownDeleteStart = workflow.indexOf("- name: Delete exact SD-008 resource group and verify absence");
+    const teardownPrecheck = workflow.slice(teardownPrecheckStart, teardownDeleteStart);
+    expect(teardownPrecheck).toContain('app_exists=false');
+    expect(teardownPrecheck).toContain(
+      'if app_id="$(az containerapp show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query id -o tsv 2>/dev/null)"; then'
+    );
+    const existingAppBranch = teardownPrecheck.match(
+      /if \[\[ "\$app_exists" == "true" \]\]; then([\s\S]*?)\n          fi/
+    )?.[1];
+    expect(existingAppBranch).toContain('[[ "$TRAFFIC_PRINCIPAL_OBJECT_ID" =~');
+    expect(existingAppBranch).toContain('--assignee-object-id "$TRAFFIC_PRINCIPAL_OBJECT_ID"');
+    expect(existingAppBranch).toContain('--scope "$app_id" --include-inherited');
+    const teardownStepEnd = workflow.indexOf("\n      - name:", teardownDeleteStart + 1);
+    const teardownDelete = workflow.slice(teardownDeleteStart, teardownStepEnd);
+    expect(teardownDelete).toContain("Resource group identity or required cleanup tags do not match this SD-008 run");
+    expect(teardownDelete).toContain("validate_authority teardown-delete");
+    expect(teardownDelete).toContain('az group delete --name "$RESOURCE_GROUP" --yes --no-wait');
+    expect(teardownDelete).toContain("validate_authority teardown-closure");
+    expect(workflow.match(/refresh_scoped_authority\(\)/g)).toHaveLength(3);
+    expect(workflow.match(/if ! refresh_scoped_authority "\$mutation"; then[\s\S]*?return 1[\s\S]*?fi\s+if ! node scripts\/render-sd008-azure-authority\.mjs/g)).toHaveLength(3);
+    expect(workflow.match(/az account show --query user\.type -o tsv/g)).toHaveLength(3);
+    expect(workflow.match(/az account get-access-token --resource https:\/\/management\.azure\.com\/ --query accessToken -o tsv/g)).toHaveLength(3);
+    expect(workflow.match(/az role assignment list/g)?.length ?? 0).toBeGreaterThanOrEqual(6);
+    expect(workflow.match(/--include-inherited/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+    expect(workflow.match(/az role definition list --custom-role-only --scope "\$AUTHORITY_QUERY_SCOPE"/g)).toHaveLength(3);
+    expect(workflow.match(/--scope "\$AUTHORITY_QUERY_SCOPE" --assignee-object-id/g)).toHaveLength(3);
+    expect(workflow).not.toContain("graph.microsoft.com");
+    expect(workflow).not.toContain("az ad sp show");
+    expect(workflow).not.toContain("--all --include-inherited");
+    expect(workflow).not.toMatch(/az role assignment list[\s\S]{0,200}?--all\b/);
+    expect(workflow).not.toContain("az account show --query user.name");
+    expect(workflow.match(/--decode-arm-token stdin/g)).toHaveLength(3);
+    expect(workflow).toContain("--post-delete-teardown-assignment .tmp-sd008-post-delete-teardown-assignment.json");
+    expect(workflow).toContain("post-delete teardown assignment absence could not be proven by exact ARM lookup");
+    expect(workflow).toContain(
+      '"https://management.azure.com${teardown_assignment_id}?api-version=2022-04-01"'
+    );
+    const logicalWorkflow = workflow.replace(/\\\r?\n\s*/g, " ");
+    const curlCommands = logicalWorkflow
+      .split(/\r?\n/)
+      .filter((line) => /\bcurl\b/.test(line));
+    for (const command of curlCommands) {
+      const curlArgv = command.slice(command.indexOf("curl"));
+      expect(curlArgv).not.toMatch(/(?:^|\s)-H(?:\s|=)/);
+      expect(curlArgv).not.toMatch(/(?:^|\s)--header=/);
+      expect(curlArgv).not.toMatch(/(?:^|\s)--header\s+(?!@-(?:\s|$))/);
+      expect(curlArgv).not.toMatch(/Authorization:\s*Bearer/i);
+      expect(curlArgv).not.toMatch(/\$(?:arm_)?access_token\b/);
+    }
+    expect(
+      workflow.match(/printf 'Authorization: Bearer %s\\n' "\$(?:arm_)?access_token"/g)
+    ).toHaveLength(5);
+    expect(workflow.match(/--header @-/g)).toHaveLength(5);
+    expect(workflow).not.toContain("--config -");
+    for (const scopeCase of [
+      '"provision-deployment")',
+      '"provision-bootstrap-job-start")',
+      '"provision-migration-job-start")',
+      '"provision-app-update")'
+    ]) {
+      expect(workflow).toContain(scopeCase);
+    }
+    expect(workflow).toContain('Unknown provision authority mutation: ${mutation}');
+    for (const binding of [
+      '--azure-client-id "$AZURE_CLIENT_ID"',
+      '--authenticated-azure-client-id "$AUTHENTICATED_AZURE_CLIENT_ID"',
+      '--authenticated-principal-object-id "$AUTHENTICATED_PRINCIPAL_OBJECT_ID"',
+      '--authenticated-principal-type "$AUTHENTICATED_PRINCIPAL_TYPE"',
+      '--authenticated-tenant-id "$AUTHENTICATED_TENANT_ID"',
+      "--live-role-assignments .tmp-sd008-live-role-assignments.json",
+      "--live-role-definitions .tmp-sd008-live-role-definitions.json"
+    ]) {
+      expect(workflow.match(new RegExp(binding.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"))).toHaveLength(3);
+    }
+    expect(workflow).not.toMatch(/az role assignment (create|delete)/);
+    expect(workflow).not.toMatch(/gh (api|secret).*ENTRA_CLIENT_SECRET/);
+  });
+
+  it("guards rollback validation explicitly when errexit is disabled", async () => {
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+    const restoreFunction = workflow.match(
+      /          restore_traffic\(\) \{[\s\S]*?\n          \}/
+    )?.[0];
+    if (restoreFunction === undefined) {
+      throw new Error("restore_traffic public seam is missing from the workflow.");
+    }
+    expect(restoreFunction).toMatch(
+      /if ! validate_authority "\$mutation"; then[\s\S]*?return 1[\s\S]*?fi\s+if ! az containerapp ingress traffic set/
+    );
+    expect(restoreFunction).toMatch(
+      /if ! az containerapp ingress traffic set[\s\S]*?return 1[\s\S]*?fi/
+    );
+    expect(restoreFunction).toMatch(
+      /if ! baseline_weight="\$\(az containerapp ingress traffic show[\s\S]*?return 1[\s\S]*?fi/
+    );
+    expect(restoreFunction.indexOf("traffic_restored=true")).toBeGreaterThan(
+      restoreFunction.indexOf('[[ "$baseline_weight" != "100" ]]')
+    );
+  });
+
+  it("reuses one canonical image through publication and reports advisory OCI diagnostics", async () => {
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+
+    expect(workflow).toContain("Build canonical image once and emit OCI diagnostics");
+    expect(workflow).toContain("CANONICAL_IMAGE: signaldesk:sd008-canonical");
+    expect(workflow).toContain("ADVISORY_IMAGE: signaldesk:sd008-advisory");
+    expect(workflow.match(/docker buildx build \\/g)).toHaveLength(2);
+    expect(workflow).toContain(
+      '--output "type=oci,dest=.tmp/canonical.tar,rewrite-timestamp=true,name=$CANONICAL_IMAGE"'
+    );
+    expect(workflow).toContain(
+      '--output "type=docker,name=$CANONICAL_IMAGE"'
+    );
+    expect(workflow).toContain(
+      '--output "type=oci,dest=.tmp/advisory.tar,rewrite-timestamp=true,name=$ADVISORY_IMAGE"'
+    );
+    expect(workflow).toContain(
+      '--output "type=docker,name=$ADVISORY_IMAGE"'
+    );
+    expect(workflow).not.toContain("docker load --input");
+    expect(workflow).toContain('docker run --detach --name "$container_name"');
+    expect(workflow).toContain('"http://127.0.0.1:${host_port}/api/v1/health/live"');
+    expect(workflow).toContain("Canonical image liveness response was not live");
+    expect(workflow).not.toContain('docker run --rm --entrypoint node "$CANONICAL_IMAGE" --version');
+    expect(workflow).toContain("Canonical/advisory application-tree mismatch is blocking");
+    expect(workflow).toContain(".tmp/reproducibility-diagnostics.json");
+    expect(workflow).toContain(
+      'reproducibilityClaim: advisoryFailure || !applicationTreeEqual ? "suppressed" : "advisory-only"'
+    );
+    expect(workflow).toContain('echo "::warning::Independent OCI bit identity failed; reproducibility claim is suppressed."');
+    expect(workflow).toContain("image: signaldesk:sd008-canonical");
+    expect(workflow).toContain('docker push "$PUBLICATION_TAG"');
+    expect(workflow).toContain('[[ "$package_visibility" == "private" ]]');
+    expect(workflow).toContain('docker buildx imagetools inspect "$PUBLICATION_TAG" --raw');
+    expect(workflow).toContain('[[ "$canonical_config_digest" == "$registry_config_digest" ]]');
+    expect(workflow).toContain("Attest exact privately published digest");
+    expect(workflow).not.toContain("docker/build-push-action@");
+    expect(workflow.indexOf("environment: staging-publication")).toBeLessThan(
+      workflow.indexOf("environment: staging-provision")
+    );
+    expect(workflow).toContain("needs: [build-and-attest, staging-publication]");
+    expect(workflow).toContain(
+      "IMAGE_DIGEST: ${{ needs.build-and-attest.outputs.image-digest }}"
+    );
+  });
+
+  it("reports non-mutating SD-008 adapter admission and runtime diagnostics", async () => {
+    const { stdout } = await execFileAsync(
+      process.execPath,
+      ["scripts/check-sd008-artifact-adapter.mjs", "--format", "json"],
+      { cwd: process.cwd() }
+    );
+    const report = JSON.parse(stdout) as {
+      claim: string;
+      overall: string;
+      checks: Array<{ id: string; status: string; evidenceKind: string }>;
+    };
+    const checks = new Map(report.checks.map((check) => [check.id, check]));
+
+    expect(report.claim).toBe("local-adapter-evidence-only-not-provider-acceptance");
+    expect(report.overall).toMatch(/^(pass|pass-with-blocked-capabilities)$/);
+    expect(checks.get("reusable-workflow-permissions")).toMatchObject({
+      status: "pass",
+      evidenceKind: "local-static-contract"
+    });
+    expect(checks.get("workflow-graph-admission")).toMatchObject({
+      status: "pass",
+      evidenceKind: "local-static-contract"
+    });
+    expect(checks.get("oci-docker-exporter-compatibility")).toMatchObject({
+      status: "pass",
+      evidenceKind: "local-static-contract"
+    });
+    expect(checks.get("diagnostic-output-presence")).toMatchObject({
+      status: "pass",
+      evidenceKind: "local-static-contract"
+    });
+    expect(["pass", "blocked"]).toContain(checks.get("docker-load-run")?.status);
+    expect(["pass", "blocked"]).toContain(checks.get("actionlint-admission")?.status);
+    expect(["pass", "blocked"]).toContain(checks.get("jq-availability")?.status);
+
+    const missingToolEnvironment = { ...process.env, PATH: "" };
+    const localMissingTools = await execFileAsync(
+      process.execPath,
+      ["scripts/check-sd008-artifact-adapter.mjs", "--format", "json"],
+      { cwd: process.cwd(), env: missingToolEnvironment }
+    );
+    const localMissingToolsReport = JSON.parse(localMissingTools.stdout) as {
+      overall: string;
+      checks: Array<{ id: string; status: string }>;
+    };
+    expect(localMissingToolsReport.overall).toBe("pass-with-blocked-capabilities");
+    expect(localMissingToolsReport.checks).toContainEqual(
+      expect.objectContaining({ id: "actionlint-admission", status: "blocked" })
+    );
+
+    let hostedStdout = "";
+    try {
+      const hosted = await execFileAsync(
+        process.execPath,
+        ["scripts/check-sd008-artifact-adapter.mjs", "--format", "json", "--mode", "hosted"],
+        { cwd: process.cwd(), env: missingToolEnvironment }
+      );
+      hostedStdout = hosted.stdout;
+    } catch (error) {
+      hostedStdout = (error as { stdout?: string }).stdout ?? "";
+    }
+    const hostedReport = JSON.parse(hostedStdout) as {
+      overall: string;
+      checks: Array<{ id: string; status: string }>;
+    };
+    expect(hostedReport.overall).toBe("fail");
+    expect(hostedReport.checks).toContainEqual(
+      expect.objectContaining({ id: "actionlint-admission", status: "fail" })
+    );
+  });
+
+  it("behaviorally rejects an unexpected write permission in the reusable caller", async () => {
+    await mkdir(".tmp", { recursive: true });
+    const directory = await mkdtemp(join(process.cwd(), ".tmp", "sd008-permission-fixture-"));
+    try {
+      const workflowPath = join(directory, "workflow.yml");
+      const reusablePath = join(directory, "reusable.yml");
+      const workflowSource = (await text(".github/workflows/sd008-azure-staging.yml")).replace(
+        /\r?\n/g,
+        "\r\n"
+      );
+      const permissionBlock =
+        /    permissions:\r?\n      contents: read\r?\n    uses: \.\/\.github\/workflows\/hosted-review-gate\.yml/;
+      expect(workflowSource).toMatch(permissionBlock);
+      const workflow = workflowSource.replace(
+        permissionBlock,
+        "    permissions:\n      contents: read\n      packages: write\n    uses: ./.github/workflows/hosted-review-gate.yml"
+      );
+      expect(workflow).not.toBe(workflowSource);
+      expect(workflow).toContain("packages: write");
+      await Promise.all([
+        writeFile(workflowPath, workflow),
+        writeFile(reusablePath, await text(".github/workflows/hosted-review-gate.yml"))
+      ]);
+
+      let stdout = "";
+      try {
+        const result = await execFileAsync(
+          process.execPath,
+          [
+            "scripts/check-sd008-artifact-adapter.mjs",
+            "--format",
+            "json",
+            "--mode",
+            "permissions-only",
+            "--workflow",
+            workflowPath,
+            "--reusable",
+            reusablePath
+          ],
+          { cwd: process.cwd() }
+        );
+        stdout = result.stdout;
+      } catch (error) {
+        stdout = (error as { stdout?: string }).stdout ?? "";
+      }
+      const report = JSON.parse(stdout) as {
+        overall: string;
+        checks: Array<{ id: string; status: string; detail: string }>;
+      };
+      expect(report.overall).toBe("fail");
+      expect(report.checks).toContainEqual(
+        expect.objectContaining({
+          id: "reusable-workflow-permissions",
+          status: "fail",
+          detail: expect.stringContaining("packages:write")
+        })
+      );
+    } finally {
+      await rm(directory, { recursive: true });
+    }
+  });
+
+  it("requires real canonical startup sanitized diagnostics and checked Docker cleanup", async () => {
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+    const reviewGate = await text(".github/workflows/hosted-review-gate.yml");
+    const adapter = await text("scripts/check-sd008-artifact-adapter.mjs");
+    const adapterDocs = (
+      await Promise.all([
+        text("docs/adr/0012-sd008-phase-proportional-artifact-evidence.md"),
+        text("docs/plans/2026-08-23-sd008-rescue-artifact-gate.md"),
+        text("docs/test-reproduction/SD-008-ADR-0012.md"),
+        text("docs/evidence/SD-008-ADR-0012-local-rescue.md")
+      ])
+    ).join("\n");
+
+    expect(workflow).not.toContain(
+      'docker run --rm --entrypoint node "$CANONICAL_IMAGE" --version'
+    );
+    expect(workflow).toContain("Start canonical application and probe HTTP liveness");
+    expect(workflow).toContain('docker run --detach --name "$container_name"');
+    expect(workflow).toContain('"$CANONICAL_IMAGE"');
+    expect(workflow).toContain("/api/v1/health/live");
+    expect(workflow).toContain("trap preserve_status_and_cleanup EXIT");
+    expect(workflow).toContain('docker logs "$container_name"');
+    expect(workflow).toContain('if ! docker rm --force "$container_name"');
+    expect(workflow).toContain("Canonical container cleanup failed");
+    expect(workflow).not.toMatch(/docker rm --force[^\n]+\|\| true/);
+    expect(workflow).toContain("secret_scan_status=0");
+    expect(workflow).toContain('|| secret_scan_status=$?');
+    expect(workflow).toContain(
+      'node scripts/check-sd008-secret-scan-exit.mjs "$secret_scan_status"'
+    );
+    expect(workflow).not.toMatch(/!\s+docker run[^\n]*[\s\S]{0,300}?grep -R/);
+
+    const diagnosticRetention = workflow.indexOf(
+      "Retain independent-build diagnostics even when later gates fail"
+    );
+    expect(diagnosticRetention).toBeGreaterThan(
+      workflow.indexOf("Build canonical image once and emit OCI diagnostics")
+    );
+    expect(diagnosticRetention).toBeLessThan(
+      workflow.indexOf("Reject forbidden files and secret-shaped application content")
+    );
+    const diagnosticUpload = workflow.slice(
+      diagnosticRetention,
+      workflow.indexOf("Reject forbidden files and secret-shaped application content")
+    );
+    expect(diagnosticUpload).toContain("if: ${{ always() }}");
+    expect(diagnosticUpload).toContain("if-no-files-found: error");
+    expect(diagnosticUpload).toContain(".tmp/reproducibility-diagnostics.json");
+    for (const forbiddenUpload of [
+      ".tmp/canonical-application.log",
+      ".tmp/canonical-container-id.txt",
+      ".tmp/canonical-live.json",
+      ".tmp/canonical-tree.txt",
+      ".tmp/advisory-tree.txt",
+      ".tmp/canonical-oci-config.json",
+      ".tmp/canonical-oci-manifest.json",
+      ".tmp/advisory-oci-config.json",
+      ".tmp/advisory-oci-manifest.json"
+    ]) {
+      expect(diagnosticUpload).not.toContain(forbiddenUpload);
+    }
+    expect(workflow).toContain(".tmp/canonical-oci-config.json");
+    expect(workflow).toContain(".tmp/canonical-oci-manifest.json");
+    expect(workflow).toContain(".tmp/advisory-oci-config.json");
+    expect(workflow).toContain(".tmp/advisory-oci-manifest.json");
+    const allUploadBlocks = workflow
+      .split("uses: actions/upload-artifact@")
+      .slice(1)
+      .map((block) => block.split(/\n\s{6}- name:/, 1)[0] ?? "")
+      .join("\n");
+    for (const forbiddenUpload of [
+      ".tmp/canonical-application.log",
+      ".tmp/canonical-oci-config.json",
+      ".tmp/canonical-oci-manifest.json",
+      ".tmp/advisory-oci-config.json",
+      ".tmp/advisory-oci-manifest.json",
+      ".tmp/registry-manifest.json"
+    ]) {
+      expect(allUploadBlocks).not.toContain(forbiddenUpload);
+    }
+    const diagnosticObject = workflow.slice(
+      workflow.indexOf("function digestSummary"),
+      workflow.indexOf('fs.writeFileSync(".tmp/canonical-oci-config.json"')
+    );
+    expect(diagnosticObject).toContain("canonicalSha256:");
+    expect(diagnosticObject).toContain("advisorySha256:");
+    expect(diagnosticObject).toContain('status: applicationTreeEqual ? "blocking-pass" : "blocking-failure"');
+    expect(diagnosticObject).toContain("equal: applicationTreeEqual");
+    expect(diagnosticObject).toContain("blockingMismatch: !applicationTreeEqual");
+    expect(diagnosticObject).toContain("configDigest:");
+    expect(diagnosticObject).toContain("manifestDigest:");
+    expect(diagnosticObject).toContain("layerDigests:");
+    expect(diagnosticObject).toContain("finalDigest:");
+    expect(diagnosticObject).not.toContain("config: canonical.config");
+    expect(diagnosticObject).not.toContain("manifest: canonical.manifest");
+    const diagnosticWrite = workflow.indexOf(
+      'fs.writeFileSync(".tmp/reproducibility-diagnostics.json"'
+    );
+    const blockingTreeExit = workflow.indexOf(
+      "Canonical/advisory application-tree mismatch is blocking"
+    );
+    expect(diagnosticWrite).toBeGreaterThan(0);
+    expect(blockingTreeExit).toBeGreaterThan(diagnosticWrite);
+    expect(workflow).not.toContain(
+      "diff --strip-trailing-cr .tmp/canonical-tree.txt .tmp/advisory-tree.txt"
+    );
+
+    expect(workflow).toContain('docker container ls --all --quiet --filter "name=^/${container_name}$"');
+    expect(workflow).not.toContain('docker inspect "$container_name"');
+
+    expect(adapter).toContain('"--network=none"');
+    expect(adapter).toContain('"--builder", builderName');
+    expect(adapter).toContain('["buildx", "create", "--name", builderName');
+    expect(adapter).toContain('["buildx", "rm", "--force", builderName]');
+    expect(adapter).toContain('"buildx", "ls", "--format", "{{.Name}}"');
+    expect(adapter).not.toContain('command("cc"');
+    expect(adapter).toContain("pinnedBaseImage");
+    expect(adapter).toContain("type=docker,name=${imageReference},dest=${archivePath}");
+    expect(adapter).toContain('["load", "--input", archivePath]');
+    expect(adapter).toContain('["run", "--rm", imageReference]');
+    expect(adapter).toContain("FROM ${pinnedBaseImage}");
+    expect(adapter).toContain('["image", "rm", imageReference]');
+    expect(adapter).toContain('["image", "ls", "--all", "--quiet", "--no-trunc", "--filter"');
+    expect(adapter).toContain("Docker image cleanup failed");
+    expect(adapter).toContain("Docker image cleanup could not be verified");
+    expect(adapter).not.toContain('["image", "inspect", imageReference]');
+    expect(adapter).not.toContain(
+      '    command("docker", ["image", "rm", "--force", imageReference]);'
+    );
+    expect(adapterDocs).toContain("build steps use `--network=none`");
+    expect(adapterDocs).toContain(
+      "builder bootstrap and pinned-base resolution may perform read-only registry pulls",
+    );
+    for (const staleClaim of [
+      "read-only Node adapter",
+      "read-only provider adapter",
+      "reads only local workflow files and executable availability",
+      "caller-supplied local image",
+      "inspects local workflow text and local executable availability only",
+      "no repository, Git, provider, or network mutation",
+      "temporary, network-disabled local Docker daemon mutation"
+    ]) {
+      expect(adapterDocs).not.toContain(staleClaim);
+    }
+    expect(reviewGate).toContain("SD-008 Docker archive adapter smoke");
+    expect(reviewGate).toContain("ACTIONLINT_VERSION: 1.7.12");
+    expect(reviewGate).toContain(
+      "go install github.com/rhysd/actionlint/cmd/actionlint@v${ACTIONLINT_VERSION}"
+    );
+    expect(reviewGate).toContain(
+      'installed_version="$("$install_dir/actionlint" -version | head -n 1)"'
+    );
+    expect(reviewGate).toContain('[[ "$installed_version" == "$ACTIONLINT_VERSION" ]]');
+    expect(reviewGate).toContain("npm run sd008:artifact-adapter -- --format text --mode hosted");
+    expect(reviewGate.indexOf("SD-008 Docker archive adapter smoke")).toBeLessThan(
+      reviewGate.indexOf("- name: Foundation")
+    );
   });
 });
 
@@ -876,7 +1518,8 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
       .slice(1)
       .map((block) => block.split(/\n\s{6}- name:/, 1)[0] ?? "")
       .join("\n");
-    expect(workflow.match(/include-hidden-files: true/g)).toHaveLength(6);
+    expect(workflow).toContain("name: sd008-reproducibility-diagnostics-${{ github.run_id }}");
+    expect(workflow.match(/include-hidden-files: true/g)?.length ?? 0).toBeGreaterThanOrEqual(6);
     for (const rawArtifact of [
       ".tmp-sd008-what-if.json",
       ".tmp-sd008-deployment.json",
@@ -940,10 +1583,17 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     const main = await text("infra/staging/main.bicep");
     const apps = await text("infra/staging/container-apps.bicep");
     const smoke = await text("scripts/get-entra-smoke-token.mjs");
+    const playwright = await text("playwright.config.ts");
     expect(workflow).toContain("scripts/get-entra-smoke-token.mjs");
     expect(workflow).toContain("vars.STAGING_SMOKE_CLIENT_ID");
     expect(workflow).toContain("vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID");
-    expect(workflow).not.toContain("az account get-access-token");
+    const azureCliTokenCommands = workflow.match(/az account get-access-token[^\r\n]*/g) ?? [];
+    expect(azureCliTokenCommands).toHaveLength(3);
+    expect(
+      azureCliTokenCommands.every((command) =>
+        command.includes("--resource https://management.azure.com/")
+      )
+    ).toBe(true);
     expect(main).toContain("authorizedSmokeClientId");
     expect(main).toContain("authorizedSmokePrincipalObjectId");
     expect(apps).toContain("allowedApplications: [");
@@ -954,6 +1604,53 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     expect(smoke).toContain("client_assertion_type");
     expect(smoke).toContain("client_assertion: githubResponse.value");
     expect(smoke).toContain("repo:Neel-Error404/signal-desk:environment:${environment}");
+    expect(smoke).toContain(
+      "/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/"
+    );
+    expect(smoke).not.toContain("GITHUB_ENV");
+    expect(smoke).not.toContain("GITHUB_OUTPUT");
+    expect(smoke).not.toContain("add-mask");
+    expect(workflow).not.toContain("SMOKE_ACCESS_TOKEN");
+    expect(workflow).not.toContain("Acquire dedicated secretless");
+    expect(workflow.match(/access_token="\$\(node scripts\/get-entra-smoke-token\.mjs\)"/g)).toHaveLength(2);
+    expect(workflow).not.toMatch(/add-mask::\$access_token/);
+    expect(workflow).not.toMatch(/(?:smoke|access)[_-]?token[^\r\n]*(?:>|tee|file)/i);
+    expect(workflow).not.toContain('! grep -F -- "$access_token"');
+    expect(workflow.match(/token_scan_status=0/g)).toHaveLength(2);
+    expect(workflow.match(/\|\| token_scan_status=\$\?/g)).toHaveLength(2);
+    expect(workflow).toContain(
+      'node scripts/check-sd008-secret-scan-exit.mjs "$token_scan_status" provision-token'
+    );
+    expect(workflow).toContain(
+      'node scripts/check-sd008-secret-scan-exit.mjs "$token_scan_status" traffic-token'
+    );
+    expect(playwright).toContain(
+      'trace: authorization === undefined ? "retain-on-failure" : "off"'
+    );
+
+    const trafficStart = workflow.indexOf("- name: Shift staging traffic and restore prior healthy revision");
+    const trafficEnd = workflow.indexOf("\n      - name:", trafficStart + 1);
+    const trafficStep = workflow.slice(trafficStart, trafficEnd);
+    const trafficLines = trafficStep.split(/\r?\n/);
+    const acquisitionLine = trafficLines.findIndex((line) =>
+      line.includes('access_token="$(node scripts/get-entra-smoke-token.mjs)"')
+    );
+    const validationEndLine = trafficLines.findIndex(
+      (line, index) => index > acquisitionLine && line.trim() === "fi"
+    );
+    expect(acquisitionLine).toBeGreaterThan(-1);
+    expect(validationEndLine).toBeGreaterThan(acquisitionLine);
+    let tokenIsBound = true;
+    const useAfterUnset: string[] = [];
+    for (const line of trafficLines.slice(validationEndLine + 1)) {
+      if (/\$(?:access_token\b|\{access_token(?:\}|[^}]*\}))/u.test(line) && !tokenIsBound) {
+        useAfterUnset.push(line.trim());
+      }
+      if (/^\s*access_token=/u.test(line)) tokenIsBound = true;
+      if (/^\s*unset\s+access_token\s*$/u.test(line)) tokenIsBound = false;
+    }
+    expect(useAfterUnset).toEqual([]);
+    expect(tokenIsBound).toBe(false);
   });
 
   it("pins baseline traffic, declares exact effective roles, and requires post-delete authority closure", async () => {
@@ -976,6 +1673,13 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     expect(workflow).toContain("SignalDesk SD008 Post Delete Verifier");
     expect(workflow).toContain("hosted-trace-inputs:");
     expect(workflow).toContain("authority-closure-template.json");
+    expect(workflow).toContain('ingressCredentialState:"OWNER_MUST_VERIFY_REVOKED"');
+    expect(workflow).toContain(
+      'stagingProvisionEnvironmentSecretState:"OWNER_MUST_VERIFY_REMOVED"'
+    );
+    expect(workflow).toContain(
+      'requiredRemovalOrder:["SignalDesk SD008 Teardown","ingress-credential","staging-provision:ENTRA_CLIENT_SECRET","SignalDesk SD008 Post Delete Verifier"]'
+    );
     expect(workflow).toContain("unexpectedChargesDetected:false");
     expect(workflow).toContain('session_started_at="$SESSION_STARTED_AT"');
     expect(workflow).toContain('tags.createdAt -o tsv');
