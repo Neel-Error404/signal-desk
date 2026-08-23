@@ -1,6 +1,7 @@
 # SD-008 ADR 0012 Local Rescue Evidence
 
-**Status:** IMPLEMENTED locally; Foundation and Component VERIFIED; hosted/provider proof BLOCKED
+**Status:** IMPLEMENTED locally; Foundation, Component, Integration, and Workflow VERIFIED; Stress
+FAILED; hosted/provider proof BLOCKED
 
 **Date:** August 23, 2026
 
@@ -294,28 +295,98 @@ operation and no Git mutation was performed.
 
 ### Hosted review-gate actionlint probe correction
 
-Required run `32618788939` for PR 14 at head
-`3ff22131f854699b9bee03942722fafb40aa06b0` failed only at `Install exact actionlint`, before the
-adapter or product tests. The failure was the version probe rather than installation: under
-`set -euo pipefail`, `actionlint -version | head -n 1` can terminate the multiline producer with a
-broken pipe after `head` exits successfully.
+PR 14 runs `32618788939` at `3ff22131f854699b9bee03942722fafb40aa06b0` and `32620690030` at
+`0eb69964ff73df52367e77b7b486a9a54af22210` both stopped in `Install exact actionlint`, before
+the adapter or product tests. The second run had already removed the `head` pipeline, so the prior
+broken-pipe diagnosis is retracted.
 
-The local workflow correction captures the complete actionlint output without a pipeline, then
-selects its first line with Bash parameter expansion before preserving the existing exact
-`1.7.12` equality check. A Foundation regression executes a multiline producer and proves both
-the legacy nonzero result and corrected `1.7.12` result under `set -euo pipefail`.
+A direct isolated reproduction with Go 1.26.7 installed
+`github.com/rhysd/actionlint/cmd/actionlint@v1.7.12` from source. The resulting executable reported
+`v1.7.12`; the workflow's exact comparison against unprefixed `1.7.12` returned false.
 
-Focused RED failed 1 test with 60 skipped while the workflow retained the pipeline. Focused GREEN
-passed 1 test with 60 skipped. The final ordered local levels passed Foundation 61/61 with all
-prerequisite and boundary checks, followed by Component 68/68 across 13 files. Cached actionlint
-1.7.12 accepted both workflows, and Git Bash syntax checking accepted all 25 explicit Bash
-workflow steps. No Git or provider mutation occurred, and the failed hosted run was not rerun;
-hosted success therefore remains unverified.
+- **Immediate cause:** `v1.7.12` did not exactly equal the required `1.7.12`.
+- **Enabling cause:** runner-side `go install` used a source-built distribution with different
+  version identity from the official release binary and no verified release-archive boundary. The
+  prior regression modeled an unobserved multiline producer instead of this real identity.
+- **Non-causes:** no broken pipe caused the failure; actionlint did not report a workflow finding;
+  and neither the adapter nor product tests ran.
 
-## Remaining limits and next gate
+The local correction downloads the official actionlint 1.7.12 Linux amd64 release archive from its
+exact GitHub release URL, verifies SHA-256
+`8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8` before extraction or
+execution, then requires the first version line to be exactly `1.7.12`. Download, checksum,
+extraction, execution, and version failures are explicit and actionable. The focused Foundation
+contract rejects `go install` and verifies the URL, checksum, verification order, exact comparison,
+diagnostic, and ordering before both the adapter and Foundation.
 
-The primary coordinator must independently review the local diff and run Integration and later test
-levels in order. Git staging/commit/push/PR, hosted workflow admission or dispatch, GHCR mutation, package
-visibility, identity setup, Azure provisioning, traffic, rollback, teardown, trace assembly, and
-learning remain separately authorized. JIT authority sequencing is implemented and verified only at
-the local Foundation and Component levels.
+Primary integration's live GitHub API query confirmed that the official asset is
+`actionlint_1.7.12_linux_amd64.tar.gz` at
+`https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz`;
+the earlier `linux_x86_64` URL was invalid. The corrected curl command is bounded to three retries,
+uses `--proto '=https'` for the initial request and `--proto-redir '=https'` for every redirect, and
+requires TLS 1.2 or newer.
+The follow-up focused RED failed 1 test with 60 skipped on the invalid asset name before reaching
+the missing transport assertions. The same focused test passed with 60 skipped after both the asset
+identity and curl constraints were corrected.
+A subsequent focused RED failed 1 test with 60 skipped because `--proto-redir '=https'` was absent;
+the same test passed with 60 skipped after the redirect constraint was added.
+
+Focused RED failed 1 test with 60 skipped because the official release URL and checksum were absent
+and `go install` remained. Focused GREEN passed 1 test with 60 skipped after the minimum workflow
+change. The complete Foundation level passed all 61 contracts plus lockfile, Prisma generation and
+validation, TypeScript, ESLint, migration-safety, source-layout, and dependency-boundary checks.
+The cached source-built actionlint reported `v1.7.12`, `installed by building from source`, and Go
+1.26.7, and accepted both workflow files. Git Bash accepted all 25 explicit Bash workflow steps.
+
+The local checks did not execute the official Linux release archive. No Git or provider mutation
+occurred, neither failed hosted run was rerun, and hosted success remains unverified.
+
+## Primary coordinator ordered verification
+
+After the implementation and review corrections, the primary coordinator ran the local ladder in
+order:
+
+- **Foundation — PASS:** 61/61 contracts, with prerequisite lockfile, Prisma generation and
+  validation, TypeScript, ESLint, migration-safety, source-layout, and dependency-boundary checks
+  passing.
+- **Component — PASS:** 68/68 tests.
+- **Integration — PASS:** 25/25 tests and all six migrations.
+- **Workflow — PASS:** 2/2 desktop and mobile workflows.
+- **Stress — FAIL:** the level did not pass, so the ladder stopped there.
+
+The Stress observations were:
+
+1. The first Node 24.14 attempt ended with a top-level `undefined` failure.
+2. A traced Node 24 attempt timed out; its exact test process tree was identified and terminated.
+3. A clean Node 24 rerun reached all concurrency and outage checks. After the embedded database was
+   restarted, the readiness list GET returned HTTP 200, but the immediately following full detail
+   GET returned HTTP 503 `storage_unavailable` at `scripts/run-stress.mjs:362`.
+4. An isolated Node 22.14 rerun also ended with a top-level `undefined` failure.
+
+The strongest current cause is a pre-existing flaky Windows embedded-postgres/Prisma connection-
+pool recovery race, not the four-file actionlint installer diff. Existing code forcibly stops and
+restarts PostgreSQL with Windows `taskkill`; readiness polls only the one-query list endpoint, while
+the detail endpoint starts two concurrent Prisma reads and then performs lineage reads. The stores
+normalize raw database failures to HTTP 503 `storage_unavailable`. The exact failing Prisma
+operation remains unknown, so this classification is evidence-based but not a completed operation-
+level root-cause proof.
+
+The ladder did not advance to Build, dependency audit, Bicep validation, the post-ladder actionlint
+recheck, or Elder validation because the test policy stops at the failed Stress level. No harness or
+source correction was made: that would exceed the approved actionlint hard-stop exception and
+requires separate approval.
+
+## Owner closure decision and next gate
+
+On August 23, 2026, the owner directed the rescue to stop investigating the local Stress harness
+and proceed from the already passing basic product evidence. The local Stress result remains
+explicitly failed and deferred; it is not relabeled as a pass. This decision is limited to delivery
+of the actionlint installer correction and does not remove, bypass, or weaken the hosted Stress step
+in the required pull-request check. The exact hosted runner remains the next authoritative boundary.
+
+If hosted Stress fails, that hosted failure becomes the evidence for a separately scoped root-cause
+decision. Until then, no change is authorized to the stress harness, embedded PostgreSQL restart
+behavior, Prisma pool recovery, or product data access. Hosted success remains unverified. Git
+staging, commit, push, the resulting pull-request run, merge, GHCR mutation, package visibility,
+identity setup, Azure provisioning, traffic, rollback, teardown, trace assembly, and learning
+remain separately authorized.

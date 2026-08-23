@@ -1395,68 +1395,58 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       expect(adapterDocs).not.toContain(staleClaim);
     }
     expect(reviewGate).toContain("SD-008 Docker archive adapter smoke");
-    expect(reviewGate).toContain("ACTIONLINT_VERSION: 1.7.12");
-    expect(reviewGate).toContain(
-      "go install github.com/rhysd/actionlint/cmd/actionlint@v${ACTIONLINT_VERSION}"
-    );
-    expect(reviewGate).toContain(
-      'installed_version_output="$("$install_dir/actionlint" -version)"'
-    );
-    expect(reviewGate).toContain('installed_version="${installed_version_output%%$\'\\n\'*}"');
-    expect(reviewGate).toContain('[[ "$installed_version" == "$ACTIONLINT_VERSION" ]]');
     expect(reviewGate).toContain("npm run sd008:artifact-adapter -- --format text --mode hosted");
     expect(reviewGate.indexOf("SD-008 Docker archive adapter smoke")).toBeLessThan(
       reviewGate.indexOf("- name: Foundation")
     );
   });
 
-  it("probes multiline actionlint version safely under pipefail", async () => {
+  it("installs the checksummed official actionlint release before hosted validation", async () => {
     const reviewGate = await text(".github/workflows/hosted-review-gate.yml");
-    const bashExecutable =
-      process.platform === "win32"
-        ? join(process.env.ProgramFiles ?? "C:\\Program Files", "Git", "bin", "bash.exe")
-        : "bash";
-    const multilineProducer = `
-emit_version() {
-  printf '1.7.12\\n'
-  local index
-  for ((index = 0; index < 10000; index++)); do
-    printf 'actionlint build detail\\n'
-  done
-}
-`;
+    const installStart = reviewGate.indexOf("- name: Install exact actionlint");
+    const adapterStart = reviewGate.indexOf("- name: SD-008 Docker archive adapter smoke");
+    const foundationStart = reviewGate.indexOf("- name: Foundation");
 
-    await expect(
-      execFileAsync(bashExecutable, [
-        "-c",
-        `set -euo pipefail
-${multilineProducer}
-installed_version="$(emit_version | head -n 1)"
-printf '%s\\n' "$installed_version"
-`
-      ])
-    ).rejects.toMatchObject({ code: expect.anything() });
+    expect(installStart).toBeGreaterThan(0);
+    expect(adapterStart).toBeGreaterThan(installStart);
+    expect(foundationStart).toBeGreaterThan(adapterStart);
 
-    const { stdout } = await execFileAsync(bashExecutable, [
-      "-c",
-      `set -euo pipefail
-${multilineProducer}
-installed_version_output="$(emit_version)"
-installed_version="\${installed_version_output%%$'\\n'*}"
-printf '%s\\n' "$installed_version"
-`
-    ]);
+    const installStep = reviewGate.slice(installStart, adapterStart);
+    expect(installStep).toContain("ACTIONLINT_VERSION: 1.7.12");
+    expect(installStep).toContain(
+      "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
+    );
+    expect(installStep).toContain(
+      "ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+    );
+    expect(reviewGate).not.toContain("go install");
 
-    expect(stdout.trim()).toBe("1.7.12");
-    expect(reviewGate).not.toContain(
-      "installed_version=\"$(\"$install_dir/actionlint\" -version | head -n 1)\""
+    const downloadStart = installStep.indexOf("if ! curl");
+    const downloadEnd = installStep.indexOf("; then", downloadStart);
+    expect(downloadStart).toBeGreaterThan(0);
+    expect(downloadEnd).toBeGreaterThan(downloadStart);
+    const downloadCommand = installStep.slice(downloadStart, downloadEnd);
+    expect(downloadCommand).toContain("--retry 3");
+    expect(downloadCommand).toContain("--proto '=https'");
+    expect(downloadCommand).toContain("--proto-redir '=https'");
+    expect(downloadCommand).toContain("--tlsv1.2");
+    expect(downloadCommand).toContain("--fail");
+    expect(downloadCommand).toContain("--location");
+    expect(downloadCommand).toContain("--silent");
+    expect(downloadCommand).toContain("--show-error");
+
+    const checksumVerification = installStep.indexOf("sha256sum --check --status");
+    const extraction = installStep.indexOf('tar -xzf "$archive_path"');
+    expect(checksumVerification).toBeGreaterThan(0);
+    expect(extraction).toBeGreaterThan(checksumVerification);
+    expect(installStep).toContain("::error::actionlint archive checksum mismatch");
+    expect(installStep).toContain(
+      'installed_version_output="$("$install_dir/actionlint" -version)"'
     );
-    expect(reviewGate).toContain(
-      "installed_version_output=\"$(\"$install_dir/actionlint\" -version)\""
-    );
-    expect(reviewGate).toContain(
-      'installed_version="${installed_version_output%%$\'\\n\'*}"'
-    );
+    expect(installStep).toContain('installed_version="${installed_version_output%%$\'\\n\'*}"');
+    expect(installStep).toContain('[[ "$installed_version" != "$ACTIONLINT_VERSION" ]]');
+    expect(installStep).toContain("::error::actionlint version mismatch");
+    expect(installStep.indexOf('"$install_dir/actionlint" -version')).toBeGreaterThan(extraction);
   });
 });
 
