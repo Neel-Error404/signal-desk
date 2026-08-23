@@ -96,7 +96,8 @@ jobs:
           install_dir="$RUNNER_TEMP/actionlint-bin"
           mkdir -p "$install_dir"
           GOBIN="$install_dir" go install github.com/rhysd/actionlint/cmd/actionlint@v${ACTIONLINT_VERSION}
-          installed_version="$("$install_dir/actionlint" -version | head -n 1)"
+          installed_version_output="$("$install_dir/actionlint" -version)"
+          installed_version="${installed_version_output%%$'\n'*}"
           [[ "$installed_version" == "$ACTIONLINT_VERSION" ]]
           printf '%s\n' "$install_dir" >> "$GITHUB_PATH"
 

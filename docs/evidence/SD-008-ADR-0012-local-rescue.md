@@ -292,6 +292,26 @@ Foundation and three Component tests. Final ordered local reruns passed Foundati
 prerequisite and boundary checks, followed by Component 68/68 across 13 files. No hosted or provider
 operation and no Git mutation was performed.
 
+### Hosted review-gate actionlint probe correction
+
+Required run `32618788939` for PR 14 at head
+`3ff22131f854699b9bee03942722fafb40aa06b0` failed only at `Install exact actionlint`, before the
+adapter or product tests. The failure was the version probe rather than installation: under
+`set -euo pipefail`, `actionlint -version | head -n 1` can terminate the multiline producer with a
+broken pipe after `head` exits successfully.
+
+The local workflow correction captures the complete actionlint output without a pipeline, then
+selects its first line with Bash parameter expansion before preserving the existing exact
+`1.7.12` equality check. A Foundation regression executes a multiline producer and proves both
+the legacy nonzero result and corrected `1.7.12` result under `set -euo pipefail`.
+
+Focused RED failed 1 test with 60 skipped while the workflow retained the pipeline. Focused GREEN
+passed 1 test with 60 skipped. The final ordered local levels passed Foundation 61/61 with all
+prerequisite and boundary checks, followed by Component 68/68 across 13 files. Cached actionlint
+1.7.12 accepted both workflows, and Git Bash syntax checking accepted all 25 explicit Bash
+workflow steps. No Git or provider mutation occurred, and the failed hosted run was not rerun;
+hosted success therefore remains unverified.
+
 ## Remaining limits and next gate
 
 The primary coordinator must independently review the local diff and run Integration and later test

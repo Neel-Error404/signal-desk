@@ -1400,12 +1400,62 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       "go install github.com/rhysd/actionlint/cmd/actionlint@v${ACTIONLINT_VERSION}"
     );
     expect(reviewGate).toContain(
-      'installed_version="$("$install_dir/actionlint" -version | head -n 1)"'
+      'installed_version_output="$("$install_dir/actionlint" -version)"'
     );
+    expect(reviewGate).toContain('installed_version="${installed_version_output%%$\'\\n\'*}"');
     expect(reviewGate).toContain('[[ "$installed_version" == "$ACTIONLINT_VERSION" ]]');
     expect(reviewGate).toContain("npm run sd008:artifact-adapter -- --format text --mode hosted");
     expect(reviewGate.indexOf("SD-008 Docker archive adapter smoke")).toBeLessThan(
       reviewGate.indexOf("- name: Foundation")
+    );
+  });
+
+  it("probes multiline actionlint version safely under pipefail", async () => {
+    const reviewGate = await text(".github/workflows/hosted-review-gate.yml");
+    const bashExecutable =
+      process.platform === "win32"
+        ? join(process.env.ProgramFiles ?? "C:\\Program Files", "Git", "bin", "bash.exe")
+        : "bash";
+    const multilineProducer = `
+emit_version() {
+  printf '1.7.12\\n'
+  local index
+  for ((index = 0; index < 10000; index++)); do
+    printf 'actionlint build detail\\n'
+  done
+}
+`;
+
+    await expect(
+      execFileAsync(bashExecutable, [
+        "-c",
+        `set -euo pipefail
+${multilineProducer}
+installed_version="$(emit_version | head -n 1)"
+printf '%s\\n' "$installed_version"
+`
+      ])
+    ).rejects.toMatchObject({ code: expect.anything() });
+
+    const { stdout } = await execFileAsync(bashExecutable, [
+      "-c",
+      `set -euo pipefail
+${multilineProducer}
+installed_version_output="$(emit_version)"
+installed_version="\${installed_version_output%%$'\\n'*}"
+printf '%s\\n' "$installed_version"
+`
+    ]);
+
+    expect(stdout.trim()).toBe("1.7.12");
+    expect(reviewGate).not.toContain(
+      "installed_version=\"$(\"$install_dir/actionlint\" -version | head -n 1)\""
+    );
+    expect(reviewGate).toContain(
+      "installed_version_output=\"$(\"$install_dir/actionlint\" -version)\""
+    );
+    expect(reviewGate).toContain(
+      'installed_version="${installed_version_output%%$\'\\n\'*}"'
     );
   });
 });
