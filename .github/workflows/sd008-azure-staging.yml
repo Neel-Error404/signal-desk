@@ -185,10 +185,12 @@ jobs:
           revision_suffix="sd008-${short_sha}-${GITHUB_RUN_ID}"
           source_date_epoch="$(git show -s --format=%ct "$AUTHORIZED_COMMIT")"
           publication_tag="${IMAGE_NAME}:sd008-${short_sha}-${GITHUB_RUN_ID}"
-          echo "revision-suffix=$revision_suffix" >> "$GITHUB_OUTPUT"
-          echo "image-reference=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
-          echo "source-date-epoch=$source_date_epoch" >> "$GITHUB_OUTPUT"
-          echo "publication-tag=$publication_tag" >> "$GITHUB_OUTPUT"
+          {
+            echo "revision-suffix=$revision_suffix"
+            echo "image-reference=$IMAGE_NAME"
+            echo "source-date-epoch=$source_date_epoch"
+            echo "publication-tag=$publication_tag"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Configure pinned Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
@@ -274,7 +276,7 @@ jobs:
           host_port="$(docker port "$container_name" 3000/tcp | awk -F: 'END { print $NF }')"
           [[ "$host_port" =~ ^[0-9]+$ ]]
           live=false
-          for attempt in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             if curl --silent --show-error --fail --max-time 2 \
               "http://127.0.0.1:${host_port}/api/v1/health/live" \
               > .tmp/canonical-live.json; then
@@ -624,10 +626,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "resource-group=rg-signaldesk-stg-cin" >> "$GITHUB_OUTPUT"
-          echo "app-name=signaldesk-stg-cin-app" >> "$GITHUB_OUTPUT"
-          echo "bootstrap-job-name=signaldesk-stg-cin-dbinit" >> "$GITHUB_OUTPUT"
-          echo "migration-job-name=signaldesk-stg-cin-migrate" >> "$GITHUB_OUTPUT"
+          {
+            echo "resource-group=rg-signaldesk-stg-cin"
+            echo "app-name=signaldesk-stg-cin-app"
+            echo "bootstrap-job-name=signaldesk-stg-cin-dbinit"
+            echo "migration-job-name=signaldesk-stg-cin-migrate"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Load exact provision authority packet
         shell: bash
@@ -924,7 +928,7 @@ jobs:
             validate_authority "$mutation"
             execution_name="$(az containerapp job start --resource-group "$RESOURCE_GROUP" --name "$job_name" --query name -o tsv)"
             [[ -n "$execution_name" ]]
-            for attempt in $(seq 1 80); do
+            for _ in $(seq 1 80); do
               status="$(az containerapp job execution show --resource-group "$RESOURCE_GROUP" --name "$job_name" --job-execution-name "$execution_name" --query properties.status -o tsv)"
               if [[ "$status" == "Succeeded" ]]; then
                 jq -n --arg job "$job_name" --arg execution "$execution_name" --arg status "$status" \
@@ -988,13 +992,28 @@ jobs:
               authorizedSmoke:true
             }' > .tmp-sd008-provision-summary.json
           for secret_value in "$admin_password" "$migration_password" "$runtime_password" "$ENTRA_CLIENT_SECRET"; do
-            ! grep -F -R -- "$secret_value" .tmp-sd008-*.json .tmp-sd008-*.jsonl
+            provision_secret_scan_status=0
+            >/dev/null grep -F -R -- "$secret_value" .tmp-sd008-*.json .tmp-sd008-*.jsonl || provision_secret_scan_status=$?
+            case "$provision_secret_scan_status" in
+              0)
+                echo "::error::Provisioning evidence contains a generated secret." >&2
+                exit 1
+                ;;
+              1)
+                ;;
+              *)
+                echo "::error::Provisioning evidence secret scan execution failed with status ${provision_secret_scan_status}." >&2
+                exit 1
+                ;;
+            esac
           done
-          echo "app-fqdn=$app_fqdn" >> "$GITHUB_OUTPUT"
-          echo "baseline-revision=$baseline_revision" >> "$GITHUB_OUTPUT"
-          echo "candidate-revision=$candidate_revision" >> "$GITHUB_OUTPUT"
-          echo "log-analytics-customer-id=$log_analytics_customer_id" >> "$GITHUB_OUTPUT"
-          echo "session-started-at=$created_at" >> "$GITHUB_OUTPUT"
+          {
+            echo "app-fqdn=$app_fqdn"
+            echo "baseline-revision=$baseline_revision"
+            echo "candidate-revision=$candidate_revision"
+            echo "log-analytics-customer-id=$log_analytics_customer_id"
+            echo "session-started-at=$created_at"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Export redacted provisioning evidence and owner-encrypted identifiers
         shell: bash
@@ -1309,7 +1328,7 @@ jobs:
             --query '[].{time:eventTimestamp,operation:operationName.value,status:status.value,correlationId:correlationId}' \
             -o json > .tmp-sd008-activity.json
           logs_ready=false
-          for attempt in $(seq 1 12); do
+          for _ in $(seq 1 12); do
             az monitor log-analytics query --workspace "$WORKSPACE_CUSTOMER_ID" \
               --analytics-query "ContainerAppConsoleLogs_CL | where TimeGenerated > ago(60m) | where ContainerAppName_s == '$APP_NAME' | extend LogSha256=hash_sha256(Log_s) | project TimeGenerated, RevisionName_s, Stream_s, LogSha256 | take 200" \
               -o json > .tmp-sd008-console-logs.json
@@ -1642,7 +1661,7 @@ jobs:
           else
             printf '[]\n' > .tmp-sd008-active-vaults-before-delete.json
           fi
-          for attempt in $(seq 1 80); do
+          for _ in $(seq 1 80); do
             if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "false" ]]; then
               break
             fi
@@ -1652,10 +1671,9 @@ jobs:
           validate_authority teardown-closure
           active_resource_count="$(az resource list --query "[?resourceGroup=='$RESOURCE_GROUP'] | length(@)" -o tsv)"
           [[ "$active_resource_count" == "0" ]]
-          endpoint_absent=true
           if [[ -n "$APP_FQDN" ]]; then
             endpoint_status=""
-            for attempt in $(seq 1 40); do
+            for _ in $(seq 1 40); do
               endpoint_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 "https://${APP_FQDN}" || true)"
               if [[ "$endpoint_status" == "000" ]]; then
                 break
@@ -1768,10 +1786,10 @@ jobs:
             --jobs .tmp-sd008-jobs-raw.json \
             --output .tmp-sd008-trace-inputs/github-proof.json
           cp .tmp-sd008-source/.tmp-sd008-source-proof.json .tmp-sd008-trace-inputs/source-proof.json
-          cp .tmp-sd008-downloads/sd008-build-evidence-${GITHUB_RUN_ID}/.tmp-sd008-build-public.json .tmp-sd008-trace-inputs/build-proof.json
-          cp .tmp-sd008-downloads/sd008-provision-evidence-${GITHUB_RUN_ID}/.tmp-sd008-provision-public.json .tmp-sd008-trace-inputs/provision-public.json
-          cp .tmp-sd008-downloads/sd008-traffic-evidence-${GITHUB_RUN_ID}/.tmp-sd008-traffic-public.json .tmp-sd008-trace-inputs/traffic-public.json
-          cp .tmp-sd008-downloads/sd008-teardown-evidence-${GITHUB_RUN_ID}/.tmp-sd008-teardown-public.json .tmp-sd008-trace-inputs/teardown-public.json
+          cp ".tmp-sd008-downloads/sd008-build-evidence-${GITHUB_RUN_ID}/.tmp-sd008-build-public.json" .tmp-sd008-trace-inputs/build-proof.json
+          cp ".tmp-sd008-downloads/sd008-provision-evidence-${GITHUB_RUN_ID}/.tmp-sd008-provision-public.json" .tmp-sd008-trace-inputs/provision-public.json
+          cp ".tmp-sd008-downloads/sd008-traffic-evidence-${GITHUB_RUN_ID}/.tmp-sd008-traffic-public.json" .tmp-sd008-trace-inputs/traffic-public.json
+          cp ".tmp-sd008-downloads/sd008-teardown-evidence-${GITHUB_RUN_ID}/.tmp-sd008-teardown-public.json" .tmp-sd008-trace-inputs/teardown-public.json
           jq -n \
             --arg repository "$GITHUB_REPOSITORY" \
             --arg commit "$AUTHORIZED_COMMIT" \
@@ -1799,7 +1817,7 @@ jobs:
               occurredAt:null,
               evidenceSha256:null
             }' > .tmp-sd008-trace-inputs/authority-closure-template.json
-          (cd .tmp-sd008-trace-inputs && sha256sum *.json | sort) > .tmp-sd008-trace-inputs/SHA256SUMS
+          (cd .tmp-sd008-trace-inputs && sha256sum -- *.json | sort) > .tmp-sd008-trace-inputs/SHA256SUMS
           rm .tmp-sd008-approvals-raw.json .tmp-sd008-jobs-raw.json
 
       - name: Export public trace inputs only
