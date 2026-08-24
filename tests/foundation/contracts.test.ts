@@ -1118,10 +1118,11 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
   });
 
   it("reports non-mutating SD-008 adapter admission and runtime diagnostics", async () => {
+    const missingToolEnvironment = { ...process.env, PATH: "" };
     const { stdout } = await execFileAsync(
       process.execPath,
       ["scripts/check-sd008-artifact-adapter.mjs", "--format", "json"],
-      { cwd: process.cwd() }
+      { cwd: process.cwd(), env: missingToolEnvironment }
     );
     const report = JSON.parse(stdout) as {
       claim: string;
@@ -1131,7 +1132,7 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     const checks = new Map(report.checks.map((check) => [check.id, check]));
 
     expect(report.claim).toBe("local-adapter-evidence-only-not-provider-acceptance");
-    expect(report.overall).toMatch(/^(pass|pass-with-blocked-capabilities)$/);
+    expect(report.overall).toBe("pass-with-blocked-capabilities");
     expect(checks.get("reusable-workflow-permissions")).toMatchObject({
       status: "pass",
       evidenceKind: "local-static-contract"
@@ -1148,24 +1149,12 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       status: "pass",
       evidenceKind: "local-static-contract"
     });
-    expect(["pass", "blocked"]).toContain(checks.get("docker-load-run")?.status);
-    expect(["pass", "blocked"]).toContain(checks.get("actionlint-admission")?.status);
-    expect(["pass", "blocked"]).toContain(checks.get("jq-availability")?.status);
-
-    const missingToolEnvironment = { ...process.env, PATH: "" };
-    const localMissingTools = await execFileAsync(
-      process.execPath,
-      ["scripts/check-sd008-artifact-adapter.mjs", "--format", "json"],
-      { cwd: process.cwd(), env: missingToolEnvironment }
-    );
-    const localMissingToolsReport = JSON.parse(localMissingTools.stdout) as {
-      overall: string;
-      checks: Array<{ id: string; status: string }>;
-    };
-    expect(localMissingToolsReport.overall).toBe("pass-with-blocked-capabilities");
-    expect(localMissingToolsReport.checks).toContainEqual(
-      expect.objectContaining({ id: "actionlint-admission", status: "blocked" })
-    );
+    for (const id of ["docker-load-run", "actionlint-admission", "jq-availability"]) {
+      expect(checks.get(id)).toMatchObject({
+        status: "blocked",
+        evidenceKind: "local-executable-capability"
+      });
+    }
 
     let hostedStdout = "";
     try {
