@@ -532,6 +532,8 @@ jobs:
           [[ "$registry_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
           [[ "$canonical_config_digest" == "$registry_config_digest" ]]
 
+          payload_script="$(pwd)/scripts/hash-sd008-application-payload.mjs"
+          [[ -f "$payload_script" ]]
           docker pull "ghcr.io/neel-error404/signaldesk@$registry_digest"
           docker run --rm --read-only --entrypoint node \
             --mount "type=bind,src=${payload_script},dst=/tmp/hash-sd008-application-payload.mjs,readonly" \
