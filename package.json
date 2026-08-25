@@ -15,6 +15,7 @@
     "prisma:generate": "prisma generate",
     "prisma:validate": "node scripts/validate-prisma-schema.mjs",
     "migration:safety": "node scripts/validate-migration-safety.mjs",
+    "sd008:artifact-adapter": "node scripts/check-sd008-artifact-adapter.mjs",
     "contracts": "vitest run --config vitest.foundation.config.ts",
     "source-layout": "node scripts/check-source-layout.mjs",
     "boundaries": "npm run source-layout && depcruise --config .dependency-cruiser.cjs src tests",

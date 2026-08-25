@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 1,
-  "id": "signaldesk-sd008-azure-authority-v1",
+  "schemaVersion": 2,
+  "id": "signaldesk-sd008-azure-authority-v2",
   "status": "ratified-local-implementation",
   "projectId": "signaldesk",
   "workItem": "SD-008",
@@ -15,6 +15,180 @@
       "exact-container-app",
       "minimal-subscription-read-only"
     ]
+  },
+  "justInTimeAuthority": {
+    "packetMode": "exactly-one-requested-phase",
+    "maximumLeaseMinutes": 480,
+    "providerEnforcedAssignmentExpiry": false,
+    "assignmentExpiryEvidence": "procedural",
+    "assignmentExpiryEvidenceDetail": "owner-record-and-workflow-reread",
+    "automaticRenewal": "forbidden",
+    "approvalBinding": {
+      "source": "owner-controlled-github-environment-variables",
+      "requiredVariables": [
+        "SD008_AUTHORITY_APPROVAL_REFERENCE",
+        "SD008_AUTHORITY_APPROVAL_DIGEST",
+        "SD008_AUTHORITY_APPROVED_AT"
+      ],
+      "validatorComparison": "exact-reference-digest-and-time",
+      "liveGitHubReviewEventVerification": false,
+      "limitation": "The local workflow validates owner-controlled protected-environment values; it does not query or cryptographically verify the GitHub approval event."
+    },
+    "authenticatedIdentityBinding": {
+      "packetFields": [
+        "azure-client-id",
+        "service-principal-object-id",
+        "azure-tenant-id",
+        "principal-type"
+      ],
+      "protectedEnvironmentSources": [
+        "AZURE_CLIENT_ID",
+        "AZURE_TENANT_ID"
+      ],
+      "liveContextReads": [
+        "az account show user.type",
+        "az account get-access-token ARM token decoded locally for appid oid tid"
+      ],
+      "requiredPrincipalType": "ServicePrincipal",
+      "secretMaterial": "forbidden"
+    },
+    "continuousAuthorityVerification": {
+      "timing": "immediately-before-every-declared-mutation",
+      "directAndInheritedAssignments": "exact-phase-packet-only",
+      "assignmentFields": [
+        "id",
+        "roleDefinitionId",
+        "scope",
+        "principalId",
+        "principalType",
+        "condition",
+        "conditionVersion"
+      ],
+      "customRoleFields": [
+        "Actions",
+        "NotActions",
+        "DataActions",
+        "NotDataActions",
+        "AssignableScopes"
+      ],
+      "tokenGroupSignalPrecondition": "The current ARM access token must decode locally with exact appid, oid, and tid claims and expose neither a non-empty groups claim nor a group-overage signal",
+      "tokenGroupSignalLimitation": "Absence of group and overage signals in the current ARM token does not prove that the service principal has no Microsoft Entra group memberships",
+      "postDeleteTeardownClosure": "verifier-only live assignment set plus exact packet-bound teardown assignment ARM GET returning 404",
+      "enumerationFailure": "fail-closed"
+    },
+    "identifierRules": {
+      "uuidCanonicalization": "lowercase-before-deterministic-derivation",
+      "resourceGroup": "azure-resource-group-name",
+      "containerApp": "lowercase-2-to-32-start-letter-end-alphanumeric-no-consecutive-hyphens"
+    },
+    "minimumRemainingMinutesByMutation": {
+      "provision-deployment": 90,
+      "provision-bootstrap-job-start": 90,
+      "provision-migration-job-start": 90,
+      "provision-app-update": 90,
+      "traffic-promotion": 45,
+      "traffic-rollback": 15,
+      "traffic-restore": 15,
+      "teardown-delete": 60,
+      "teardown-closure": 60
+    },
+    "phases": {
+      "provision": {
+        "approvalEnvironment": "staging-provision",
+        "roleIds": [
+          "sd008-provision-v1"
+        ],
+        "preconditions": [
+          "exact-protected-source",
+          "exact-private-publication-evidence",
+          "separately-approved-publication-verification",
+          "owner-approved-provision-packet"
+        ],
+        "forbiddenConcurrentRoleIds": [
+          "sd008-traffic-v1",
+          "sd008-evidence-reader-v1",
+          "sd008-teardown-v1",
+          "sd008-post-delete-verifier-v1"
+        ]
+      },
+      "traffic": {
+        "approvalEnvironment": "staging-traffic",
+        "roleIds": [
+          "sd008-traffic-v1",
+          "sd008-evidence-reader-v1"
+        ],
+        "preconditions": [
+          "exact-container-app-exists",
+          "provision-assignment-absent",
+          "owner-approved-traffic-packet"
+        ],
+        "forbiddenConcurrentRoleIds": [
+          "sd008-provision-v1",
+          "sd008-teardown-v1",
+          "sd008-post-delete-verifier-v1"
+        ]
+      },
+      "teardown": {
+        "approvalEnvironment": "staging-teardown",
+        "roleIds": [
+          "sd008-teardown-v1",
+          "sd008-post-delete-verifier-v1"
+        ],
+        "preconditions": [
+          "provision-assignment-absent",
+          "traffic-and-evidence-reader-assignments-absent",
+          "fresh-owner-approved-teardown-packet"
+        ],
+        "forbiddenConcurrentRoleIds": [
+          "sd008-provision-v1",
+          "sd008-traffic-v1",
+          "sd008-evidence-reader-v1"
+        ],
+        "priorTrafficAuthorityClosureBinding": {
+          "required": true,
+          "requiredVariables": [
+            "SD008_TRAFFIC_AUTHORITY_CLOSURE_SHA256",
+            "SD008_TRAFFIC_AUTHORITY_REMOVED_AT"
+          ],
+          "freshnessRule": "teardown-issued-at-strictly-after-traffic-authority-removed-at"
+        },
+        "removalOrder": [
+          "sd008-teardown-v1",
+          "sd008-post-delete-verifier-v1"
+        ]
+      }
+    },
+    "ingressCredential": {
+      "kind": "per-session-entra-client-secret",
+      "githubEnvironment": "staging-provision",
+      "secretName": "ENTRA_CLIENT_SECRET",
+      "justInTime": true,
+      "longLived": false,
+      "maximumLifetimeMinutes": 480,
+      "repositoryStorage": "forbidden",
+      "workflowArtifactStorage": "forbidden",
+      "ownerCleanupRequired": [
+        "remove-staging-provision-environment-secret",
+        "revoke-entra-credential",
+        "verify-both-absent-before-authority-closure"
+      ]
+    },
+    "partialBootstrapCompensation": {
+      "bounded": true,
+      "automaticAuthorityRenewal": false,
+      "maximumCleanupMinutes": 15,
+      "requiredOrder": [
+        "stop-new-mutations",
+        "remove-any-created-phase-role-assignments",
+        "remove-staging-provision-environment-secret-if-created",
+        "revoke-jit-ingress-credential-if-created",
+        "delete-owner-created-empty-resource-group-if-safe",
+        "verify-assignment-credential-and-resource-absence",
+        "record-blocking-incident"
+      ],
+      "insufficientCurrentAuthority": "obtain-separately-approved-fresh-teardown-authority-before-cleanup",
+      "silentOrUnboundedCleanup": "forbidden"
+    }
   },
   "roles": [
     {
@@ -173,18 +347,22 @@
   ],
   "sessionOrder": [
     "owner-creates-tagged-resource-group",
-    "owner-assigns-provision-teardown-and-post-delete-roles",
+    "owner-renders-and-assigns-provision-phase-only",
     "owner-approves-staging-provision",
     "workflow-provisions-zero-traffic-candidate",
-    "owner-assigns-traffic-role-to-created-exact-app",
     "owner-removes-provision-assignment",
+    "owner-renders-and-assigns-traffic-plus-evidence-reader-after-exact-app-exists",
     "workflow-verifies-provision-assignment-absent",
     "owner-approves-staging-traffic",
     "workflow-rehearses-traffic-and-rollback",
     "owner-removes-traffic-and-evidence-reader-assignments",
+    "owner-renders-and-assigns-fresh-teardown-plus-post-delete-verifier",
     "owner-approves-staging-teardown",
     "workflow-deletes-resource-group",
     "post-delete-read-only-assignment-proves-absence",
+    "owner-removes-teardown-assignment",
+    "owner-revokes-jit-ingress-credential",
+    "owner-removes-staging-provision-environment-secret",
     "owner-removes-post-delete-read-only-assignment"
   ],
   "forbidden": [

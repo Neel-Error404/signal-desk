@@ -19,13 +19,38 @@
   "artifact": {
     "registry": "ghcr.io",
     "repository": "ghcr.io/neel-error404/signaldesk",
-    "visibility": "public",
-    "deploymentReference": "digest-only",
+    "visibility": "private-initial-public-only-after-separate-owner-approval",
+    "deploymentReference": "registry-digest-only",
     "nodeVersion": "22.18.0",
     "baseImage": "node:22.18.0-bookworm-slim@sha256:752ea8a2f758c34002a0461bd9f1cee4f9a3c36d48494586f60ffce1fc708e0e",
     "nonRootUser": "node",
     "normalizedContext": "git-archive-exact-commit",
-    "requiredCleanBuilds": 2,
+    "canonicalDeployableBuilds": 1,
+    "independentAdvisoryBuilds": 1,
+    "canonicalLifecycle": [
+      "build-once",
+      "real-cmd-http-liveness",
+      "forbidden-file-and-secret-scan",
+      "vulnerability-rejection",
+      "sbom",
+      "private-publication-without-rebuild",
+      "registry-digest-and-config-verification",
+      "provenance-and-sbom-attestation",
+      "digest-only-deployment"
+    ],
+    "applicationTreeEquality": "blocking",
+    "ociBitIdentity": "advisory",
+    "diagnosticRetention": "always-after-generation",
+    "diagnosticDetail": "sanitized-digests-comparison-booleans-and-claim-suppression",
+    "advisoryDiagnostics": [
+      "application-tree",
+      "oci-config",
+      "oci-manifest-and-layers",
+      "final-digest"
+    ],
+    "reproducibilityClaimOnOciMismatch": "suppressed",
+    "initialPublication": "private",
+    "publicVisibility": "separate-owner-approved-staging-publication-gate",
     "requiredDigestComparison": [
       "application-tree-sha256",
       "oci-manifest-sha256"
@@ -134,6 +159,31 @@
     "openPullRequest": "not-authorized",
     "createGitHubEnvironments": "not-authorized",
     "mutateAzure": "not-authorized",
+    "cloudAuthorityBeginsAfter": "exact-artifact-publication-evidence-then-separately-owner-approved-staging-publication-visibility-change-and-verification-then-owner-approved-staging-provision",
+    "justInTime": {
+      "packetMode": "one-phase-at-a-time",
+      "maximumLeaseMinutes": 480,
+      "providerEnforcedExpiry": false,
+      "assignmentExpiryEvidence": "procedural-owner-record-and-workflow-reread",
+      "approvalBinding": "exact-owner-controlled-protected-environment-reference-digest-and-time",
+      "approvalBindingLimitation": "local-validator-does-not-query-or-cryptographically-verify-github-review-event",
+      "authenticatedIdentityBinding": "protected-environment-client-and-tenant-to-current-arm-token-appid-oid-and-tid",
+      "continuousAuthority": "immediate-exact-scope-direct-and-inherited-custom-role-reread-plus-current-arm-token-group-and-overage-signal-rejection-before-every-mutation",
+      "phaseOrder": [
+        "provision-only",
+        "traffic-plus-evidence-reader-after-exact-app-and-provision-revocation",
+        "fresh-teardown-plus-post-delete-verifier-after-bound-traffic-authority-removal"
+      ],
+      "minimumRemainingMinutes": {
+        "provision": 90,
+        "traffic": 45,
+        "rollback": 15,
+        "teardown": 60
+      },
+      "ingressCredential": "per-session-jit-and-owner-cleaned",
+      "closure": "schema-v1-teardown-role-absent-credential-revoked-environment-secret-removed-and-verifier-last",
+      "partialBootstrapFailureCleanup": "bounded-fifteen-minute-compensation-or-fresh-approved-teardown-authority"
+    },
     "merge": "human-only",
     "deploy": "human-gated",
     "release": "human-only",

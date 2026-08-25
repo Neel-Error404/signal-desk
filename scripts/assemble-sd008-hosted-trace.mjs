@@ -6,6 +6,7 @@ import { validateLearningTrace } from "./validate-sd008-learning-trace.mjs";
 const COMMIT = /^[0-9a-f]{40}$/;
 const RUN_ID = /^[1-9][0-9]*$/;
 const SHA256 = /^[0-9a-f]{64}$/;
+const OCI_DIGEST = /^sha256:[0-9a-f]{64}$/;
 const REPOSITORY = "Neel-Error404/signal-desk";
 const ENVIRONMENTS = ["staging-publication", "staging-provision", "staging-traffic", "staging-teardown"];
 
@@ -78,6 +79,106 @@ const event = (sequence, runId, type, occurredAt, evidenceSha256) => ({
   evidenceSha256
 });
 
+const assertDigestSummary = (summary, label) => {
+  assert(summary !== null && typeof summary === "object", `${label} digest summary is missing.`);
+  assert(OCI_DIGEST.test(summary.configDigest), `${label} config digest is invalid.`);
+  assert(OCI_DIGEST.test(summary.manifestDigest), `${label} manifest digest is invalid.`);
+  assert(OCI_DIGEST.test(summary.finalDigest), `${label} final digest is invalid.`);
+  assert(
+    Array.isArray(summary.layerDigests) &&
+      summary.layerDigests.length > 0 &&
+      summary.layerDigests.every((digest) => OCI_DIGEST.test(digest)),
+    `${label} layer digests are invalid.`
+  );
+};
+
+const assertBuildProof = (build) => {
+  assert(
+    !Object.prototype.hasOwnProperty.call(build, "reproducibleBuilds"),
+    "Build proof contains deprecated reproducibleBuilds."
+  );
+  assert(
+    build.canonicalDeployableBuilds === 1 &&
+      build.independentAdvisoryBuilds === 1 &&
+      build.secretScan === "passed" &&
+      build.reproducibility !== null &&
+      typeof build.reproducibility === "object",
+    "Build proof is incomplete."
+  );
+  assert(OCI_DIGEST.test(build.imageDigest), "Build proof image digest is invalid.");
+  assert(SHA256.test(build.sbomSha256), "Build proof SBOM digest is invalid.");
+  assert(
+    SHA256.test(build.vulnerabilityReportSha256),
+    "Build proof vulnerability report digest is invalid."
+  );
+  assert(build.publicationVisibility === "private", "Build proof publication visibility is invalid.");
+
+  const reproducibility = build.reproducibility;
+  const applicationTree = reproducibility.applicationTree;
+  assert(
+    reproducibility.schemaVersion === 1 &&
+      applicationTree !== null &&
+      typeof applicationTree === "object",
+    "Build reproducibility proof is incomplete."
+  );
+  assert(
+    SHA256.test(build.applicationTreeSha256) &&
+      SHA256.test(applicationTree.canonicalSha256) &&
+      SHA256.test(applicationTree.advisorySha256) &&
+      build.applicationTreeSha256 === applicationTree.canonicalSha256 &&
+      applicationTree.canonicalSha256 === applicationTree.advisorySha256 &&
+      applicationTree.equal === true &&
+      applicationTree.status === "blocking-pass" &&
+      reproducibility.blockingMismatch === false,
+    "Build proof does not establish blocking application-tree equality."
+  );
+
+  assertDigestSummary(reproducibility.canonical, "Canonical OCI");
+  assertDigestSummary(reproducibility.advisory, "Advisory OCI");
+  const comparisons = reproducibility.comparisons;
+  const comparisonNames = [
+    "configBitIdentical",
+    "manifestBitIdentical",
+    "layersIdentical",
+    "finalDigestIdentical"
+  ];
+  assert(
+    comparisons !== null &&
+      typeof comparisons === "object" &&
+      comparisonNames.every((name) => typeof comparisons[name] === "boolean"),
+    "Build OCI comparison proof is incomplete."
+  );
+  const computedComparisons = {
+    configBitIdentical:
+      reproducibility.canonical.configDigest === reproducibility.advisory.configDigest,
+    manifestBitIdentical:
+      reproducibility.canonical.manifestDigest === reproducibility.advisory.manifestDigest,
+    layersIdentical:
+      JSON.stringify(reproducibility.canonical.layerDigests) ===
+      JSON.stringify(reproducibility.advisory.layerDigests),
+    finalDigestIdentical:
+      reproducibility.canonical.finalDigest === reproducibility.advisory.finalDigest
+  };
+  assert(
+    comparisonNames.every((name) => comparisons[name] === computedComparisons[name]),
+    "Build OCI comparison booleans do not match the digest evidence."
+  );
+  const ociMismatch = comparisonNames.some((name) => computedComparisons[name] === false);
+  if (ociMismatch) {
+    assert(
+      reproducibility.status === "advisory-failure" &&
+        reproducibility.reproducibilityClaim === "suppressed",
+      "OCI mismatch must be advisory-failure with a suppressed reproducibility claim."
+    );
+  } else {
+    assert(
+      reproducibility.status === "advisory-match" &&
+        reproducibility.reproducibilityClaim === "advisory-only",
+      "OCI match cannot claim anything stronger than advisory-only."
+    );
+  }
+};
+
 export const assembleHostedTrace = ({ source, build, provision, traffic, teardown, github, closure }) => {
   const commit = source.value.commit;
   const runId = source.value.runId;
@@ -92,7 +193,7 @@ export const assembleHostedTrace = ({ source, build, provision, traffic, teardow
   assert(build.value.schemaVersion === 1 && build.value.workItem === "SD-008", "Build proof contract is invalid.");
   assert(build.value.event === "artifact-published", "Build proof event is invalid.");
   assert(build.value.commit === commit && build.value.runId === runId, "Build proof identity does not match.");
-  assert(build.value.reproducibleBuilds === 2 && build.value.secretScan === "passed", "Build proof is incomplete.");
+  assertBuildProof(build.value);
   exactTime(build.value.occurredAt, "Build proof time");
 
   assertPhasePacket(provision.value, "provision", commit, runId);
@@ -151,9 +252,51 @@ export const assembleHostedTrace = ({ source, build, provision, traffic, teardow
   assert(closure.value.event === "post-delete-verifier-removed", "Authority closure event is invalid.");
   assert(closure.value.roleName === "SignalDesk SD008 Post Delete Verifier", "Authority closure role is invalid.");
   assert(closure.value.assignmentState === "absent" && closure.value.assignmentCount === 0, "Post-delete verifier authority remains assigned.");
+  assert(
+    closure.value.teardownRoleAssignmentState === "absent" &&
+      closure.value.teardownRoleAssignmentCount === 0,
+    "Teardown authority remains assigned."
+  );
+  assert(closure.value.ingressCredentialState === "revoked", "Ingress credential remains active.");
+  assert(
+    closure.value.stagingProvisionEnvironmentSecretState === "removed",
+    "staging-provision Environment secret remains present."
+  );
+  const requiredRemovalOrder = [
+    "SignalDesk SD008 Teardown",
+    "ingress-credential",
+    "staging-provision:ENTRA_CLIENT_SECRET",
+    "SignalDesk SD008 Post Delete Verifier"
+  ];
+  assert(
+    JSON.stringify(closure.value.requiredRemovalOrder) === JSON.stringify(requiredRemovalOrder),
+    "Authority closure removal order is invalid."
+  );
   assert(closure.value.performedBy === "Neel", "Post-delete verifier removal requires the accountable owner.");
   assert(SHA256.test(closure.value.evidenceSha256), "Authority closure evidence digest is invalid.");
-  exactTime(closure.value.occurredAt, "Authority closure time");
+  const teardownRoleRemovedAt = Date.parse(
+    exactTime(closure.value.teardownRoleRemovedAt, "Teardown authority removal time")
+  );
+  const ingressCredentialRevokedAt = Date.parse(
+    exactTime(closure.value.ingressCredentialRevokedAt, "Ingress credential revocation time")
+  );
+  const environmentSecretRemovedAt = Date.parse(
+    exactTime(
+      closure.value.stagingProvisionEnvironmentSecretRemovedAt,
+      "staging-provision Environment secret removal time"
+    )
+  );
+  const verifierRemovedAt = Date.parse(exactTime(closure.value.occurredAt, "Authority closure time"));
+  assert(
+    teardownRoleRemovedAt < ingressCredentialRevokedAt &&
+      ingressCredentialRevokedAt < environmentSecretRemovedAt &&
+      environmentSecretRemovedAt < verifierRemovedAt,
+    "Post-delete verifier was not removed last."
+  );
+  assert(
+    teardownRoleRemovedAt >= Date.parse(teardownSummary.absenceVerifiedAt),
+    "Teardown authority was removed before absence verification completed."
+  );
   if (cost.estimatedUsd > cost.ownerReviewThresholdUsd) {
     assert(SHA256.test(closure.value.costExceptionApprovalSha256), "Cost above USD 2 requires an owner exception digest.");
   }
@@ -193,6 +336,14 @@ export const assembleHostedTrace = ({ source, build, provision, traffic, teardow
       unexpectedChargesDetected: false,
       rawProviderArtifactsUploaded: false,
       exactIdentifiers: "owner-encrypted-only",
+      authorityClosure: {
+        teardownRoleAssignmentState: closure.value.teardownRoleAssignmentState,
+        ingressCredentialState: closure.value.ingressCredentialState,
+        stagingProvisionEnvironmentSecretState:
+          closure.value.stagingProvisionEnvironmentSecretState,
+        requiredRemovalOrder: closure.value.requiredRemovalOrder,
+        verifierRemovedLast: true
+      },
       cost,
       ...(closure.value.costExceptionApprovalSha256 === undefined
         ? {}

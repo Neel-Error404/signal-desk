@@ -1,5 +1,10 @@
 # SD-008 Azure-Hosted Staging Baseline Implementation Plan
 
+> **Artifact amendment:** ADR 0012 and
+> `docs/plans/2026-08-23-sd008-rescue-artifact-gate.md` replace this plan's two-build blocking OCI
+> identity and publication-rebuild details. All source, environment, identity, staging, rollback,
+> teardown, trace, and learning gates in this plan remain required.
+
 **Status:** IN PROGRESS — local implementation authorized; Git, GitHub, and Azure mutations remain
 separately gated
 
@@ -197,35 +202,44 @@ Key Vault, digest deployment, Entra protection, health, or rollback evidence.
 
 ## Azure bootstrap sequence
 
-The owner performs or explicitly approves a one-time bootstrap separate from routine deployment:
+The owner performs or explicitly approves a one-time reusable-shell bootstrap separate from each
+disposable staging session. This bootstrap creates identities, definitions, and protected
+Environment shells, but it does not leave phase role assignments, an ingress client credential, or
+the `ENTRA_CLIENT_SECRET` value standing between sessions:
 
 1. reverify subscription state, Central India providers, quotas, PostgreSQL SKU, live price,
    sponsorship balance, and the USD 5 budget alert;
 2. reverify global resource-name availability;
-3. create `rg-signaldesk-stg-cin` with project, environment, owner, cost-center, and expiry tags;
-4. create three separate Entra service principals for provision, traffic, and teardown so their
+3. reserve and verify the exact `rg-signaldesk-stg-cin` name; create the tagged resource group only
+   at the start of an owner-authorized session;
+4. create three reusable Entra service principals for provision, traffic, and teardown so their
    Azure permissions cannot aggregate;
 5. add one federated credential to each principal, restricted to repository
    `Neel-Error404/signal-desk` and its exact matching GitHub Environment;
-6. create consequence-specific custom roles without production or tenant-wide authority and scope
-   each principal to the exact staging resource group operation. The provision role's only
-   role-assignment write is condition-bound to Key Vault Secrets User, secret child scopes, and a
-   principal other than the provision principal;
+6. create reusable consequence-specific custom-role definitions without production or tenant-wide
+   authority. Do not create the assignments during bootstrap. The provision role's only
+   role-assignment write is condition-bound to Key Vault Secrets User and a service principal other
+   than the provision principal; the exact resource-group outer assignment scope is the provider-
+   supported scope boundary because a secret-child-scope condition attribute is unavailable;
 7. create the four GitHub staging Environments, add Neel as required reviewer, restrict deployment
    to protected `main`, store non-secret Azure identifiers as Environment variables, duplicate the
    traffic principal client ID into `staging-provision` for the ingress allow-list, and store only
-   the rotated Entra ingress secret as a protected `staging-provision` Environment secret;
+   no ingress secret during bootstrap;
 8. create the Entra application registration used by Container Apps authentication and the
    separate smoke-test application identity;
 9. capture identifiers in an owner-controlled private record; commit only symbolic variable names
-   and redacted hashes.
+   and redacted hashes. Treat the reusable applications, federated credentials, custom-role
+   definitions, and GitHub Environment shells as non-authoritative until a session-specific packet
+   is approved and its exact phase assignment is created.
 
 If GitHub cannot enforce the reviewer/branch rule or the OIDC subject is broader than the staging
 Environment, stop before resource creation.
 
 ## First deployment sequence
 
-1. Owner dispatches the workflow with exact protected `main` SHA.
+1. Owner creates the tagged empty resource group, creates a per-session Entra ingress credential,
+   stores it only as the protected `staging-provision:ENTRA_CLIENT_SECRET`, and dispatches the
+   workflow with the exact protected `main` SHA.
 2. The workflow reruns Foundation, Component, Integration, Workflow, Stress, Build, high-severity
    dependency audit, and Elder validation in order.
 3. Build the non-root standalone image twice from normalized clean contexts, compare the
@@ -234,8 +248,15 @@ Environment, stop before resource creation.
    digest.
 4. The owner performs the separately approved GHCR public-visibility mutation, then approves
    `staging-publication`; the job proves anonymous digest pull and exact application-tree identity.
-5. `staging-provision` pauses before any Azure resource mutation. Azure OIDC reconstructs the exact
-   provision principal without a client secret.
+5. The owner renders a provision-only authority packet, records its digest plus exact approval
+   reference/digest/time in protected `staging-provision` variables, creates only the exact
+   provision assignment, and approves `staging-provision`. Azure OIDC reconstructs the exact
+   provision principal without a client secret; the workflow binds the protected Azure client ID
+   to the current ARM token's application, object, and tenant claims and revalidates the packet
+   immediately before every provision mutation. Each revalidation compares direct/inherited
+   assignments and live custom-role actions, data actions, and assignable scopes at the exact
+   relevant ARM scope. A non-empty token group claim or group-overage signal blocks the mutation;
+   absence of those signals does not prove absence of Microsoft Entra group membership.
 6. Bicep validation and `what-if` match the approved resource plan, and the owner confirms any new
    resource or cost-bearing mutation.
 7. Verify the digest and attestations from GHCR/GitHub before any migration.
@@ -244,13 +265,19 @@ Environment, stop before resource creation.
 9. Create candidate revision `sd008-<shortsha>-<run>` at zero traffic with exact release metadata.
 10. Verify platform probes, liveness, readiness, anonymous denial, automated authorized smoke,
     complete owner flow, revision logs, and absence of secret-shaped output.
-11. `staging-traffic` pauses for owner approval of the staging traffic change.
+11. The owner removes the provision assignment and proves it absent, then renders a traffic-only
+    packet, records its digest plus exact approval reference/digest/time in protected
+    `staging-traffic` variables, creates only the traffic and evidence-reader assignments, and
+    approves the staging traffic change.
 12. Move 100% staging traffic to the healthy candidate and repeat health/access/owner-flow checks.
 13. Execute the controlled same-digest second-revision traffic change and rollback rehearsal.
 14. Export the complete redacted public packet and owner-controlled private packet, bind both by
     digest, and verify they are readable outside the disposable resource group.
-15. `staging-teardown` pauses for owner approval of destruction after accepting rollback and
-    evidence completeness.
+15. The owner removes the traffic and evidence-reader assignments, proves them absent, and records
+    the removal time and closure-evidence digest. Only afterward, the owner renders a fresh teardown
+    packet bound to that time and digest, creates only the teardown and post-delete-verifier
+    assignments, records the packet and exact approval values in protected `staging-teardown`
+    variables, and approves destruction after accepting rollback and evidence completeness.
 16. Delete `rg-signaldesk-stg-cin`; do not retain the app, PostgreSQL server, active Key Vault,
     accessible secrets, network, private DNS link, Log Analytics workspace, or resource-scoped
     identities.
@@ -258,7 +285,11 @@ Environment, stop before resource creation.
     and endpoint absence. Record the purge-protected Key Vault tombstone and any provider retention
     record with expiry. Any active orphan, unexpected charge, accessible secret, or reachable
     endpoint blocks SD-008 closure.
-18. Write the exact evidence and handoff, close the Elder session, and stop.
+18. Remove the teardown assignment, revoke the per-session ingress credential, remove the
+    `staging-provision:ENTRA_CLIENT_SECRET`, and remove the post-delete verifier last. Verify all
+    four absences and preserve their ordered timestamps in the existing schema-v1 authority-closure
+    record.
+19. Write the exact evidence and handoff, close the Elder session, and stop.
 
 ## Controlled failure proofs
 

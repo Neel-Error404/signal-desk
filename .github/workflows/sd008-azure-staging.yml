@@ -147,7 +147,7 @@ jobs:
     uses: ./.github/workflows/hosted-review-gate.yml
 
   build-and-attest:
-    name: Build, reproduce, publish, and attest exact image
+    name: Build, diagnose, privately publish, and attest exact image
     needs: ordered-review-gate
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -159,6 +159,7 @@ jobs:
     outputs:
       image-digest: ${{ steps.publish.outputs.digest }}
       image-reference: ${{ steps.identity.outputs.image-reference }}
+      publication-evidence-sha256: ${{ steps.build-evidence.outputs.publication-evidence-sha256 }}
       revision-suffix: ${{ steps.identity.outputs.revision-suffix }}
       source-date-epoch: ${{ steps.identity.outputs.source-date-epoch }}
     steps:
@@ -183,9 +184,13 @@ jobs:
           short_sha="${AUTHORIZED_COMMIT:0:12}"
           revision_suffix="sd008-${short_sha}-${GITHUB_RUN_ID}"
           source_date_epoch="$(git show -s --format=%ct "$AUTHORIZED_COMMIT")"
-          echo "revision-suffix=$revision_suffix" >> "$GITHUB_OUTPUT"
-          echo "image-reference=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
-          echo "source-date-epoch=$source_date_epoch" >> "$GITHUB_OUTPUT"
+          publication_tag="${IMAGE_NAME}:sd008-${short_sha}-${GITHUB_RUN_ID}"
+          {
+            echo "revision-suffix=$revision_suffix"
+            echo "image-reference=$IMAGE_NAME"
+            echo "source-date-epoch=$source_date_epoch"
+            echo "publication-tag=$publication_tag"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Configure pinned Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
@@ -200,55 +205,222 @@ jobs:
           mkdir -p .tmp/container-source
           tar -xf .tmp/container-context/source.tar -C .tmp/container-source
 
-      - name: Prove two clean application trees and OCI manifests are identical
+      - name: Build canonical image once and emit OCI diagnostics
         shell: bash
         env:
+          CANONICAL_IMAGE: signaldesk:sd008-canonical
+          ADVISORY_IMAGE: signaldesk:sd008-advisory
           SIGNALDESK_RELEASE_COMMIT: ${{ inputs.source_commit }}
           SOURCE_DATE_EPOCH: ${{ steps.identity.outputs.source-date-epoch }}
         run: |
           set -euo pipefail
           context_source_date_epoch="$(node -p "require('./.tmp/container-context/context-manifest.json').sourceDateEpoch")"
           [[ "$SOURCE_DATE_EPOCH" == "$context_source_date_epoch" ]]
-          for build_number in 1 2; do
-            rm -rf ".tmp/proof-${build_number}.tar" ".tmp/proof-${build_number}"
-            docker buildx build \
-              --no-cache \
-              --provenance=false \
-              --sbom=false \
-              --build-arg "SIGNALDESK_RELEASE_COMMIT=$SIGNALDESK_RELEASE_COMMIT" \
-              --build-arg "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH" \
-              --output "type=oci,dest=.tmp/proof-${build_number}.tar,rewrite-timestamp=true,name=signaldesk:reproducibility-proof" \
-              --output "type=docker,name=signaldesk:reproducibility-proof" \
-              .tmp/container-source
-            mkdir ".tmp/proof-${build_number}"
-            tar -xf ".tmp/proof-${build_number}.tar" -C ".tmp/proof-${build_number}"
-            node -e "const fs=require('fs'); const index=JSON.parse(fs.readFileSync('.tmp/proof-${build_number}/index.json')); if(index.manifests.length!==1) throw new Error('Expected one OCI manifest'); fs.writeFileSync('.tmp/manifest-${build_number}.txt', index.manifests[0].digest+'\n');"
-            node -e "const fs=require('fs'); const root='.tmp/proof-${build_number}'; const index=JSON.parse(fs.readFileSync(root+'/index.json')); const manifestDigest=index.manifests[0].digest.slice(7); const manifest=JSON.parse(fs.readFileSync(root+'/blobs/sha256/'+manifestDigest)); const configDigest=manifest.config.digest.slice(7); const config=JSON.parse(fs.readFileSync(root+'/blobs/sha256/'+configDigest)); fs.writeFileSync('.tmp/oci-manifest-${build_number}.json',JSON.stringify(manifest,null,2)+'\n'); fs.writeFileSync('.tmp/oci-config-${build_number}.json',JSON.stringify(config,null,2)+'\n');"
-            docker run --rm --entrypoint sh signaldesk:reproducibility-proof -c \
-              "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
-              | awk '{print $1}' > ".tmp/tree-${build_number}.txt"
+
+          rm -rf .tmp/canonical.tar .tmp/canonical-oci .tmp/advisory.tar .tmp/advisory-oci
+          docker buildx build \
+            --no-cache \
+            --provenance=false \
+            --sbom=false \
+            --build-arg "SIGNALDESK_RELEASE_COMMIT=$SIGNALDESK_RELEASE_COMMIT" \
+            --build-arg "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH" \
+            --output "type=oci,dest=.tmp/canonical.tar,rewrite-timestamp=true,name=$CANONICAL_IMAGE" \
+            --output "type=docker,name=$CANONICAL_IMAGE" \
+            .tmp/container-source
+
+          # Start canonical application and probe HTTP liveness through its real CMD.
+          container_name="sd008-canonical-${GITHUB_RUN_ID}"
+          cleanup_canonical_container() {
+            local cleanup_status=0
+            local remaining_container_ids=""
+            if ! docker logs "$container_name" > .tmp/canonical-application.log 2>&1; then
+              echo "::warning::Canonical application logs could not be captured; they remain runner-local." >&2
+            fi
+            if ! docker rm --force "$container_name" >/dev/null; then
+              echo "::error::Canonical container cleanup failed for ${container_name}." >&2
+              cleanup_status=1
+            fi
+            if ! remaining_container_ids="$(docker container ls --all --quiet --filter "name=^/${container_name}$")"; then
+              echo "::error::Canonical container cleanup inventory failed for ${container_name}." >&2
+              cleanup_status=1
+            elif [[ -n "$remaining_container_ids" ]]; then
+              echo "::error::Canonical container cleanup could not be verified for ${container_name}." >&2
+              cleanup_status=1
+            fi
+            return "$cleanup_status"
+          }
+          preserve_status_and_cleanup() {
+            local primary_status=$?
+            local cleanup_status=0
+            trap - EXIT
+            set +e
+            cleanup_canonical_container
+            cleanup_status=$?
+            set -e
+            if [[ "$primary_status" -ne 0 ]]; then
+              if [[ "$cleanup_status" -ne 0 ]]; then
+                echo "::error::Canonical probe failed and cleanup also failed; preserving primary status ${primary_status}." >&2
+              fi
+              exit "$primary_status"
+            fi
+            exit "$cleanup_status"
+          }
+          trap preserve_status_and_cleanup EXIT
+          docker run --detach --name "$container_name" \
+            --publish "127.0.0.1::3000" \
+            --env "SIGNALDESK_RELEASE_COMMIT=$SIGNALDESK_RELEASE_COMMIT" \
+            --env "SIGNALDESK_IMAGE_DIGEST=sha256:0000000000000000000000000000000000000000000000000000000000000000" \
+            --env "SIGNALDESK_DEPLOYMENT_RUN_ID=$GITHUB_RUN_ID" \
+            --env "SIGNALDESK_REVISION=sd008-local-canonical" \
+            "$CANONICAL_IMAGE" > .tmp/canonical-container-id.txt
+          host_port="$(docker port "$container_name" 3000/tcp | awk -F: 'END { print $NF }')"
+          [[ "$host_port" =~ ^[0-9]+$ ]]
+          live=false
+          for _ in $(seq 1 30); do
+            if curl --silent --show-error --fail --max-time 2 \
+              "http://127.0.0.1:${host_port}/api/v1/health/live" \
+              > .tmp/canonical-live.json; then
+              live=true
+              break
+            fi
+            sleep 1
           done
-          echo "application-tree-1=$(tr -d '\r\n' < .tmp/tree-1.txt)"
-          echo "application-tree-2=$(tr -d '\r\n' < .tmp/tree-2.txt)"
-          diff --strip-trailing-cr .tmp/tree-1.txt .tmp/tree-2.txt
-          diff --strip-trailing-cr .tmp/oci-config-1.json .tmp/oci-config-2.json
-          diff --strip-trailing-cr .tmp/oci-manifest-1.json .tmp/oci-manifest-2.json
-          diff --strip-trailing-cr .tmp/manifest-1.txt .tmp/manifest-2.txt
+          if [[ "$live" != "true" ]]; then
+            echo "::error::Canonical image did not become live; runner-local logs will be captured during checked cleanup." >&2
+            exit 1
+          fi
+          node -e "const fs=require('fs'); const body=JSON.parse(fs.readFileSync('.tmp/canonical-live.json')); if(body.status!=='live') throw new Error('Canonical image liveness response was not live');"
+          trap - EXIT
+          cleanup_canonical_container
+
+          docker run --rm --entrypoint sh "$CANONICAL_IMAGE" -c \
+            "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
+            | awk '{print $1}' > .tmp/canonical-tree.txt
+
+          docker buildx build \
+            --no-cache \
+            --provenance=false \
+            --sbom=false \
+            --build-arg "SIGNALDESK_RELEASE_COMMIT=$SIGNALDESK_RELEASE_COMMIT" \
+            --build-arg "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH" \
+            --output "type=oci,dest=.tmp/advisory.tar,rewrite-timestamp=true,name=$ADVISORY_IMAGE" \
+            --output "type=docker,name=$ADVISORY_IMAGE" \
+            .tmp/container-source
+
+          docker run --rm --entrypoint sh "$ADVISORY_IMAGE" -c \
+            "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
+            | awk '{print $1}' > .tmp/advisory-tree.txt
+
+          mkdir .tmp/canonical-oci .tmp/advisory-oci
+          tar -xf .tmp/canonical.tar -C .tmp/canonical-oci
+          tar -xf .tmp/advisory.tar -C .tmp/advisory-oci
+          node <<'NODE'
+          const fs = require("fs");
+          const crypto = require("crypto");
+
+          function inspect(root) {
+            const index = JSON.parse(fs.readFileSync(`${root}/index.json`, "utf8"));
+            if (index.manifests.length !== 1) throw new Error(`Expected one OCI manifest in ${root}`);
+            const finalDigest = index.manifests[0].digest;
+            const manifestBytes = fs.readFileSync(`${root}/blobs/sha256/${finalDigest.slice(7)}`);
+            const manifest = JSON.parse(manifestBytes);
+            const configBytes = fs.readFileSync(`${root}/blobs/sha256/${manifest.config.digest.slice(7)}`);
+            return {
+              configDigest: manifest.config.digest,
+              configBytesSha256: crypto.createHash("sha256").update(configBytes).digest("hex"),
+              manifestDigest: `sha256:${crypto.createHash("sha256").update(manifestBytes).digest("hex")}`,
+              layerDigests: manifest.layers.map((layer) => layer.digest),
+              finalDigest,
+              config: JSON.parse(configBytes),
+              manifest
+            };
+          }
+
+          const canonical = inspect(".tmp/canonical-oci");
+          const advisory = inspect(".tmp/advisory-oci");
+          const canonicalTreeSha256 = fs.readFileSync(".tmp/canonical-tree.txt", "utf8").trim();
+          const advisoryTreeSha256 = fs.readFileSync(".tmp/advisory-tree.txt", "utf8").trim();
+          for (const [name, digest] of Object.entries({ canonicalTreeSha256, advisoryTreeSha256 })) {
+            if (!/^[0-9a-f]{64}$/.test(digest)) throw new Error(`Invalid ${name}: ${digest}`);
+          }
+          const applicationTreeEqual = canonicalTreeSha256 === advisoryTreeSha256;
+          const comparisons = {
+            configBitIdentical: canonical.configBytesSha256 === advisory.configBytesSha256,
+            manifestBitIdentical: canonical.manifestDigest === advisory.manifestDigest,
+            layersIdentical: JSON.stringify(canonical.layerDigests) === JSON.stringify(advisory.layerDigests),
+            finalDigestIdentical: canonical.finalDigest === advisory.finalDigest
+          };
+          const advisoryFailure = Object.values(comparisons).some((value) => !value);
+          function digestSummary(image) {
+            return {
+              configDigest: image.configDigest,
+              manifestDigest: image.manifestDigest,
+              layerDigests: image.layerDigests,
+              finalDigest: image.finalDigest
+            };
+          }
+          const diagnostics = {
+            schemaVersion: 1,
+            status: !applicationTreeEqual
+              ? "blocking-failure"
+              : advisoryFailure
+                ? "advisory-failure"
+                : "advisory-match",
+            applicationTree: {
+              canonicalSha256: canonicalTreeSha256,
+              advisorySha256: advisoryTreeSha256,
+              equal: applicationTreeEqual,
+              status: applicationTreeEqual ? "blocking-pass" : "blocking-failure"
+            },
+            blockingMismatch: !applicationTreeEqual,
+            reproducibilityClaim: advisoryFailure || !applicationTreeEqual ? "suppressed" : "advisory-only",
+            canonical: digestSummary(canonical),
+            advisory: digestSummary(advisory),
+            comparisons
+          };
+          fs.writeFileSync(".tmp/canonical-oci-config.json", `${JSON.stringify(canonical.config, null, 2)}\n`);
+          fs.writeFileSync(".tmp/canonical-oci-manifest.json", `${JSON.stringify(canonical.manifest, null, 2)}\n`);
+          fs.writeFileSync(".tmp/advisory-oci-config.json", `${JSON.stringify(advisory.config, null, 2)}\n`);
+          fs.writeFileSync(".tmp/advisory-oci-manifest.json", `${JSON.stringify(advisory.manifest, null, 2)}\n`);
+          fs.writeFileSync(".tmp/reproducibility-diagnostics.json", `${JSON.stringify(diagnostics, null, 2)}\n`);
+          NODE
+          cat .tmp/reproducibility-diagnostics.json >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$(node -p "require('./.tmp/reproducibility-diagnostics.json').blockingMismatch")" == "true" ]]; then
+            echo "::error::Canonical/advisory application-tree mismatch is blocking; sanitized diagnostics were written before exit." >&2
+            exit 1
+          fi
+          if [[ "$(node -p "require('./.tmp/reproducibility-diagnostics.json').status")" == "advisory-failure" ]]; then
+            echo "::warning::Independent OCI bit identity failed; reproducibility claim is suppressed."
+          fi
+
+      - name: Retain independent-build diagnostics even when later gates fail
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sd008-reproducibility-diagnostics-${{ github.run_id }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          path: .tmp/reproducibility-diagnostics.json
 
       - name: Reject forbidden files and secret-shaped application content
         shell: bash
         run: |
           set -euo pipefail
-          forbidden_files="$(docker run --rm --entrypoint sh signaldesk:reproducibility-proof -c \
+          forbidden_files="$(docker run --rm --entrypoint sh signaldesk:sd008-canonical -c \
             "find /app -type f \( -name '.env' -o -name '.env.*' -o -name '*.db' -o -name '*.sqlite' -o -name '*.pem' -o -name '*.key' \) -print")"
           [[ -z "$forbidden_files" ]]
-          ! docker run --rm --entrypoint sh signaldesk:reproducibility-proof -c \
-            "grep -R -E -n 'postgres(ql)?://[^[:space:]]+:[^[:space:]@]+@|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gh[pousr]_[A-Za-z0-9]{20,}' /app/.next /app/prisma /app/scripts"
+          secret_scan_status=0
+          docker run --rm --entrypoint sh signaldesk:sd008-canonical -c \
+            "grep -R -E -n 'postgres(ql)?://[^[:space:]]+:[^[:space:]@]+@|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gh[pousr]_[A-Za-z0-9]{20,}' /app/.next /app/prisma /app/scripts" \
+            >/dev/null \
+            || secret_scan_status=$?
+          node scripts/check-sd008-secret-scan-exit.mjs "$secret_scan_status"
 
       - name: Generate exact-image SBOM
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
         with:
-          image: signaldesk:reproducibility-proof
+          image: signaldesk:sd008-canonical
           format: spdx-json
           output-file: .tmp/signaldesk.spdx.json
           upload-artifact: false
@@ -256,7 +428,7 @@ jobs:
       - name: Reject fixed high or critical image vulnerabilities
         uses: anchore/scan-action@1638637db639e0ade3258b51db49a9a137574c3e
         with:
-          image: signaldesk:reproducibility-proof
+          image: signaldesk:sd008-canonical
           fail-build: true
           only-fixed: true
           severity-cutoff: high
@@ -270,27 +442,43 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Publish exact digest
+      - name: Publish exact canonical artifact privately and verify registry identity
         id: publish
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        shell: bash
         env:
-          SOURCE_DATE_EPOCH: ${{ steps.identity.outputs.source-date-epoch }}
-        with:
-          context: .tmp/container-source
-          push: true
-          no-cache: true
-          platforms: linux/amd64
-          outputs: type=image,push=true,rewrite-timestamp=true
-          provenance: false
-          sbom: false
-          build-args: |
-            SIGNALDESK_RELEASE_COMMIT=${{ inputs.source_commit }}
-            SOURCE_DATE_EPOCH=${{ steps.identity.outputs.source-date-epoch }}
-          tags: |
-            ghcr.io/neel-error404/signaldesk:sha-${{ inputs.source_commit }}
-            ghcr.io/neel-error404/signaldesk:sd008-${{ github.run_id }}
+          CANONICAL_IMAGE: signaldesk:sd008-canonical
+          PUBLICATION_TAG: ${{ steps.identity.outputs.publication-tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          canonical_config_digest="$(docker image inspect --format '{{.Id}}' "$CANONICAL_IMAGE")"
+          [[ "$canonical_config_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          if gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/container/signaldesk" > .tmp/package-before.json 2> .tmp/package-before-error.txt; then
+            [[ "$(jq -r '.visibility' .tmp/package-before.json)" == "private" ]]
+          else
+            grep -F "HTTP 404" .tmp/package-before-error.txt >/dev/null
+          fi
+          docker tag "$CANONICAL_IMAGE" "$PUBLICATION_TAG"
+          docker push "$PUBLICATION_TAG"
+          package_visibility="$(gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/container/signaldesk" --jq '.visibility')"
+          [[ "$package_visibility" == "private" ]]
 
-      - name: Attest exact published digest
+          docker buildx imagetools inspect "$PUBLICATION_TAG" > .tmp/registry-descriptor.txt
+          registry_digest="$(awk '$1 == "Digest:" { print $2; exit }' .tmp/registry-descriptor.txt)"
+          docker buildx imagetools inspect "$PUBLICATION_TAG" --raw > .tmp/registry-manifest.json
+          registry_config_digest="$(node -p "require('./.tmp/registry-manifest.json').config.digest")"
+          [[ "$registry_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          [[ "$canonical_config_digest" == "$registry_config_digest" ]]
+
+          docker pull "ghcr.io/neel-error404/signaldesk@$registry_digest"
+          docker run --rm --entrypoint sh "ghcr.io/neel-error404/signaldesk@$registry_digest" -c \
+            "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
+            | awk '{print $1}' > .tmp/published-tree.txt
+          diff --strip-trailing-cr .tmp/canonical-tree.txt .tmp/published-tree.txt
+          echo "digest=$registry_digest" >> "$GITHUB_OUTPUT"
+          echo "registry-config-digest=$registry_config_digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest exact privately published digest
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a
         with:
           subject-name: ghcr.io/neel-error404/signaldesk
@@ -305,7 +493,7 @@ jobs:
           sbom-path: .tmp/signaldesk.spdx.json
           push-to-registry: true
 
-      - name: Verify authenticated published digest and attestations
+      - name: Verify authenticated attestations for the exact registry digest
         shell: bash
         env:
           IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
@@ -313,15 +501,11 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
-          docker pull "ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST"
-          docker run --rm --entrypoint sh "ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" -c \
-            "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
-            | awk '{print $1}' > .tmp/published-tree.txt
-          diff --strip-trailing-cr .tmp/tree-2.txt .tmp/published-tree.txt
           gh attestation verify "oci://ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" \
             --repo Neel-Error404/signal-desk
 
       - name: Bind public build evidence
+        id: build-evidence
         shell: bash
         env:
           IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
@@ -332,26 +516,31 @@ jobs:
             --arg commit "$AUTHORIZED_COMMIT" \
             --arg runId "$GITHUB_RUN_ID" \
             --arg imageDigest "$IMAGE_DIGEST" \
-            --arg occurredAt "$(node -p 'new Date().toISOString()')" \
-            --arg applicationTreeSha256 "$(tr -d '\r\n' < .tmp/published-tree.txt)" \
-            --arg ociManifestDigest "$(tr -d '\r\n' < .tmp/manifest-2.txt)" \
-            --arg sbomSha256 "$(sha256sum .tmp/signaldesk.spdx.json | cut -d' ' -f1)" \
-            --arg vulnerabilityReportSha256 "$(sha256sum .tmp/signaldesk-grype.sarif | cut -d' ' -f1)" \
-            '{
+             --arg occurredAt "$(node -p 'new Date().toISOString()')" \
+             --arg applicationTreeSha256 "$(tr -d '\r\n' < .tmp/published-tree.txt)" \
+             --arg sbomSha256 "$(sha256sum .tmp/signaldesk.spdx.json | cut -d' ' -f1)" \
+             --arg vulnerabilityReportSha256 "$(sha256sum .tmp/signaldesk-grype.sarif | cut -d' ' -f1)" \
+             --slurpfile reproducibility .tmp/reproducibility-diagnostics.json \
+             '{
               schemaVersion:1,
               workItem:"SD-008",
               event:"artifact-published",
               commit:$commit,
               runId:$runId,
               occurredAt:$occurredAt,
-              imageDigest:$imageDigest,
-              applicationTreeSha256:$applicationTreeSha256,
-              ociManifestDigest:$ociManifestDigest,
-              sbomSha256:$sbomSha256,
-              vulnerabilityReportSha256:$vulnerabilityReportSha256,
-              reproducibleBuilds:2,
-              secretScan:"passed"
+               imageDigest:$imageDigest,
+               applicationTreeSha256:$applicationTreeSha256,
+               sbomSha256:$sbomSha256,
+               vulnerabilityReportSha256:$vulnerabilityReportSha256,
+               canonicalDeployableBuilds:1,
+               independentAdvisoryBuilds:1,
+               publicationVisibility:"private",
+               reproducibility:$reproducibility[0],
+               secretScan:"passed"
             }' > .tmp-sd008-build-public.json
+          publication_evidence_sha256="$(sha256sum .tmp-sd008-build-public.json | cut -d' ' -f1)"
+          [[ "$publication_evidence_sha256" =~ ^[0-9a-f]{64}$ ]]
+          echo "publication-evidence-sha256=$publication_evidence_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Export non-secret build evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -362,11 +551,12 @@ jobs:
           retention-days: 30
           path: |
             .tmp/container-context/context-manifest.json
-            .tmp/manifest-1.txt
-            .tmp/manifest-2.txt
-            .tmp/tree-1.txt
-            .tmp/tree-2.txt
+            .tmp/canonical-tree.txt
+            .tmp/advisory-tree.txt
+            .tmp/canonical-live.json
             .tmp/published-tree.txt
+            .tmp/registry-descriptor.txt
+            .tmp/reproducibility-diagnostics.json
             .tmp/signaldesk.spdx.json
             .tmp/signaldesk-grype.sarif
             .tmp-sd008-build-public.json
@@ -415,7 +605,10 @@ jobs:
       contents: read
       id-token: write
     outputs:
-      app-name: ${{ steps.provision.outputs.app-name }}
+      resource-group: ${{ steps.staging-names.outputs.resource-group }}
+      app-name: ${{ steps.staging-names.outputs.app-name }}
+      bootstrap-job-name: ${{ steps.staging-names.outputs.bootstrap-job-name }}
+      migration-job-name: ${{ steps.staging-names.outputs.migration-job-name }}
       baseline-revision: ${{ steps.provision.outputs.baseline-revision }}
       candidate-revision: ${{ steps.provision.outputs.candidate-revision }}
       app-fqdn: ${{ steps.provision.outputs.app-fqdn }}
@@ -428,24 +621,35 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Resolve deterministic staging resource names
+        id: staging-names
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "resource-group=rg-signaldesk-stg-cin"
+            echo "app-name=signaldesk-stg-cin-app"
+            echo "bootstrap-job-name=signaldesk-stg-cin-dbinit"
+            echo "migration-job-name=signaldesk-stg-cin-migrate"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Load exact provision authority packet
+        shell: bash
+        env:
+          SD008_AUTHORITY_PACKET_B64: ${{ vars.SD008_AUTHORITY_PACKET_B64 }}
+          SD008_AUTHORITY_PACKET_SHA256: ${{ vars.SD008_AUTHORITY_PACKET_SHA256 }}
+        run: |
+          set -euo pipefail
+          [[ "$SD008_AUTHORITY_PACKET_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s' "$SD008_AUTHORITY_PACKET_B64" | base64 --decode > .tmp-sd008-authority.json
+          [[ "$(sha256sum .tmp-sd008-authority.json | cut -d' ' -f1)" == "$SD008_AUTHORITY_PACKET_SHA256" ]]
+
       - name: Log in to Azure with GitHub OIDC
         uses: Azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Acquire dedicated secretless provision-smoke token
-        shell: bash
-        env:
-          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
-          STAGING_SMOKE_CLIENT_ID: ${{ vars.STAGING_SMOKE_CLIENT_ID }}
-          STAGING_SMOKE_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID }}
-          SD008_ENVIRONMENT: staging-provision
-        run: |
-          set -euo pipefail
-          node scripts/get-entra-smoke-token.mjs
 
       - name: Validate Bicep compiler and exact template
         shell: bash
@@ -460,29 +664,164 @@ jobs:
         shell: bash
         env:
           IMAGE_DIGEST: ${{ needs.build-and-attest.outputs.image-digest }}
+          PUBLICATION_EVIDENCE_DIGEST: ${{ needs.build-and-attest.outputs.publication-evidence-sha256 }}
           REVISION_SUFFIX: ${{ needs.build-and-attest.outputs.revision-suffix }}
           ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
           ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
           ENTRA_OWNER_OBJECT_ID: ${{ vars.ENTRA_OWNER_OBJECT_ID }}
           PROVISION_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_PROVISION_PRINCIPAL_OBJECT_ID }}
+          TRAFFIC_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TRAFFIC_PRINCIPAL_OBJECT_ID }}
+          TEARDOWN_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TEARDOWN_PRINCIPAL_OBJECT_ID }}
+          AUTHORITY_PACKET_SHA256: ${{ vars.SD008_AUTHORITY_PACKET_SHA256 }}
+          AUTHORITY_APPROVAL_REFERENCE: ${{ vars.SD008_AUTHORITY_APPROVAL_REFERENCE }}
+          AUTHORITY_APPROVAL_DIGEST: ${{ vars.SD008_AUTHORITY_APPROVAL_DIGEST }}
+          AUTHORITY_APPROVED_AT: ${{ vars.SD008_AUTHORITY_APPROVED_AT }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           SMOKE_CLIENT_ID: ${{ vars.STAGING_SMOKE_CLIENT_ID }}
           SMOKE_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID }}
-          SMOKE_ACCESS_TOKEN: ${{ env.SMOKE_ACCESS_TOKEN }}
+          STAGING_SMOKE_CLIENT_ID: ${{ vars.STAGING_SMOKE_CLIENT_ID }}
+          STAGING_SMOKE_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID }}
+          SD008_ENVIRONMENT: staging-provision
           RELEASE_NOTE: ${{ inputs.release_note }}
           AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
           RESOURCE_GROUP: rg-signaldesk-stg-cin
+          APP_NAME: ${{ steps.staging-names.outputs.app-name }}
+          BOOTSTRAP_JOB_NAME: ${{ steps.staging-names.outputs.bootstrap-job-name }}
+          MIGRATION_JOB_NAME: ${{ steps.staging-names.outputs.migration-job-name }}
           LOCATION: centralindia
         run: |
           set -euo pipefail
+          set +x
           [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
           [[ -n "$ENTRA_CLIENT_SECRET" ]]
           [[ "$ENTRA_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
           [[ "$ENTRA_OWNER_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
           [[ "$PROVISION_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$TRAFFIC_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$TEARDOWN_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
           [[ "$SMOKE_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
           [[ "$SMOKE_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
-          [[ -n "$SMOKE_ACCESS_TOKEN" ]]
           [[ ${#RELEASE_NOTE} -ge 1 && ${#RELEASE_NOTE} -le 500 ]]
+          refresh_scoped_authority() {
+            local mutation="$1"
+            local account_principal_type=""
+            local arm_access_token=""
+            local identity_json=""
+            local identity_fields=""
+            local token_principal_type=""
+            local expected_scope=""
+            case "$mutation" in
+              "provision-deployment")
+                AUTHORITY_QUERY_SCOPE="/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${RESOURCE_GROUP}"
+                ;;
+              "provision-bootstrap-job-start")
+                expected_scope="/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.App/jobs/${bootstrap_job}"
+                if ! AUTHORITY_QUERY_SCOPE="$(az containerapp job show --resource-group "$RESOURCE_GROUP" --name "$bootstrap_job" --query id -o tsv)"; then
+                  echo "::error::Exact bootstrap job authority scope could not be resolved." >&2
+                  return 1
+                fi
+                [[ "${AUTHORITY_QUERY_SCOPE,,}" == "${expected_scope,,}" ]] || {
+                  echo "::error::Resolved bootstrap job authority scope does not match the exact expected resource." >&2
+                  return 1
+                }
+                ;;
+              "provision-migration-job-start")
+                expected_scope="/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.App/jobs/${migration_job}"
+                if ! AUTHORITY_QUERY_SCOPE="$(az containerapp job show --resource-group "$RESOURCE_GROUP" --name "$migration_job" --query id -o tsv)"; then
+                  echo "::error::Exact migration job authority scope could not be resolved." >&2
+                  return 1
+                fi
+                [[ "${AUTHORITY_QUERY_SCOPE,,}" == "${expected_scope,,}" ]] || {
+                  echo "::error::Resolved migration job authority scope does not match the exact expected resource." >&2
+                  return 1
+                }
+                ;;
+              "provision-app-update")
+                expected_scope="/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.App/containerApps/${app_name}"
+                if ! AUTHORITY_QUERY_SCOPE="$(az containerapp show --resource-group "$RESOURCE_GROUP" --name "$app_name" --query id -o tsv)"; then
+                  echo "::error::Exact Container App authority scope could not be resolved." >&2
+                  return 1
+                fi
+                [[ "${AUTHORITY_QUERY_SCOPE,,}" == "${expected_scope,,}" ]] || {
+                  echo "::error::Resolved Container App authority scope does not match the exact expected resource." >&2
+                  return 1
+                }
+                ;;
+              *)
+                echo "::error::Unknown provision authority mutation: ${mutation}." >&2
+                return 1
+                ;;
+            esac
+            if ! account_principal_type="$(az account show --query user.type -o tsv)"; then
+              echo "::error::Azure authenticated principal type could not be read." >&2
+              return 1
+            fi
+            if ! arm_access_token="$(az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv)"; then
+              echo "::error::Current ARM access token could not be acquired." >&2
+              return 1
+            fi
+            if ! identity_json="$(printf '%s' "$arm_access_token" | node scripts/render-sd008-azure-authority.mjs --decode-arm-token stdin)"; then
+              arm_access_token=""
+              unset arm_access_token
+              echo "::error::Current ARM token identity claims were rejected." >&2
+              return 1
+            fi
+            arm_access_token=""
+            unset arm_access_token
+            if ! identity_fields="$(jq -er '[.clientId,.principalObjectId,.tenantId,.principalType] | @tsv' <<<"$identity_json")"; then
+              echo "::error::Decoded ARM identity fields are incomplete." >&2
+              return 1
+            fi
+            IFS=$'\t' read -r AUTHENTICATED_AZURE_CLIENT_ID AUTHENTICATED_PRINCIPAL_OBJECT_ID AUTHENTICATED_TENANT_ID token_principal_type <<<"$identity_fields"
+            if [[ "${account_principal_type,,}" != "serviceprincipal" || "$token_principal_type" != "ServicePrincipal" ]]; then
+              echo "::error::Azure authentication is not an application service principal." >&2
+              return 1
+            fi
+            AUTHENTICATED_PRINCIPAL_TYPE="$account_principal_type"
+            if ! az role assignment list --scope "$AUTHORITY_QUERY_SCOPE" --assignee-object-id "$PROVISION_PRINCIPAL_OBJECT_ID" --include-inherited --fill-principal-name false -o json > .tmp-sd008-live-role-assignments.json; then
+              echo "::error::Live Azure role assignments could not be enumerated." >&2
+              return 1
+            fi
+            if ! az role definition list --custom-role-only --scope "$AUTHORITY_QUERY_SCOPE" -o json > .tmp-sd008-live-role-definitions.json; then
+              echo "::error::Live Azure custom role definitions could not be enumerated." >&2
+              return 1
+            fi
+          }
+          validate_authority() {
+            local mutation="$1"
+            if ! refresh_scoped_authority "$mutation"; then
+              echo "::error::Live Azure authority refresh failed before ${mutation}." >&2
+              return 1
+            fi
+            if ! node scripts/render-sd008-azure-authority.mjs \
+              --validate-packet .tmp-sd008-authority.json \
+              --packet-sha256 "$AUTHORITY_PACKET_SHA256" \
+              --phase provision \
+              --mutation "$mutation" \
+              --now "$(node -p 'new Date().toISOString()')" \
+              --subscription-id "${{ vars.AZURE_SUBSCRIPTION_ID }}" \
+              --provision-principal-object-id "$PROVISION_PRINCIPAL_OBJECT_ID" \
+              --azure-client-id "$AZURE_CLIENT_ID" \
+              --azure-tenant-id "${{ vars.AZURE_TENANT_ID }}" \
+              --authenticated-azure-client-id "$AUTHENTICATED_AZURE_CLIENT_ID" \
+              --authenticated-principal-object-id "$AUTHENTICATED_PRINCIPAL_OBJECT_ID" \
+              --authenticated-principal-type "$AUTHENTICATED_PRINCIPAL_TYPE" \
+              --authenticated-tenant-id "$AUTHENTICATED_TENANT_ID" \
+              --live-role-assignments .tmp-sd008-live-role-assignments.json \
+              --live-role-definitions .tmp-sd008-live-role-definitions.json \
+              --resource-group "$RESOURCE_GROUP" \
+              --source-commit "$AUTHORIZED_COMMIT" \
+              --image-digest "$IMAGE_DIGEST" \
+              --publication-evidence-digest "$PUBLICATION_EVIDENCE_DIGEST" \
+              --session-run-id "$GITHUB_RUN_ID" \
+              --expected-owner-approval-reference "$AUTHORITY_APPROVAL_REFERENCE" \
+              --expected-owner-approval-digest "$AUTHORITY_APPROVAL_DIGEST" \
+              --expected-owner-approved-at "$AUTHORITY_APPROVED_AT"; then
+              echo "::error::Authority revalidation failed immediately before Azure mutation ${mutation}." >&2
+              return 1
+            fi
+          }
           admin_password="$(openssl rand -hex 32)"
           migration_password="$(openssl rand -hex 32)"
           runtime_password="$(openssl rand -hex 32)"
@@ -495,12 +834,16 @@ jobs:
           [[ "$(az group show --name "$RESOURCE_GROUP" --query tags.workItem -o tsv)" == "SD-008" ]]
           [[ "$(az group show --name "$RESOURCE_GROUP" --query tags.owner -o tsv)" == "Neel" ]]
           resource_group_id="$(az group show --name "$RESOURCE_GROUP" --query id -o tsv)"
+          authority_scope="$resource_group_id"
+          if app_id="$(az containerapp show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query id -o tsv 2>/dev/null)"; then
+            authority_scope="$app_id"
+          fi
           provision_assignments="$(az role assignment list \
             --assignee-object-id "$PROVISION_PRINCIPAL_OBJECT_ID" \
             --scope "$resource_group_id" --include-inherited \
             --fill-principal-name false -o json)"
           jq -e --arg scope "$resource_group_id" --arg provision "$PROVISION_PRINCIPAL_OBJECT_ID" '
-            [.[] | select(
+            ([.[] | select(
               (.scope | ascii_downcase) == ($scope | ascii_downcase) and
               .roleDefinitionName == "SignalDesk SD008 Provision" and
               .conditionVersion == "2.0" and
@@ -512,8 +855,28 @@ jobs:
               (.condition | contains("ForAnyOfAnyValues:StringEqualsIgnoreCase")) and
               (.condition | contains("ServicePrincipal")) and
               ((.condition | contains("RoleAssignmentScope")) | not)
-            )] | length == 1
+            )] | length == 1) and
+            ([.[] | select(
+              .roleDefinitionName == "SignalDesk SD008 Provision" or
+              .roleDefinitionName == "SignalDesk SD008 Traffic" or
+              .roleDefinitionName == "SignalDesk SD008 Evidence Reader" or
+              .roleDefinitionName == "SignalDesk SD008 Teardown" or
+              .roleDefinitionName == "SignalDesk SD008 Post Delete Verifier"
+            )] | length == 1)
           ' <<<"$provision_assignments" >/dev/null
+          for forbidden_principal in "$TRAFFIC_PRINCIPAL_OBJECT_ID" "$TEARDOWN_PRINCIPAL_OBJECT_ID"; do
+            forbidden_phase_count="$(az role assignment list \
+              --assignee-object-id "$forbidden_principal" \
+              --scope "$authority_scope" --include-inherited \
+              --fill-principal-name false -o json \
+              | jq '[.[] | select(
+                  .roleDefinitionName == "SignalDesk SD008 Traffic" or
+                  .roleDefinitionName == "SignalDesk SD008 Evidence Reader" or
+                  .roleDefinitionName == "SignalDesk SD008 Teardown" or
+                  .roleDefinitionName == "SignalDesk SD008 Post Delete Verifier"
+                )] | length')"
+            [[ "$forbidden_phase_count" == "0" ]]
+          done
           expires_at="$(az group show --name "$RESOURCE_GROUP" --query tags.expiresAt -o tsv)"
           created_at="$(az group show --name "$RESOURCE_GROUP" --query tags.createdAt -o tsv)"
           expires_epoch="$(date --date="$expires_at" +%s)"
@@ -534,6 +897,7 @@ jobs:
               entraClientSecret="$ENTRA_CLIENT_SECRET" administratorPassword="$admin_password" \
               migrationPassword="$migration_password" runtimePassword="$runtime_password" \
             --no-pretty-print > .tmp-sd008-what-if.json
+          validate_authority provision-deployment
           deployment_json="$(az deployment group create \
             --name "sd008-${GITHUB_RUN_ID}" \
             --resource-group "$RESOURCE_GROUP" \
@@ -553,13 +917,18 @@ jobs:
           bootstrap_job="$(jq -r '.bootstrapJobName.value' <<<"$deployment_json")"
           migration_job="$(jq -r '.migrationJobName.value' <<<"$deployment_json")"
           log_analytics_customer_id="$(jq -r '.logAnalyticsCustomerId.value' <<<"$deployment_json")"
+          [[ "$app_name" == "$APP_NAME" ]]
+          [[ "$bootstrap_job" == "$BOOTSTRAP_JOB_NAME" ]]
+          [[ "$migration_job" == "$MIGRATION_JOB_NAME" ]]
           wait_for_job() {
             local job_name="$1"
+            local mutation="$2"
             local execution_name
             local status
+            validate_authority "$mutation"
             execution_name="$(az containerapp job start --resource-group "$RESOURCE_GROUP" --name "$job_name" --query name -o tsv)"
             [[ -n "$execution_name" ]]
-            for attempt in $(seq 1 80); do
+            for _ in $(seq 1 80); do
               status="$(az containerapp job execution show --resource-group "$RESOURCE_GROUP" --name "$job_name" --job-execution-name "$execution_name" --query properties.status -o tsv)"
               if [[ "$status" == "Succeeded" ]]; then
                 jq -n --arg job "$job_name" --arg execution "$execution_name" --arg status "$status" \
@@ -573,10 +942,11 @@ jobs:
             done
             return 1
           }
-          wait_for_job "$bootstrap_job"
-          wait_for_job "$migration_job"
+          wait_for_job "$bootstrap_job" provision-bootstrap-job-start
+          wait_for_job "$migration_job" provision-migration-job-start
           baseline_revision="$(az containerapp revision list --resource-group "$RESOURCE_GROUP" --name "$app_name" --query '[0].name' -o tsv)"
           [[ "$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$app_name" --query "[?revisionName=='$baseline_revision'].weight | [0]" -o tsv)" == "100" ]]
+          validate_authority provision-app-update
           az containerapp update --resource-group "$RESOURCE_GROUP" --name "$app_name" \
             --image "$image_reference" --revision-suffix "$REVISION_SUFFIX" \
             --set-env-vars "SIGNALDESK_REVISION=$REVISION_SUFFIX" >/dev/null
@@ -584,11 +954,26 @@ jobs:
           candidate_weight="$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$app_name" --query "[?revisionName=='$candidate_revision'].weight | [0]" -o tsv)"
           [[ -z "$candidate_weight" || "$candidate_weight" == "0" ]]
           candidate_fqdn="$(az containerapp revision show --resource-group "$RESOURCE_GROUP" --name "$app_name" --revision "$candidate_revision" --query properties.fqdn -o tsv)"
-          access_token="$SMOKE_ACCESS_TOKEN"
+          access_token="$(node scripts/get-entra-smoke-token.mjs)"
+          if [[ ! "$access_token" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
+            access_token=""
+            unset access_token
+            echo "::error::Dedicated provision smoke token is not an exact three-segment base64url JWT." >&2
+            exit 1
+          fi
           anonymous_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 15 "https://${candidate_fqdn}/api/v1/health/live")"
           [[ "$anonymous_status" == "401" ]]
-          curl --silent --show-error --fail --max-time 15 --header "Authorization: Bearer $access_token" "https://${candidate_fqdn}/api/v1/health/live" > .tmp-sd008-live.json
-          curl --silent --show-error --fail --max-time 15 --header "Authorization: Bearer $access_token" "https://${candidate_fqdn}/api/v1/health/ready" > .tmp-sd008-ready.json
+          printf 'Authorization: Bearer %s\n' "$access_token" \
+            | curl --silent --show-error --fail --max-time 15 --header @- \
+              "https://${candidate_fqdn}/api/v1/health/live" > .tmp-sd008-live.json
+          printf 'Authorization: Bearer %s\n' "$access_token" \
+            | curl --silent --show-error --fail --max-time 15 --header @- \
+              "https://${candidate_fqdn}/api/v1/health/ready" > .tmp-sd008-ready.json
+          token_scan_status=0
+          >/dev/null grep -F -- "$access_token" .tmp-sd008-live.json .tmp-sd008-ready.json || token_scan_status=$?
+          node scripts/check-sd008-secret-scan-exit.mjs "$token_scan_status" provision-token
+          access_token=""
+          unset access_token
           jq -n --arg actor "$GITHUB_ACTOR" --arg run "$GITHUB_RUN_ID" --arg commit "$AUTHORIZED_COMMIT" \
             --arg image "$image_reference" --arg note "$RELEASE_NOTE" \
             '{actor:$actor,runId:$run,commit:$commit,image:$image,releaseNote:$note}' > .tmp-sd008-run-identity.json
@@ -606,15 +991,29 @@ jobs:
               anonymousDenied:true,
               authorizedSmoke:true
             }' > .tmp-sd008-provision-summary.json
-          for secret_value in "$admin_password" "$migration_password" "$runtime_password" "$ENTRA_CLIENT_SECRET" "$SMOKE_ACCESS_TOKEN"; do
-            ! grep -F -R -- "$secret_value" .tmp-sd008-*.json .tmp-sd008-*.jsonl
+          for secret_value in "$admin_password" "$migration_password" "$runtime_password" "$ENTRA_CLIENT_SECRET"; do
+            provision_secret_scan_status=0
+            >/dev/null grep -F -R -- "$secret_value" .tmp-sd008-*.json .tmp-sd008-*.jsonl || provision_secret_scan_status=$?
+            case "$provision_secret_scan_status" in
+              0)
+                echo "::error::Provisioning evidence contains a generated secret." >&2
+                exit 1
+                ;;
+              1)
+                ;;
+              *)
+                echo "::error::Provisioning evidence secret scan execution failed with status ${provision_secret_scan_status}." >&2
+                exit 1
+                ;;
+            esac
           done
-          echo "app-name=$app_name" >> "$GITHUB_OUTPUT"
-          echo "app-fqdn=$app_fqdn" >> "$GITHUB_OUTPUT"
-          echo "baseline-revision=$baseline_revision" >> "$GITHUB_OUTPUT"
-          echo "candidate-revision=$candidate_revision" >> "$GITHUB_OUTPUT"
-          echo "log-analytics-customer-id=$log_analytics_customer_id" >> "$GITHUB_OUTPUT"
-          echo "session-started-at=$created_at" >> "$GITHUB_OUTPUT"
+          {
+            echo "app-fqdn=$app_fqdn"
+            echo "baseline-revision=$baseline_revision"
+            echo "candidate-revision=$candidate_revision"
+            echo "log-analytics-customer-id=$log_analytics_customer_id"
+            echo "session-started-at=$created_at"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Export redacted provisioning evidence and owner-encrypted identifiers
         shell: bash
@@ -667,6 +1066,17 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Load exact traffic authority packet
+        shell: bash
+        env:
+          SD008_AUTHORITY_PACKET_B64: ${{ vars.SD008_AUTHORITY_PACKET_B64 }}
+          SD008_AUTHORITY_PACKET_SHA256: ${{ vars.SD008_AUTHORITY_PACKET_SHA256 }}
+        run: |
+          set -euo pipefail
+          [[ "$SD008_AUTHORITY_PACKET_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s' "$SD008_AUTHORITY_PACKET_B64" | base64 --decode > .tmp-sd008-authority.json
+          [[ "$(sha256sum .tmp-sd008-authority.json | cut -d' ' -f1)" == "$SD008_AUTHORITY_PACKET_SHA256" ]]
+
       - name: Install Node.js 22
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -687,18 +1097,6 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Acquire dedicated secretless traffic-smoke token
-        shell: bash
-        env:
-          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
-          STAGING_SMOKE_CLIENT_ID: ${{ vars.STAGING_SMOKE_CLIENT_ID }}
-          STAGING_SMOKE_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID }}
-          SD008_ENVIRONMENT: staging-traffic
-        run: |
-          set -euo pipefail
-          node scripts/get-entra-smoke-token.mjs
-
       - name: Prove provision authority is revoked and traffic authority is exact-app scoped
         shell: bash
         env:
@@ -706,10 +1104,12 @@ jobs:
           RESOURCE_GROUP: rg-signaldesk-stg-cin
           PROVISION_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_PROVISION_PRINCIPAL_OBJECT_ID }}
           TRAFFIC_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TRAFFIC_PRINCIPAL_OBJECT_ID }}
+          TEARDOWN_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TEARDOWN_PRINCIPAL_OBJECT_ID }}
         run: |
           set -euo pipefail
           [[ "$PROVISION_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
           [[ "$TRAFFIC_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          [[ "$TEARDOWN_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
           resource_group_id="$(az group show --name "$RESOURCE_GROUP" --query id -o tsv)"
           app_id="$(az containerapp show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query id -o tsv)"
           provision_count="$(az role assignment list \
@@ -718,9 +1118,18 @@ jobs:
             --fill-principal-name false -o json \
             | jq '[.[] | select(.roleDefinitionName == "SignalDesk SD008 Provision")] | length')"
           [[ "$provision_count" == "0" ]]
+          teardown_count="$(az role assignment list \
+            --assignee-object-id "$TEARDOWN_PRINCIPAL_OBJECT_ID" \
+            --scope "$resource_group_id" --include-inherited \
+            --fill-principal-name false -o json \
+            | jq '[.[] | select(
+                .roleDefinitionName == "SignalDesk SD008 Teardown" or
+                .roleDefinitionName == "SignalDesk SD008 Post Delete Verifier"
+              )] | length')"
+          [[ "$teardown_count" == "0" ]]
           traffic_assignments="$(az role assignment list \
             --assignee-object-id "$TRAFFIC_PRINCIPAL_OBJECT_ID" \
-            --all \
+            --scope "$app_id" --include-inherited \
             --fill-principal-name false -o json)"
           jq -e --arg app "$app_id" --arg group "$resource_group_id" '
             ([.[] | select(
@@ -730,37 +1139,188 @@ jobs:
             ([.[] | select(
               .roleDefinitionName == "SignalDesk SD008 Evidence Reader" and
               (.scope | ascii_downcase) == ($group | ascii_downcase)
-            )] | length == 1)
+            )] | length == 1) and
+            ([.[] | select(
+              .roleDefinitionName == "SignalDesk SD008 Provision" or
+              .roleDefinitionName == "SignalDesk SD008 Traffic" or
+              .roleDefinitionName == "SignalDesk SD008 Evidence Reader" or
+              .roleDefinitionName == "SignalDesk SD008 Teardown" or
+              .roleDefinitionName == "SignalDesk SD008 Post Delete Verifier"
+            )] | length == 2)
           ' <<<"$traffic_assignments" >/dev/null
 
       - name: Shift staging traffic and restore prior healthy revision
         shell: bash
         env:
           APP_NAME: ${{ needs.staging-provision.outputs.app-name }}
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+          IMAGE_DIGEST: ${{ needs.build-and-attest.outputs.image-digest }}
+          PUBLICATION_EVIDENCE_DIGEST: ${{ needs.build-and-attest.outputs.publication-evidence-sha256 }}
+          AUTHORITY_PACKET_SHA256: ${{ vars.SD008_AUTHORITY_PACKET_SHA256 }}
+          AUTHORITY_APPROVAL_REFERENCE: ${{ vars.SD008_AUTHORITY_APPROVAL_REFERENCE }}
+          AUTHORITY_APPROVAL_DIGEST: ${{ vars.SD008_AUTHORITY_APPROVAL_DIGEST }}
+          AUTHORITY_APPROVED_AT: ${{ vars.SD008_AUTHORITY_APPROVED_AT }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          TRAFFIC_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TRAFFIC_PRINCIPAL_OBJECT_ID }}
           BASELINE_REVISION: ${{ needs.staging-provision.outputs.baseline-revision }}
           CANDIDATE_REVISION: ${{ needs.staging-provision.outputs.candidate-revision }}
           RESOURCE_GROUP: rg-signaldesk-stg-cin
           APP_FQDN: ${{ needs.staging-provision.outputs.app-fqdn }}
           ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
-          SMOKE_ACCESS_TOKEN: ${{ env.SMOKE_ACCESS_TOKEN }}
+          STAGING_SMOKE_CLIENT_ID: ${{ vars.STAGING_SMOKE_CLIENT_ID }}
+          STAGING_SMOKE_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_SMOKE_PRINCIPAL_OBJECT_ID }}
+          SD008_ENVIRONMENT: staging-traffic
           WORKSPACE_CUSTOMER_ID: ${{ needs.staging-provision.outputs.log-analytics-customer-id }}
         run: |
           set -euo pipefail
+          set +x
           [[ "$ENTRA_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
-          [[ -n "$SMOKE_ACCESS_TOKEN" ]]
-          access_token="$SMOKE_ACCESS_TOKEN"
+          refresh_scoped_authority() {
+            local mutation="$1"
+            local account_principal_type=""
+            local arm_access_token=""
+            local identity_json=""
+            local identity_fields=""
+            local token_principal_type=""
+            AUTHORITY_QUERY_SCOPE="/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.App/containerApps/${APP_NAME}"
+            if ! account_principal_type="$(az account show --query user.type -o tsv)"; then
+              echo "::error::Azure authenticated principal type could not be read." >&2
+              return 1
+            fi
+            if ! arm_access_token="$(az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv)"; then
+              echo "::error::Current ARM access token could not be acquired." >&2
+              return 1
+            fi
+            if ! identity_json="$(printf '%s' "$arm_access_token" | node scripts/render-sd008-azure-authority.mjs --decode-arm-token stdin)"; then
+              arm_access_token=""
+              unset arm_access_token
+              echo "::error::Current ARM token identity claims were rejected." >&2
+              return 1
+            fi
+            arm_access_token=""
+            unset arm_access_token
+            if ! identity_fields="$(jq -er '[.clientId,.principalObjectId,.tenantId,.principalType] | @tsv' <<<"$identity_json")"; then
+              echo "::error::Decoded ARM identity fields are incomplete." >&2
+              return 1
+            fi
+            IFS=$'\t' read -r AUTHENTICATED_AZURE_CLIENT_ID AUTHENTICATED_PRINCIPAL_OBJECT_ID AUTHENTICATED_TENANT_ID token_principal_type <<<"$identity_fields"
+            if [[ "${account_principal_type,,}" != "serviceprincipal" || "$token_principal_type" != "ServicePrincipal" ]]; then
+              echo "::error::Azure authentication is not an application service principal." >&2
+              return 1
+            fi
+            AUTHENTICATED_PRINCIPAL_TYPE="$account_principal_type"
+            if ! az role assignment list --scope "$AUTHORITY_QUERY_SCOPE" --assignee-object-id "$TRAFFIC_PRINCIPAL_OBJECT_ID" --include-inherited --fill-principal-name false -o json > .tmp-sd008-live-role-assignments.json; then
+              echo "::error::Live Azure role assignments could not be enumerated." >&2
+              return 1
+            fi
+            if ! az role definition list --custom-role-only --scope "$AUTHORITY_QUERY_SCOPE" -o json > .tmp-sd008-live-role-definitions.json; then
+              echo "::error::Live Azure custom role definitions could not be enumerated." >&2
+              return 1
+            fi
+          }
+          validate_authority() {
+            local mutation="$1"
+            if ! refresh_scoped_authority "$mutation"; then
+              echo "::error::Live Azure authority refresh failed before ${mutation}." >&2
+              return 1
+            fi
+            if ! node scripts/render-sd008-azure-authority.mjs \
+              --validate-packet .tmp-sd008-authority.json \
+              --packet-sha256 "$AUTHORITY_PACKET_SHA256" \
+              --phase traffic \
+              --mutation "$mutation" \
+              --now "$(node -p 'new Date().toISOString()')" \
+              --subscription-id "${{ vars.AZURE_SUBSCRIPTION_ID }}" \
+              --traffic-principal-object-id "$TRAFFIC_PRINCIPAL_OBJECT_ID" \
+              --azure-client-id "$AZURE_CLIENT_ID" \
+              --azure-tenant-id "${{ vars.AZURE_TENANT_ID }}" \
+              --authenticated-azure-client-id "$AUTHENTICATED_AZURE_CLIENT_ID" \
+              --authenticated-principal-object-id "$AUTHENTICATED_PRINCIPAL_OBJECT_ID" \
+              --authenticated-principal-type "$AUTHENTICATED_PRINCIPAL_TYPE" \
+              --authenticated-tenant-id "$AUTHENTICATED_TENANT_ID" \
+              --live-role-assignments .tmp-sd008-live-role-assignments.json \
+              --live-role-definitions .tmp-sd008-live-role-definitions.json \
+              --resource-group "$RESOURCE_GROUP" \
+              --container-app "$APP_NAME" \
+              --source-commit "$AUTHORIZED_COMMIT" \
+              --image-digest "$IMAGE_DIGEST" \
+              --publication-evidence-digest "$PUBLICATION_EVIDENCE_DIGEST" \
+              --session-run-id "$GITHUB_RUN_ID" \
+              --expected-owner-approval-reference "$AUTHORITY_APPROVAL_REFERENCE" \
+              --expected-owner-approval-digest "$AUTHORITY_APPROVAL_DIGEST" \
+              --expected-owner-approved-at "$AUTHORITY_APPROVED_AT"; then
+              echo "::error::Authority revalidation failed immediately before Azure mutation ${mutation}." >&2
+              return 1
+            fi
+          }
+          traffic_shifted=false
+          traffic_restored=false
+          restore_traffic() {
+            local mutation="$1"
+            local baseline_weight=""
+            if ! validate_authority "$mutation"; then
+              echo "::error::Traffic restoration is blocked because authority validation failed." >&2
+              return 1
+            fi
+            if ! az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
+              --revision-weight "$BASELINE_REVISION=100" "$CANDIDATE_REVISION=0" >/dev/null; then
+              echo "::error::Azure rejected traffic restoration." >&2
+              return 1
+            fi
+            if ! baseline_weight="$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[?revisionName=='$BASELINE_REVISION'].weight | [0]" -o tsv)"; then
+              echo "::error::Azure traffic restoration reread failed." >&2
+              return 1
+            fi
+            if [[ "$baseline_weight" != "100" ]]; then
+              echo "::error::Azure traffic restoration reread did not prove 100 percent baseline weight." >&2
+              return 1
+            fi
+            traffic_restored=true
+          }
+          rollback_on_failure() {
+            local primary_status=$?
+            trap - EXIT
+            if [[ "$primary_status" -ne 0 && "$traffic_shifted" == "true" && "$traffic_restored" != "true" ]]; then
+              set +e
+              restore_traffic traffic-rollback
+              local rollback_status=$?
+              set -e
+              if [[ "$rollback_status" -ne 0 ]]; then
+                echo "::error::Traffic rollback failed or its 15-minute authority window was insufficient; attended incident response is required." >&2
+              fi
+            fi
+            exit "$primary_status"
+          }
+          trap rollback_on_failure EXIT
+          validate_authority traffic-promotion
+          traffic_shifted=true
           az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
             --revision-weight "$BASELINE_REVISION=0" "$CANDIDATE_REVISION=100" >/dev/null
           [[ "$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[?revisionName=='$CANDIDATE_REVISION'].weight | [0]" -o tsv)" == "100" ]]
-          curl --silent --show-error --fail --max-time 15 --header "Authorization: Bearer $access_token" "https://${APP_FQDN}/api/v1/health/ready" > .tmp-sd008-promoted-ready.json
-          echo "::add-mask::$access_token"
+          access_token="$(node scripts/get-entra-smoke-token.mjs)"
+          if [[ ! "$access_token" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
+            access_token=""
+            unset access_token
+            echo "::error::Dedicated traffic smoke token is not an exact three-segment base64url JWT." >&2
+            exit 1
+          fi
+          printf 'Authorization: Bearer %s\n' "$access_token" \
+            | curl --silent --show-error --fail --max-time 15 --header @- \
+              "https://${APP_FQDN}/api/v1/health/ready" > .tmp-sd008-promoted-ready.json
           SIGNALDESK_BASE_URL="https://${APP_FQDN}" \
           SIGNALDESK_AUTHORIZATION="Bearer $access_token" \
             npx playwright test --config playwright.config.ts
-          az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
-            --revision-weight "$BASELINE_REVISION=100" "$CANDIDATE_REVISION=0" >/dev/null
-          [[ "$(az containerapp ingress traffic show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query "[?revisionName=='$BASELINE_REVISION'].weight | [0]" -o tsv)" == "100" ]]
-          curl --silent --show-error --fail --max-time 15 --header "Authorization: Bearer $access_token" "https://${APP_FQDN}/api/v1/health/ready" > .tmp-sd008-rollback-ready.json
+          restore_traffic traffic-restore
+          trap - EXIT
+          printf 'Authorization: Bearer %s\n' "$access_token" \
+            | curl --silent --show-error --fail --max-time 15 --header @- \
+              "https://${APP_FQDN}/api/v1/health/ready" > .tmp-sd008-rollback-ready.json
+          token_scan_status=0
+          >/dev/null grep -F -- "$access_token" .tmp-sd008-promoted-ready.json .tmp-sd008-rollback-ready.json || token_scan_status=$?
+          node scripts/check-sd008-secret-scan-exit.mjs "$token_scan_status" traffic-token
+          access_token=""
+          unset access_token
           az containerapp revision list --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
             --query '[].{name:name,active:properties.active,healthState:properties.healthState,trafficWeight:properties.trafficWeight}' \
             -o json > .tmp-sd008-revisions.json
@@ -768,7 +1328,7 @@ jobs:
             --query '[].{time:eventTimestamp,operation:operationName.value,status:status.value,correlationId:correlationId}' \
             -o json > .tmp-sd008-activity.json
           logs_ready=false
-          for attempt in $(seq 1 12); do
+          for _ in $(seq 1 12); do
             az monitor log-analytics query --workspace "$WORKSPACE_CUSTOMER_ID" \
               --analytics-query "ContainerAppConsoleLogs_CL | where TimeGenerated > ago(60m) | where ContainerAppName_s == '$APP_NAME' | extend LogSha256=hash_sha256(Log_s) | project TimeGenerated, RevisionName_s, Stream_s, LogSha256 | take 200" \
               -o json > .tmp-sd008-console-logs.json
@@ -779,9 +1339,6 @@ jobs:
             sleep 15
           done
           [[ "$logs_ready" == "true" ]]
-          for secret_value in "$access_token"; do
-            ! grep -F -R -- "$secret_value" .tmp-sd008-*.json
-          done
           jq -n \
             --arg rollbackVerifiedAt "$(node -p 'new Date().toISOString()')" \
             --arg baselineRevision "$BASELINE_REVISION" \
@@ -834,7 +1391,7 @@ jobs:
 
   staging-teardown:
     name: Approve teardown and prove zero active staging resources
-    needs: [staging-provision, staging-traffic]
+    needs: [build-and-attest, staging-provision, staging-traffic]
     if: ${{ always() && needs.staging-provision.result != 'skipped' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -850,6 +1407,17 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Load exact fresh teardown authority packet
+        shell: bash
+        env:
+          SD008_AUTHORITY_PACKET_B64: ${{ vars.SD008_AUTHORITY_PACKET_B64 }}
+          SD008_AUTHORITY_PACKET_SHA256: ${{ vars.SD008_AUTHORITY_PACKET_SHA256 }}
+        run: |
+          set -euo pipefail
+          [[ "$SD008_AUTHORITY_PACKET_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s' "$SD008_AUTHORITY_PACKET_B64" | base64 --decode > .tmp-sd008-authority.json
+          [[ "$(sha256sum .tmp-sd008-authority.json | cut -d' ' -f1)" == "$SD008_AUTHORITY_PACKET_SHA256" ]]
+
       - name: Log in to Azure with GitHub OIDC
         uses: Azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6
         with:
@@ -860,31 +1428,44 @@ jobs:
       - name: Prove mutation leases are separated before teardown
         shell: bash
         env:
+          APP_NAME: ${{ needs.staging-provision.outputs.app-name }}
           RESOURCE_GROUP: rg-signaldesk-stg-cin
           PROVISION_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_PROVISION_PRINCIPAL_OBJECT_ID }}
           TRAFFIC_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TRAFFIC_PRINCIPAL_OBJECT_ID }}
           TEARDOWN_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TEARDOWN_PRINCIPAL_OBJECT_ID }}
         run: |
           set -euo pipefail
-          for principal in "$PROVISION_PRINCIPAL_OBJECT_ID" "$TRAFFIC_PRINCIPAL_OBJECT_ID" "$TEARDOWN_PRINCIPAL_OBJECT_ID"; do
+          for principal in "$PROVISION_PRINCIPAL_OBJECT_ID" "$TEARDOWN_PRINCIPAL_OBJECT_ID"; do
             [[ "$principal" =~ ^[0-9a-fA-F-]{36}$ ]]
           done
           resource_group_id="$(az group show --name "$RESOURCE_GROUP" --query id -o tsv)"
           subscription_id="$(az account show --query id -o tsv)"
           subscription_scope="/subscriptions/${subscription_id}"
-          for revoked_principal in "$PROVISION_PRINCIPAL_OBJECT_ID" "$TRAFFIC_PRINCIPAL_OBJECT_ID"; do
-            revoked_count="$(az role assignment list \
-              --assignee-object-id "$revoked_principal" --all \
+          provision_revoked_count="$(az role assignment list \
+            --assignee-object-id "$PROVISION_PRINCIPAL_OBJECT_ID" \
+            --scope "$resource_group_id" --include-inherited \
+            --fill-principal-name false -o json \
+            | jq '[.[] | select(.roleDefinitionName == "SignalDesk SD008 Provision")] | length')"
+          [[ "$provision_revoked_count" == "0" ]]
+          app_exists=false
+          if app_id="$(az containerapp show --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" --query id -o tsv 2>/dev/null)"; then
+            app_exists=true
+          fi
+          if [[ "$app_exists" == "true" ]]; then
+            [[ "$TRAFFIC_PRINCIPAL_OBJECT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+            traffic_revoked_count="$(az role assignment list \
+              --assignee-object-id "$TRAFFIC_PRINCIPAL_OBJECT_ID" \
+              --scope "$app_id" --include-inherited \
               --fill-principal-name false -o json \
               | jq '[.[] | select(
-                  .roleDefinitionName == "SignalDesk SD008 Provision" or
                   .roleDefinitionName == "SignalDesk SD008 Traffic" or
                   .roleDefinitionName == "SignalDesk SD008 Evidence Reader"
                 )] | length')"
-            [[ "$revoked_count" == "0" ]]
-          done
+            [[ "$traffic_revoked_count" == "0" ]]
+          fi
           teardown_assignments="$(az role assignment list \
-            --assignee-object-id "$TEARDOWN_PRINCIPAL_OBJECT_ID" --all \
+            --assignee-object-id "$TEARDOWN_PRINCIPAL_OBJECT_ID" \
+            --scope "$resource_group_id" --include-inherited \
             --fill-principal-name false -o json)"
           jq -e --arg group "$resource_group_id" --arg subscription "$subscription_scope" '
             ([.[] | select(
@@ -894,7 +1475,14 @@ jobs:
             ([.[] | select(
               .roleDefinitionName == "SignalDesk SD008 Post Delete Verifier" and
               (.scope | ascii_downcase) == ($subscription | ascii_downcase)
-            )] | length == 1)
+            )] | length == 1) and
+            ([.[] | select(
+              .roleDefinitionName == "SignalDesk SD008 Provision" or
+              .roleDefinitionName == "SignalDesk SD008 Traffic" or
+              .roleDefinitionName == "SignalDesk SD008 Evidence Reader" or
+              .roleDefinitionName == "SignalDesk SD008 Teardown" or
+              .roleDefinitionName == "SignalDesk SD008 Post Delete Verifier"
+            )] | length == 2)
           ' <<<"$teardown_assignments" >/dev/null
 
       - name: Delete exact SD-008 resource group and verify absence
@@ -902,11 +1490,145 @@ jobs:
         shell: bash
         env:
           RESOURCE_GROUP: rg-signaldesk-stg-cin
+          AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
+          IMAGE_DIGEST: ${{ needs.build-and-attest.outputs.image-digest }}
+          PUBLICATION_EVIDENCE_DIGEST: ${{ needs.build-and-attest.outputs.publication-evidence-sha256 }}
+          AUTHORITY_PACKET_SHA256: ${{ vars.SD008_AUTHORITY_PACKET_SHA256 }}
+          AUTHORITY_APPROVAL_REFERENCE: ${{ vars.SD008_AUTHORITY_APPROVAL_REFERENCE }}
+          AUTHORITY_APPROVAL_DIGEST: ${{ vars.SD008_AUTHORITY_APPROVAL_DIGEST }}
+          AUTHORITY_APPROVED_AT: ${{ vars.SD008_AUTHORITY_APPROVED_AT }}
+          PRIOR_TRAFFIC_AUTHORITY_CLOSURE_DIGEST: ${{ vars.SD008_TRAFFIC_AUTHORITY_CLOSURE_SHA256 }}
+          PRIOR_TRAFFIC_AUTHORITY_REMOVED_AT: ${{ vars.SD008_TRAFFIC_AUTHORITY_REMOVED_AT }}
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          TEARDOWN_PRINCIPAL_OBJECT_ID: ${{ vars.STAGING_TEARDOWN_PRINCIPAL_OBJECT_ID }}
           APP_FQDN: ${{ needs.staging-provision.outputs.app-fqdn }}
           SESSION_STARTED_AT: ${{ needs.staging-provision.outputs.session-started-at }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          set +x
+          refresh_scoped_authority() {
+            local mutation="$1"
+            local account_principal_type=""
+            local arm_access_token=""
+            local identity_json=""
+            local identity_fields=""
+            local teardown_assignment_id=""
+            local teardown_assignment_status=""
+            local token_principal_type=""
+            if [[ "$mutation" == "teardown-closure" ]]; then
+              AUTHORITY_QUERY_SCOPE="/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}"
+            else
+              AUTHORITY_QUERY_SCOPE="/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${RESOURCE_GROUP}"
+            fi
+            if ! account_principal_type="$(az account show --query user.type -o tsv)"; then
+              echo "::error::Azure authenticated principal type could not be read." >&2
+              return 1
+            fi
+            if ! arm_access_token="$(az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv)"; then
+              echo "::error::Current ARM access token could not be acquired." >&2
+              return 1
+            fi
+            if ! identity_json="$(printf '%s' "$arm_access_token" | node scripts/render-sd008-azure-authority.mjs --decode-arm-token stdin)"; then
+              arm_access_token=""
+              unset arm_access_token
+              echo "::error::Current ARM token identity claims were rejected." >&2
+              return 1
+            fi
+            if ! identity_fields="$(jq -er '[.clientId,.principalObjectId,.tenantId,.principalType] | @tsv' <<<"$identity_json")"; then
+              arm_access_token=""
+              unset arm_access_token
+              echo "::error::Decoded ARM identity fields are incomplete." >&2
+              return 1
+            fi
+            IFS=$'\t' read -r AUTHENTICATED_AZURE_CLIENT_ID AUTHENTICATED_PRINCIPAL_OBJECT_ID AUTHENTICATED_TENANT_ID token_principal_type <<<"$identity_fields"
+            if [[ "${account_principal_type,,}" != "serviceprincipal" || "$token_principal_type" != "ServicePrincipal" ]]; then
+              arm_access_token=""
+              unset arm_access_token
+              echo "::error::Azure authentication is not an application service principal." >&2
+              return 1
+            fi
+            AUTHENTICATED_PRINCIPAL_TYPE="$account_principal_type"
+            if [[ "$mutation" == "teardown-closure" ]]; then
+              if ! teardown_assignment_id="$(jq -er '.assignments[] | select(.roleName == "SignalDesk SD008 Teardown") | .assignmentId' .tmp-sd008-authority.json)"; then
+                arm_access_token=""
+                unset arm_access_token
+                echo "::error::Exact teardown assignment ID could not be read from the authority packet." >&2
+                return 1
+              fi
+              if ! teardown_assignment_status="$(
+                printf 'Authorization: Bearer %s\n' "$arm_access_token" \
+                  | curl --silent --show-error --output /dev/null --write-out '%{http_code}' --header @- \
+                    "https://management.azure.com${teardown_assignment_id}?api-version=2022-04-01"
+              )"; then
+                arm_access_token=""
+                unset arm_access_token
+                echo "::error::post-delete teardown assignment absence could not be proven by exact ARM lookup." >&2
+                return 1
+              fi
+              arm_access_token=""
+              unset arm_access_token
+              if [[ "$teardown_assignment_status" != "404" ]]; then
+                echo "::error::post-delete teardown assignment absence could not be proven by exact ARM lookup (HTTP ${teardown_assignment_status})." >&2
+                return 1
+              fi
+              jq -n --arg assignmentId "$teardown_assignment_id" \
+                '{assignmentId:$assignmentId,state:"absent",httpStatus:404}' \
+                > .tmp-sd008-post-delete-teardown-assignment.json
+            else
+              arm_access_token=""
+              unset arm_access_token
+            fi
+            if ! az role assignment list --scope "$AUTHORITY_QUERY_SCOPE" --assignee-object-id "$TEARDOWN_PRINCIPAL_OBJECT_ID" --include-inherited --fill-principal-name false -o json > .tmp-sd008-live-role-assignments.json; then
+              echo "::error::Live Azure role assignments could not be enumerated." >&2
+              return 1
+            fi
+            if ! az role definition list --custom-role-only --scope "$AUTHORITY_QUERY_SCOPE" -o json > .tmp-sd008-live-role-definitions.json; then
+              echo "::error::Live Azure custom role definitions could not be enumerated." >&2
+              return 1
+            fi
+          }
+          validate_authority() {
+            local mutation="$1"
+            local post_delete_arguments=()
+            if ! refresh_scoped_authority "$mutation"; then
+              echo "::error::Live Azure authority refresh failed before ${mutation}." >&2
+              return 1
+            fi
+            if [[ "$mutation" == "teardown-closure" ]]; then
+              post_delete_arguments=(--post-delete-teardown-assignment .tmp-sd008-post-delete-teardown-assignment.json)
+            fi
+            if ! node scripts/render-sd008-azure-authority.mjs \
+              --validate-packet .tmp-sd008-authority.json \
+              --packet-sha256 "$AUTHORITY_PACKET_SHA256" \
+              --phase teardown \
+              --mutation "$mutation" \
+              --now "$(node -p 'new Date().toISOString()')" \
+              --subscription-id "${{ vars.AZURE_SUBSCRIPTION_ID }}" \
+              --teardown-principal-object-id "$TEARDOWN_PRINCIPAL_OBJECT_ID" \
+              --azure-client-id "$AZURE_CLIENT_ID" \
+              --azure-tenant-id "${{ vars.AZURE_TENANT_ID }}" \
+              --authenticated-azure-client-id "$AUTHENTICATED_AZURE_CLIENT_ID" \
+              --authenticated-principal-object-id "$AUTHENTICATED_PRINCIPAL_OBJECT_ID" \
+              --authenticated-principal-type "$AUTHENTICATED_PRINCIPAL_TYPE" \
+              --authenticated-tenant-id "$AUTHENTICATED_TENANT_ID" \
+              --live-role-assignments .tmp-sd008-live-role-assignments.json \
+              --live-role-definitions .tmp-sd008-live-role-definitions.json \
+              "${post_delete_arguments[@]}" \
+              --resource-group "$RESOURCE_GROUP" \
+              --source-commit "$AUTHORIZED_COMMIT" \
+              --image-digest "$IMAGE_DIGEST" \
+              --publication-evidence-digest "$PUBLICATION_EVIDENCE_DIGEST" \
+              --session-run-id "$GITHUB_RUN_ID" \
+              --expected-owner-approval-reference "$AUTHORITY_APPROVAL_REFERENCE" \
+              --expected-owner-approval-digest "$AUTHORITY_APPROVAL_DIGEST" \
+              --expected-owner-approved-at "$AUTHORITY_APPROVED_AT" \
+              --expected-prior-traffic-authority-closure-digest "$PRIOR_TRAFFIC_AUTHORITY_CLOSURE_DIGEST" \
+              --expected-prior-traffic-authority-removed-at "$PRIOR_TRAFFIC_AUTHORITY_REMOVED_AT"; then
+              echo "::error::Authority revalidation failed immediately before Azure mutation ${mutation}." >&2
+              return 1
+            fi
+          }
           session_started_at="$SESSION_STARTED_AT"
           if [[ -z "$session_started_at" ]]; then
             if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "true" ]]; then
@@ -919,26 +1641,39 @@ jobs:
           date --date="$session_started_at" +%s >/dev/null
           expected_vault_count=0
           if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "true" ]]; then
+            resource_group_identity="$(az group show --name "$RESOURCE_GROUP" \
+              --query '{id:id,environment:tags.environment,workItem:tags.workItem,owner:tags.owner}' -o json)"
+            if ! jq -e \
+              --arg id "/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${RESOURCE_GROUP}" '
+                (.id | ascii_downcase) == ($id | ascii_downcase) and
+                .environment == "staging" and
+                .workItem == "SD-008" and
+                .owner == "Neel"
+              ' <<<"$resource_group_identity" >/dev/null; then
+              echo "::error::Resource group identity or required cleanup tags do not match this SD-008 run." >&2
+              exit 1
+            fi
             az keyvault list --resource-group "$RESOURCE_GROUP" \
               --query '[].{name:name}' -o json > .tmp-sd008-active-vaults-before-delete.json
             expected_vault_count="$(jq 'length' .tmp-sd008-active-vaults-before-delete.json)"
+            validate_authority teardown-delete
             az group delete --name "$RESOURCE_GROUP" --yes --no-wait
           else
             printf '[]\n' > .tmp-sd008-active-vaults-before-delete.json
           fi
-          for attempt in $(seq 1 80); do
+          for _ in $(seq 1 80); do
             if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "false" ]]; then
               break
             fi
             sleep 15
           done
           [[ "$(az group exists --name "$RESOURCE_GROUP")" == "false" ]]
+          validate_authority teardown-closure
           active_resource_count="$(az resource list --query "[?resourceGroup=='$RESOURCE_GROUP'] | length(@)" -o tsv)"
           [[ "$active_resource_count" == "0" ]]
-          endpoint_absent=true
           if [[ -n "$APP_FQDN" ]]; then
             endpoint_status=""
-            for attempt in $(seq 1 40); do
+            for _ in $(seq 1 40); do
               endpoint_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 "https://${APP_FQDN}" || true)"
               if [[ "$endpoint_status" == "000" ]]; then
                 break
@@ -1051,10 +1786,10 @@ jobs:
             --jobs .tmp-sd008-jobs-raw.json \
             --output .tmp-sd008-trace-inputs/github-proof.json
           cp .tmp-sd008-source/.tmp-sd008-source-proof.json .tmp-sd008-trace-inputs/source-proof.json
-          cp .tmp-sd008-downloads/sd008-build-evidence-${GITHUB_RUN_ID}/.tmp-sd008-build-public.json .tmp-sd008-trace-inputs/build-proof.json
-          cp .tmp-sd008-downloads/sd008-provision-evidence-${GITHUB_RUN_ID}/.tmp-sd008-provision-public.json .tmp-sd008-trace-inputs/provision-public.json
-          cp .tmp-sd008-downloads/sd008-traffic-evidence-${GITHUB_RUN_ID}/.tmp-sd008-traffic-public.json .tmp-sd008-trace-inputs/traffic-public.json
-          cp .tmp-sd008-downloads/sd008-teardown-evidence-${GITHUB_RUN_ID}/.tmp-sd008-teardown-public.json .tmp-sd008-trace-inputs/teardown-public.json
+          cp ".tmp-sd008-downloads/sd008-build-evidence-${GITHUB_RUN_ID}/.tmp-sd008-build-public.json" .tmp-sd008-trace-inputs/build-proof.json
+          cp ".tmp-sd008-downloads/sd008-provision-evidence-${GITHUB_RUN_ID}/.tmp-sd008-provision-public.json" .tmp-sd008-trace-inputs/provision-public.json
+          cp ".tmp-sd008-downloads/sd008-traffic-evidence-${GITHUB_RUN_ID}/.tmp-sd008-traffic-public.json" .tmp-sd008-trace-inputs/traffic-public.json
+          cp ".tmp-sd008-downloads/sd008-teardown-evidence-${GITHUB_RUN_ID}/.tmp-sd008-teardown-public.json" .tmp-sd008-trace-inputs/teardown-public.json
           jq -n \
             --arg repository "$GITHUB_REPOSITORY" \
             --arg commit "$AUTHORIZED_COMMIT" \
@@ -1066,15 +1801,23 @@ jobs:
               repository:$repository,
               commit:$commit,
               runId:$runId,
-              event:"post-delete-verifier-removed",
-              roleName:"SignalDesk SD008 Post Delete Verifier",
-              assignmentState:"OWNER_MUST_VERIFY_ABSENT",
-              assignmentCount:null,
-              performedBy:"Neel",
+               event:"post-delete-verifier-removed",
+               roleName:"SignalDesk SD008 Post Delete Verifier",
+               assignmentState:"OWNER_MUST_VERIFY_ABSENT",
+               assignmentCount:null,
+               teardownRoleAssignmentState:"OWNER_MUST_VERIFY_ABSENT",
+               teardownRoleAssignmentCount:null,
+               teardownRoleRemovedAt:null,
+               ingressCredentialState:"OWNER_MUST_VERIFY_REVOKED",
+               ingressCredentialRevokedAt:null,
+               stagingProvisionEnvironmentSecretState:"OWNER_MUST_VERIFY_REMOVED",
+               stagingProvisionEnvironmentSecretRemovedAt:null,
+               requiredRemovalOrder:["SignalDesk SD008 Teardown","ingress-credential","staging-provision:ENTRA_CLIENT_SECRET","SignalDesk SD008 Post Delete Verifier"],
+               performedBy:"Neel",
               occurredAt:null,
               evidenceSha256:null
             }' > .tmp-sd008-trace-inputs/authority-closure-template.json
-          (cd .tmp-sd008-trace-inputs && sha256sum *.json | sort) > .tmp-sd008-trace-inputs/SHA256SUMS
+          (cd .tmp-sd008-trace-inputs && sha256sum -- *.json | sort) > .tmp-sd008-trace-inputs/SHA256SUMS
           rm .tmp-sd008-approvals-raw.json .tmp-sd008-jobs-raw.json
 
       - name: Export public trace inputs only
