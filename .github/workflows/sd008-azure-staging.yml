@@ -293,9 +293,18 @@ jobs:
           trap - EXIT
           cleanup_canonical_container
 
+          payload_script="$(pwd)/scripts/hash-sd008-application-payload.mjs"
+          [[ -f "$payload_script" ]]
+          docker run --rm --read-only --entrypoint node \
+            --mount "type=bind,src=${payload_script},dst=/tmp/hash-sd008-application-payload.mjs,readonly" \
+            "$CANONICAL_IMAGE" /tmp/hash-sd008-application-payload.mjs --root /app \
+            > .tmp/canonical-application-payload.json
           docker run --rm --entrypoint sh "$CANONICAL_IMAGE" -c \
             "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
-            | awk '{print $1}' > .tmp/canonical-tree.txt
+            | awk '{print $1}' > .tmp/canonical-runtime-tree.txt
+          docker run --rm --entrypoint sh "$CANONICAL_IMAGE" -c \
+            "find /app -type f -printf '.' | wc -c" \
+            | tr -d '[:space:]' > .tmp/canonical-runtime-tree-count.txt
 
           docker buildx build \
             --no-cache \
@@ -307,9 +316,16 @@ jobs:
             --output "type=docker,name=$ADVISORY_IMAGE" \
             .tmp/container-source
 
+          docker run --rm --read-only --entrypoint node \
+            --mount "type=bind,src=${payload_script},dst=/tmp/hash-sd008-application-payload.mjs,readonly" \
+            "$ADVISORY_IMAGE" /tmp/hash-sd008-application-payload.mjs --root /app \
+            > .tmp/advisory-application-payload.json
           docker run --rm --entrypoint sh "$ADVISORY_IMAGE" -c \
             "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
-            | awk '{print $1}' > .tmp/advisory-tree.txt
+            | awk '{print $1}' > .tmp/advisory-runtime-tree.txt
+          docker run --rm --entrypoint sh "$ADVISORY_IMAGE" -c \
+            "find /app -type f -printf '.' | wc -c" \
+            | tr -d '[:space:]' > .tmp/advisory-runtime-tree-count.txt
 
           mkdir .tmp/canonical-oci .tmp/advisory-oci
           tar -xf .tmp/canonical.tar -C .tmp/canonical-oci
@@ -338,19 +354,41 @@ jobs:
 
           const canonical = inspect(".tmp/canonical-oci");
           const advisory = inspect(".tmp/advisory-oci");
-          const canonicalTreeSha256 = fs.readFileSync(".tmp/canonical-tree.txt", "utf8").trim();
-          const advisoryTreeSha256 = fs.readFileSync(".tmp/advisory-tree.txt", "utf8").trim();
-          for (const [name, digest] of Object.entries({ canonicalTreeSha256, advisoryTreeSha256 })) {
+          function readPayload(path, name) {
+            const payload = JSON.parse(fs.readFileSync(path, "utf8"));
+            if (payload.schemaVersion !== 1) throw new Error(`Invalid ${name} schema version`);
+            if (!/^[0-9a-f]{64}$/.test(payload.sha256)) throw new Error(`Invalid ${name} SHA-256`);
+            if (!Number.isSafeInteger(payload.fileCount) || payload.fileCount < 1) {
+              throw new Error(`Invalid ${name} file count`);
+            }
+            return payload;
+          }
+
+          const canonicalPayload = readPayload(".tmp/canonical-application-payload.json", "canonical payload");
+          const advisoryPayload = readPayload(".tmp/advisory-application-payload.json", "advisory payload");
+          const canonicalRuntimeTreeSha256 = fs.readFileSync(".tmp/canonical-runtime-tree.txt", "utf8").trim();
+          const advisoryRuntimeTreeSha256 = fs.readFileSync(".tmp/advisory-runtime-tree.txt", "utf8").trim();
+          const canonicalRuntimeTreeFileCount = Number(fs.readFileSync(".tmp/canonical-runtime-tree-count.txt", "utf8").trim());
+          const advisoryRuntimeTreeFileCount = Number(fs.readFileSync(".tmp/advisory-runtime-tree-count.txt", "utf8").trim());
+          for (const [name, digest] of Object.entries({ canonicalRuntimeTreeSha256, advisoryRuntimeTreeSha256 })) {
             if (!/^[0-9a-f]{64}$/.test(digest)) throw new Error(`Invalid ${name}: ${digest}`);
           }
-          const applicationTreeEqual = canonicalTreeSha256 === advisoryTreeSha256;
+          for (const [name, count] of Object.entries({ canonicalRuntimeTreeFileCount, advisoryRuntimeTreeFileCount })) {
+            if (!Number.isSafeInteger(count) || count < 1) throw new Error(`Invalid ${name}: ${count}`);
+          }
+          const applicationPayloadEqual =
+            canonicalPayload.sha256 === advisoryPayload.sha256 &&
+            canonicalPayload.fileCount === advisoryPayload.fileCount;
+          const runtimeTreeEqual =
+            canonicalRuntimeTreeSha256 === advisoryRuntimeTreeSha256 &&
+            canonicalRuntimeTreeFileCount === advisoryRuntimeTreeFileCount;
           const comparisons = {
             configBitIdentical: canonical.configBytesSha256 === advisory.configBytesSha256,
             manifestBitIdentical: canonical.manifestDigest === advisory.manifestDigest,
             layersIdentical: JSON.stringify(canonical.layerDigests) === JSON.stringify(advisory.layerDigests),
             finalDigestIdentical: canonical.finalDigest === advisory.finalDigest
           };
-          const advisoryFailure = Object.values(comparisons).some((value) => !value);
+          const advisoryFailure = !runtimeTreeEqual || Object.values(comparisons).some((value) => !value);
           function digestSummary(image) {
             return {
               configDigest: image.configDigest,
@@ -361,19 +399,31 @@ jobs:
           }
           const diagnostics = {
             schemaVersion: 1,
-            status: !applicationTreeEqual
+            status: !applicationPayloadEqual
               ? "blocking-failure"
               : advisoryFailure
                 ? "advisory-failure"
                 : "advisory-match",
             applicationTree: {
-              canonicalSha256: canonicalTreeSha256,
-              advisorySha256: advisoryTreeSha256,
-              equal: applicationTreeEqual,
-              status: applicationTreeEqual ? "blocking-pass" : "blocking-failure"
+              selection: "signaldesk-owned-executable-payload-v1",
+              canonicalSha256: canonicalPayload.sha256,
+              advisorySha256: advisoryPayload.sha256,
+              canonicalFileCount: canonicalPayload.fileCount,
+              advisoryFileCount: advisoryPayload.fileCount,
+              equal: applicationPayloadEqual,
+              status: applicationPayloadEqual ? "blocking-pass" : "blocking-failure"
             },
-            blockingMismatch: !applicationTreeEqual,
-            reproducibilityClaim: advisoryFailure || !applicationTreeEqual ? "suppressed" : "advisory-only",
+            runtimeTree: {
+              selection: "all-regular-files-below-app-v1",
+              canonicalSha256: canonicalRuntimeTreeSha256,
+              advisorySha256: advisoryRuntimeTreeSha256,
+              canonicalFileCount: canonicalRuntimeTreeFileCount,
+              advisoryFileCount: advisoryRuntimeTreeFileCount,
+              equal: runtimeTreeEqual,
+              status: runtimeTreeEqual ? "advisory-match" : "advisory-failure"
+            },
+            blockingMismatch: !applicationPayloadEqual,
+            reproducibilityClaim: advisoryFailure || !applicationPayloadEqual ? "suppressed" : "advisory-only",
             canonical: digestSummary(canonical),
             advisory: digestSummary(advisory),
             comparisons
@@ -386,11 +436,11 @@ jobs:
           NODE
           cat .tmp/reproducibility-diagnostics.json >> "$GITHUB_STEP_SUMMARY"
           if [[ "$(node -p "require('./.tmp/reproducibility-diagnostics.json').blockingMismatch")" == "true" ]]; then
-            echo "::error::Canonical/advisory application-tree mismatch is blocking; sanitized diagnostics were written before exit." >&2
+            echo "::error::Canonical/advisory application-payload mismatch is blocking; sanitized diagnostics were written before exit." >&2
             exit 1
           fi
           if [[ "$(node -p "require('./.tmp/reproducibility-diagnostics.json').status")" == "advisory-failure" ]]; then
-            echo "::warning::Independent OCI bit identity failed; reproducibility claim is suppressed."
+            echo "::warning::Independent runtime-tree or OCI bit identity failed; reproducibility claim is suppressed."
           fi
 
       - name: Retain independent-build diagnostics even when later gates fail
@@ -471,10 +521,14 @@ jobs:
           [[ "$canonical_config_digest" == "$registry_config_digest" ]]
 
           docker pull "ghcr.io/neel-error404/signaldesk@$registry_digest"
-          docker run --rm --entrypoint sh "ghcr.io/neel-error404/signaldesk@$registry_digest" -c \
-            "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
-            | awk '{print $1}' > .tmp/published-tree.txt
-          diff --strip-trailing-cr .tmp/canonical-tree.txt .tmp/published-tree.txt
+          docker run --rm --read-only --entrypoint node \
+            --mount "type=bind,src=${payload_script},dst=/tmp/hash-sd008-application-payload.mjs,readonly" \
+            "ghcr.io/neel-error404/signaldesk@$registry_digest" \
+            /tmp/hash-sd008-application-payload.mjs --root /app \
+            > .tmp/published-application-payload.json
+          diff --strip-trailing-cr \
+            .tmp/canonical-application-payload.json \
+            .tmp/published-application-payload.json
           echo "digest=$registry_digest" >> "$GITHUB_OUTPUT"
           echo "registry-config-digest=$registry_config_digest" >> "$GITHUB_OUTPUT"
 
@@ -517,7 +571,7 @@ jobs:
             --arg runId "$GITHUB_RUN_ID" \
             --arg imageDigest "$IMAGE_DIGEST" \
              --arg occurredAt "$(node -p 'new Date().toISOString()')" \
-             --arg applicationTreeSha256 "$(tr -d '\r\n' < .tmp/published-tree.txt)" \
+             --arg applicationTreeSha256 "$(node -p "require('./.tmp/published-application-payload.json').sha256")" \
              --arg sbomSha256 "$(sha256sum .tmp/signaldesk.spdx.json | cut -d' ' -f1)" \
              --arg vulnerabilityReportSha256 "$(sha256sum .tmp/signaldesk-grype.sarif | cut -d' ' -f1)" \
              --slurpfile reproducibility .tmp/reproducibility-diagnostics.json \
@@ -551,10 +605,14 @@ jobs:
           retention-days: 30
           path: |
             .tmp/container-context/context-manifest.json
-            .tmp/canonical-tree.txt
-            .tmp/advisory-tree.txt
+            .tmp/canonical-application-payload.json
+            .tmp/advisory-application-payload.json
+            .tmp/canonical-runtime-tree.txt
+            .tmp/canonical-runtime-tree-count.txt
+            .tmp/advisory-runtime-tree.txt
+            .tmp/advisory-runtime-tree-count.txt
             .tmp/canonical-live.json
-            .tmp/published-tree.txt
+            .tmp/published-application-payload.json
             .tmp/registry-descriptor.txt
             .tmp/reproducibility-diagnostics.json
             .tmp/signaldesk.spdx.json
@@ -572,6 +630,12 @@ jobs:
       packages: read
       attestations: read
     steps:
+      - name: Check out exact workflow revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Download exact build evidence
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
@@ -588,10 +652,16 @@ jobs:
           [[ "$IMAGE_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
           docker logout ghcr.io || true
           docker pull "ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST"
-          docker run --rm --entrypoint sh "ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" -c \
-            "find /app -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum" \
-            | awk '{print $1}' > .tmp/public-tree.txt
-          diff --strip-trailing-cr .tmp/build-evidence/published-tree.txt .tmp/public-tree.txt
+          payload_script="$(pwd)/scripts/hash-sd008-application-payload.mjs"
+          [[ -f "$payload_script" ]]
+          docker run --rm --read-only --entrypoint node \
+            --mount "type=bind,src=${payload_script},dst=/tmp/hash-sd008-application-payload.mjs,readonly" \
+            "ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" \
+            /tmp/hash-sd008-application-payload.mjs --root /app \
+            > .tmp/public-application-payload.json
+          diff --strip-trailing-cr \
+            .tmp/build-evidence/published-application-payload.json \
+            .tmp/public-application-payload.json
           gh attestation verify "oci://ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" \
             --repo Neel-Error404/signal-desk
 
