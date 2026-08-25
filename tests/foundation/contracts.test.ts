@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -746,7 +746,7 @@ describe("SD-008 ratified Azure staging contracts", () => {
     expect(workflow).toContain(
       '[[ "$SOURCE_DATE_EPOCH" == "$context_source_date_epoch" ]]'
     );
-    expect(workflow).toContain('status: applicationTreeEqual ? "blocking-pass" : "blocking-failure"');
+    expect(workflow).toContain('status: applicationPayloadEqual ? "blocking-pass" : "blocking-failure"');
     expect(workflow).toContain("configBitIdentical");
     expect(workflow).toContain("manifestBitIdentical");
     expect(workflow).toContain("layersIdentical");
@@ -1095,12 +1095,25 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(workflow).toContain('"http://127.0.0.1:${host_port}/api/v1/health/live"');
     expect(workflow).toContain("Canonical image liveness response was not live");
     expect(workflow).not.toContain('docker run --rm --entrypoint node "$CANONICAL_IMAGE" --version');
-    expect(workflow).toContain("Canonical/advisory application-tree mismatch is blocking");
+    expect(workflow).toContain("Canonical/advisory application-payload mismatch is blocking");
+    expect(
+      workflow.match(/\/tmp\/hash-sd008-application-payload\.mjs --root \/app/g)
+    ).toHaveLength(4);
+    expect(
+      workflow.match(/docker run --rm --read-only --entrypoint node/g)
+    ).toHaveLength(4);
+    expect(workflow).toContain('dst=/tmp/hash-sd008-application-payload.mjs,readonly');
+    expect(workflow).toContain(".tmp/canonical-application-payload.json");
+    expect(workflow).toContain(".tmp/advisory-application-payload.json");
+    expect(workflow).toContain(".tmp/canonical-runtime-tree.txt");
+    expect(workflow).toContain(".tmp/advisory-runtime-tree.txt");
     expect(workflow).toContain(".tmp/reproducibility-diagnostics.json");
     expect(workflow).toContain(
-      'reproducibilityClaim: advisoryFailure || !applicationTreeEqual ? "suppressed" : "advisory-only"'
+      'reproducibilityClaim: advisoryFailure || !applicationPayloadEqual ? "suppressed" : "advisory-only"'
     );
-    expect(workflow).toContain('echo "::warning::Independent OCI bit identity failed; reproducibility claim is suppressed."');
+    expect(workflow).toContain(
+      'echo "::warning::Independent runtime-tree or OCI bit identity failed; reproducibility claim is suppressed."'
+    );
     expect(workflow).toContain("image: signaldesk:sd008-canonical");
     expect(workflow).toContain('docker push "$PUBLICATION_TAG"');
     expect(workflow).toContain('[[ "$package_visibility" == "private" ]]');
@@ -1115,6 +1128,116 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(workflow).toContain(
       "IMAGE_DIGEST: ${{ needs.build-and-attest.outputs.image-digest }}"
     );
+  });
+
+  it("hashes only the SignalDesk-owned executable application payload", async () => {
+    const hasherSource = await text("scripts/hash-sd008-application-payload.mjs");
+    expect(hasherSource).toContain("constants.O_NOFOLLOW");
+    expect(hasherSource).toContain("pathIdentityMatchesDescriptor");
+    expect(hasherSource).toContain("Selected payload path identity changed before hashing");
+
+    await mkdir(".tmp", { recursive: true });
+    const fixtureRoot = await mkdtemp(join(process.cwd(), ".tmp", "sd008-payload-fixture-"));
+    const canonicalRoot = join(fixtureRoot, "canonical");
+    const advisoryRoot = join(fixtureRoot, "advisory");
+
+    const writePayload = async (root: string, frameworkMarker: string) => {
+      await Promise.all([
+        mkdir(join(root, ".next", "server", "app", "api", "health"), { recursive: true }),
+        mkdir(join(root, ".next", "server", "chunks"), { recursive: true }),
+        mkdir(join(root, ".next", "static", "chunks"), { recursive: true }),
+        mkdir(join(root, "node_modules", ".prisma", "client"), { recursive: true }),
+        mkdir(join(root, "prisma", "migrations"), { recursive: true }),
+        mkdir(join(root, "scripts"), { recursive: true })
+      ]);
+      await Promise.all([
+        writeFile(join(root, ".next", "server", "app", "api", "health", "route.js"), "route-v1\n"),
+        writeFile(
+          join(root, ".next", "server", "app", "api", "health", "route.js.nft.json"),
+          `${frameworkMarker}-trace\n`
+        ),
+        writeFile(join(root, ".next", "server", "chunks", "app.js"), "server-chunk-v1\n"),
+        writeFile(join(root, ".next", "static", "chunks", "app.js"), "static-chunk-v1\n"),
+        writeFile(join(root, "node_modules", ".prisma", "client", "index.js"), "prisma-client-v1\n"),
+        writeFile(join(root, "prisma", "migrations", "migration.sql"), "SELECT 1;\n"),
+        writeFile(join(root, "scripts", "bootstrap-database-roles.mjs"), "export {};\n"),
+        writeFile(join(root, "server.js"), "server-entrypoint-v1\n"),
+        writeFile(join(root, ".next", "prerender-manifest.json"), `${frameworkMarker}-preview-key\n`),
+        writeFile(
+          join(root, ".next", "server", "server-reference-manifest.json"),
+          `${frameworkMarker}-server-action-key\n`
+        )
+      ]);
+    };
+
+    const hashPayload = async (root: string) => {
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ["scripts/hash-sd008-application-payload.mjs", "--root", root],
+        { cwd: process.cwd() }
+      );
+      return JSON.parse(stdout) as { schemaVersion: number; sha256: string; fileCount: number };
+    };
+
+    const expectRejected = async (root: string, message: RegExp) => {
+      let stderr = "";
+      try {
+        await hashPayload(root);
+      } catch (error) {
+        stderr = (error as { stderr?: string }).stderr ?? "";
+      }
+      expect(stderr).toMatch(message);
+    };
+
+    try {
+      await Promise.all([
+        writePayload(canonicalRoot, "canonical-random"),
+        writePayload(advisoryRoot, "advisory-random")
+      ]);
+
+      const canonical = await hashPayload(canonicalRoot);
+      const advisory = await hashPayload(advisoryRoot);
+      expect(canonical).toMatchObject({ schemaVersion: 1, fileCount: 7 });
+      expect(canonical.sha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(advisory).toEqual(canonical);
+
+      await writeFile(
+        join(advisoryRoot, ".next", "server", "app", "api", "health", "route.js"),
+        "route-v2\n"
+      );
+      expect((await hashPayload(advisoryRoot)).sha256).not.toBe(canonical.sha256);
+
+      await writePayload(advisoryRoot, "advisory-random");
+      await writeFile(join(advisoryRoot, "server.js"), "server-entrypoint-v2\n");
+      expect((await hashPayload(advisoryRoot)).sha256).not.toBe(canonical.sha256);
+
+      await writePayload(advisoryRoot, "advisory-random");
+      await writeFile(
+        join(advisoryRoot, "node_modules", ".prisma", "client", "index.js"),
+        "prisma-client-v2\n"
+      );
+      expect((await hashPayload(advisoryRoot)).sha256).not.toBe(canonical.sha256);
+
+      await expectRejected(join(fixtureRoot, "missing"), /image root does not exist/i);
+      const emptyRoot = join(fixtureRoot, "empty");
+      await mkdir(emptyRoot);
+      await expectRejected(emptyRoot, /required payload path is missing/i);
+
+      const symlinkRoot = join(fixtureRoot, "symlink");
+      await writePayload(symlinkRoot, "symlink-random");
+      const linkedDirectory = join(fixtureRoot, "linked-server-app");
+      await mkdir(linkedDirectory);
+      await writeFile(join(linkedDirectory, "route.js"), "linked-route\n");
+      await rm(join(symlinkRoot, ".next", "server", "app"), { recursive: true });
+      await symlink(
+        linkedDirectory,
+        join(symlinkRoot, ".next", "server", "app"),
+        process.platform === "win32" ? "junction" : "dir"
+      );
+      await expectRejected(symlinkRoot, /symbolic link is not allowed/i);
+    } finally {
+      await rm(fixtureRoot, { recursive: true });
+    }
   });
 
   it("reports non-mutating SD-008 adapter admission and runtime diagnostics", async () => {
@@ -1291,8 +1414,10 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       ".tmp/canonical-application.log",
       ".tmp/canonical-container-id.txt",
       ".tmp/canonical-live.json",
-      ".tmp/canonical-tree.txt",
-      ".tmp/advisory-tree.txt",
+      ".tmp/canonical-application-payload.json",
+      ".tmp/advisory-application-payload.json",
+      ".tmp/canonical-runtime-tree.txt",
+      ".tmp/advisory-runtime-tree.txt",
       ".tmp/canonical-oci-config.json",
       ".tmp/canonical-oci-manifest.json",
       ".tmp/advisory-oci-config.json",
@@ -1323,11 +1448,17 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       workflow.indexOf("function digestSummary"),
       workflow.indexOf('fs.writeFileSync(".tmp/canonical-oci-config.json"')
     );
+    expect(diagnosticObject).toContain('selection: "signaldesk-owned-executable-payload-v1"');
     expect(diagnosticObject).toContain("canonicalSha256:");
     expect(diagnosticObject).toContain("advisorySha256:");
-    expect(diagnosticObject).toContain('status: applicationTreeEqual ? "blocking-pass" : "blocking-failure"');
-    expect(diagnosticObject).toContain("equal: applicationTreeEqual");
-    expect(diagnosticObject).toContain("blockingMismatch: !applicationTreeEqual");
+    expect(diagnosticObject).toContain("canonicalFileCount:");
+    expect(diagnosticObject).toContain("advisoryFileCount:");
+    expect(diagnosticObject).toContain('status: applicationPayloadEqual ? "blocking-pass" : "blocking-failure"');
+    expect(diagnosticObject).toContain("equal: applicationPayloadEqual");
+    expect(diagnosticObject).toContain("blockingMismatch: !applicationPayloadEqual");
+    expect(diagnosticObject).toContain("runtimeTree:");
+    expect(diagnosticObject).toContain("equal: runtimeTreeEqual");
+    expect(diagnosticObject).toContain('status: runtimeTreeEqual ? "advisory-match" : "advisory-failure"');
     expect(diagnosticObject).toContain("configDigest:");
     expect(diagnosticObject).toContain("manifestDigest:");
     expect(diagnosticObject).toContain("layerDigests:");
@@ -1338,12 +1469,12 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       'fs.writeFileSync(".tmp/reproducibility-diagnostics.json"'
     );
     const blockingTreeExit = workflow.indexOf(
-      "Canonical/advisory application-tree mismatch is blocking"
+      "Canonical/advisory application-payload mismatch is blocking"
     );
     expect(diagnosticWrite).toBeGreaterThan(0);
     expect(blockingTreeExit).toBeGreaterThan(diagnosticWrite);
     expect(workflow).not.toContain(
-      "diff --strip-trailing-cr .tmp/canonical-tree.txt .tmp/advisory-tree.txt"
+      "diff --strip-trailing-cr .tmp/canonical-runtime-tree.txt .tmp/advisory-runtime-tree.txt"
     );
 
     expect(workflow).toContain('docker container ls --all --quiet --filter "name=^/${container_name}$"');
@@ -1718,5 +1849,41 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     expect(workflow).toContain('contains("ServicePrincipal")');
     expect(workflow).toContain('contains("RoleAssignmentScope")) | not');
     expect(workflow).not.toContain("vaultPrefix");
+  });
+});
+
+describe("SD-008 repository-local delivery skills", () => {
+  it("routes the existing staging implementation without creating a parallel deployment framework", async () => {
+    const skill = await text(".codex/skills/signaldesk-sd008-delivery/SKILL.md");
+
+    expect(skill).toMatch(/^---\r?\nname: signaldesk-sd008-delivery\r?\n/);
+    expect(skill).toContain("docs/adr/0012-sd008-phase-proportional-artifact-evidence.md");
+    expect(skill).toContain(".github/workflows/sd008-azure-staging.yml");
+    expect(skill).toContain("build-and-attest");
+    expect(skill).toContain("staging-publication");
+    expect(skill).toContain("staging-provision");
+    expect(skill).toContain("staging-traffic");
+    expect(skill).toContain("staging-teardown");
+    expect(skill).toContain("hosted-trace-inputs");
+    expect(skill).toContain("OCI bit identity");
+    expect(skill).toContain("advisory");
+    expect(skill).toContain("Do not create a second deployment workflow");
+    expect(skill).toContain("Do not stage, commit, push, dispatch, publish, or mutate cloud state");
+  });
+
+  it("defers Elder generalization until the actual hosted trace and authority closure exist", async () => {
+    const skill = await text(".codex/skills/signaldesk-delivery-learning/SKILL.md");
+
+    expect(skill).toMatch(/^---\r?\nname: signaldesk-delivery-learning\r?\n/);
+    expect(skill).toContain("actual hosted SD-008 trace");
+    expect(skill).toContain("zero active resources");
+    expect(skill).toContain("temporary authority revoked");
+    expect(skill).toContain("5c7812ec515aff51431aa399409a99fc5f9c0350");
+    expect(skill).toContain("2bc202ddd27344be61b66650f2aad6def9fb4d73");
+    expect(skill).toContain("bff86e1d9243acd3546007ee0167a0bd40439b53");
+    expect(skill).toContain("exactly one cloud-neutral candidate");
+    expect(skill).toContain("independent evaluator");
+    expect(skill).toContain("non-mutating promotion packet");
+    expect(skill).toContain("Do not edit Elder Protocol from this skill");
   });
 });

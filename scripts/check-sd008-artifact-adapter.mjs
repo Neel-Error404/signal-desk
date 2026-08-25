@@ -291,8 +291,12 @@ const forbiddenDiagnosticUploads = [
   ".tmp/canonical-application.log",
   ".tmp/canonical-container-id.txt",
   ".tmp/canonical-live.json",
-  ".tmp/canonical-tree.txt",
-  ".tmp/advisory-tree.txt",
+  ".tmp/canonical-application-payload.json",
+  ".tmp/advisory-application-payload.json",
+  ".tmp/canonical-runtime-tree.txt",
+  ".tmp/canonical-runtime-tree-count.txt",
+  ".tmp/advisory-runtime-tree.txt",
+  ".tmp/advisory-runtime-tree-count.txt",
   ".tmp/canonical-oci-config.json",
   ".tmp/canonical-oci-manifest.json",
   ".tmp/advisory-oci-config.json",
@@ -301,15 +305,22 @@ const forbiddenDiagnosticUploads = [
 if (
   workflow.includes(".tmp/reproducibility-diagnostics.json") &&
   workflow.includes(
-    'reproducibilityClaim: advisoryFailure || !applicationTreeEqual ? "suppressed" : "advisory-only"'
+    'reproducibilityClaim: advisoryFailure || !applicationPayloadEqual ? "suppressed" : "advisory-only"'
   ) &&
+  workflow.includes('selection: "signaldesk-owned-executable-payload-v1"') &&
+  workflow.includes('selection: "all-regular-files-below-app-v1"') &&
   workflow.includes("configBitIdentical") &&
   workflow.includes("manifestBitIdentical") &&
   workflow.includes("layersIdentical") &&
   workflow.includes("finalDigestIdentical") &&
-  workflow.includes("canonicalSha256: canonicalTreeSha256") &&
-  workflow.includes("advisorySha256: advisoryTreeSha256") &&
-  workflow.includes("blockingMismatch: !applicationTreeEqual") &&
+  workflow.includes("canonicalSha256: canonicalPayload.sha256") &&
+  workflow.includes("advisorySha256: advisoryPayload.sha256") &&
+  workflow.includes("canonicalFileCount: canonicalPayload.fileCount") &&
+  workflow.includes("advisoryFileCount: advisoryPayload.fileCount") &&
+  workflow.includes("runtimeTree:") &&
+  workflow.includes("equal: runtimeTreeEqual") &&
+  workflow.includes("const advisoryFailure = !runtimeTreeEqual") &&
+  workflow.includes("blockingMismatch: !applicationPayloadEqual") &&
   diagnosticUploadStart >= 0 &&
   diagnosticUploadEnd > diagnosticUploadStart &&
   diagnosticUpload.includes("if: ${{ always() }}") &&
@@ -320,7 +331,7 @@ if (
     "diagnostic-output-presence",
     "pass",
     "local-static-contract",
-    "The always-retained artifact contains sanitized canonical/advisory application-tree hashes, blocking mismatch state, OCI digest comparisons, and claim suppression."
+    "The always-retained artifact contains sanitized application-payload and advisory runtime-tree hashes and counts, blocking mismatch state, OCI digest comparisons, and claim suppression."
   );
 } else {
   record(
