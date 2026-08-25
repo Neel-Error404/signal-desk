@@ -1156,6 +1156,15 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(workflow).toContain('[[ "$package_visibility" == "private" ]]');
     expect(workflow).toContain('docker buildx imagetools inspect "$PUBLICATION_TAG" --raw');
     expect(workflow).toContain('[[ "$canonical_config_digest" == "$registry_config_digest" ]]');
+    const privatePublicationStep = workflow.match(
+      /      - name: Publish exact canonical artifact privately and verify registry identity[\s\S]*?(?=\n      - name: Attest exact privately published digest)/
+    )?.[0];
+    if (privatePublicationStep === undefined) {
+      throw new Error("Private artifact publication workflow step is missing.");
+    }
+    expect(privatePublicationStep).toMatch(
+      /payload_script="\$\(pwd\)\/scripts\/hash-sd008-application-payload\.mjs"\s+\[\[ -f "\$payload_script" \]\][\s\S]*?--mount "type=bind,src=\$\{payload_script\},dst=\/tmp\/hash-sd008-application-payload\.mjs,readonly"/
+    );
     expect(workflow).toContain("Attest exact privately published digest");
     expect(workflow).not.toContain("docker/build-push-action@");
     expect(workflow.indexOf("environment: staging-publication")).toBeLessThan(
