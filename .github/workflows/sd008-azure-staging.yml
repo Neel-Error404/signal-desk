@@ -485,6 +485,18 @@ jobs:
           output-format: sarif
           output-file: .tmp/signaldesk-grype.sarif
 
+      - name: Retain rejected-image security evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sd008-security-evidence-${{ github.run_id }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
+          path: |
+            .tmp/signaldesk.spdx.json
+            .tmp/signaldesk-grype.sarif
+
       - name: Sign in to GHCR without a long-lived credential
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
         with:
