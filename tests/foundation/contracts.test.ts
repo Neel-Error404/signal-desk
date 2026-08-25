@@ -674,8 +674,14 @@ describe("SD-008 ratified Azure staging contracts", () => {
     const dockerfile = await text("Dockerfile");
     const dockerignore = await text(".dockerignore");
     const context = await text("scripts/create-container-context.mjs");
+    const contract = JSON.parse(
+      await text("delivery/staging-deployment-contract.json")
+    ) as {
+      artifact: { nodeVersion: string; baseImage: string };
+      migration: { command: string };
+    };
     const pinnedBase =
-      "node:22.18.0-bookworm-slim@sha256:752ea8a2f758c34002a0461bd9f1cee4f9a3c36d48494586f60ffce1fc708e0e";
+      "node:22.23.2-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5";
     expect(dockerfile.match(new RegExp(pinnedBase, "g"))).toHaveLength(3);
     expect(dockerfile.indexOf("ARG SOURCE_DATE_EPOCH")).toBeLessThan(
       dockerfile.indexOf("FROM ")
@@ -683,7 +689,17 @@ describe("SD-008 ratified Azure staging contracts", () => {
     expect(dockerfile).toContain("USER node");
     expect(dockerfile).toContain('CMD ["node", "server.js"]');
     expect(dockerfile).toContain("/app/node_modules ./node_modules");
+    const runtimeStage = dockerfile.slice(dockerfile.indexOf(`${pinnedBase} AS runtime`));
+    expect(runtimeStage).toContain("rm -rf /usr/local/lib/node_modules/npm");
+    expect(runtimeStage).toContain("rm -f /usr/local/bin/npm /usr/local/bin/npx");
     expect(dockerfile).not.toContain("DATABASE_URL=");
+    expect(contract.artifact).toMatchObject({
+      nodeVersion: "22.23.2",
+      baseImage: pinnedBase
+    });
+    expect(contract.migration.command).toBe(
+      "node node_modules/prisma/build/index.js migrate deploy"
+    );
     expect(dockerignore).toContain(".env.*");
     expect(context).toContain('git("status", "--porcelain=v1", "--untracked-files=all")');
     expect(context).toContain('"archive", "--format=tar"');
@@ -771,6 +787,27 @@ describe("SD-008 ratified Azure staging contracts", () => {
       }
       expect(action).toMatch(/^[^@\s]+@[0-9a-f]{40}$/);
     }
+
+    const scanStart = workflow.indexOf(
+      "- name: Reject fixed high or critical image vulnerabilities"
+    );
+    const rejectedEvidenceStart = workflow.indexOf(
+      "- name: Retain rejected-image security evidence"
+    );
+    const publicationStart = workflow.indexOf(
+      "- name: Sign in to GHCR without a long-lived credential"
+    );
+    expect(scanStart).toBeGreaterThan(0);
+    expect(rejectedEvidenceStart).toBeGreaterThan(scanStart);
+    expect(publicationStart).toBeGreaterThan(rejectedEvidenceStart);
+    const rejectedEvidenceStep = workflow.slice(rejectedEvidenceStart, publicationStart);
+    expect(rejectedEvidenceStep).toContain("if: ${{ always() }}");
+    expect(rejectedEvidenceStep).toContain(
+      "uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+    );
+    expect(rejectedEvidenceStep).toContain("if-no-files-found: error");
+    expect(rejectedEvidenceStep).toContain(".tmp/signaldesk.spdx.json");
+    expect(rejectedEvidenceStep).toContain(".tmp/signaldesk-grype.sarif");
   });
 });
 
