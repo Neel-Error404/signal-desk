@@ -1367,6 +1367,7 @@ exit "$status"`
       "Microsoft.Network/virtualNetworks/subnets/join/action",
       "Microsoft.Network/virtualNetworks/join/action",
       "Microsoft.Network/privateDnsZones/join/action",
+      "Microsoft.OperationalInsights/workspaces/listKeys/action",
       "Microsoft.KeyVault/vaults/PrivateEndpointConnectionsApproval/action"
     ]) {
       expect(provisionActions?.filter((candidate) => candidate === action)).toEqual([action]);
@@ -1377,7 +1378,8 @@ exit "$status"`
       "Microsoft.Resources/deployments/exportTemplate/action",
       "Microsoft.Resources/deployments/*",
       "Microsoft.Resources/locations/moboOperationStatuses/read",
-      "Microsoft.App/jobs/execution/read"
+      "Microsoft.App/jobs/execution/read",
+      "Microsoft.OperationalInsights/workspaces/sharedKeys/action"
     ]) {
       expect(provisionActions).not.toContain(action);
     }

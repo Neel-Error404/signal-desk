@@ -248,7 +248,7 @@
         "Microsoft.OperationalInsights/workspaces/read",
         "Microsoft.OperationalInsights/workspaces/write",
         "Microsoft.OperationalInsights/workspaces/delete",
-        "Microsoft.OperationalInsights/workspaces/sharedKeys/action",
+        "Microsoft.OperationalInsights/workspaces/listKeys/action",
         "Microsoft.App/managedEnvironments/read",
         "Microsoft.App/managedEnvironments/write",
         "Microsoft.App/managedEnvironments/delete",
