@@ -1352,7 +1352,7 @@ exit "$status"`
     const contractedProvisionActions = authorityContract.roles.find(
       (role) => role.id === "sd008-provision-v1"
     )?.actions;
-    expect(provisionActions).toHaveLength(71);
+    expect(provisionActions).toHaveLength(72);
     expect(provisionActions).toEqual(contractedProvisionActions);
     for (const action of [
       "Microsoft.Resources/deployments/write",
@@ -1366,7 +1366,8 @@ exit "$status"`
       "Microsoft.App/managedEnvironments/join/action",
       "Microsoft.Network/virtualNetworks/subnets/join/action",
       "Microsoft.Network/virtualNetworks/join/action",
-      "Microsoft.Network/privateDnsZones/join/action"
+      "Microsoft.Network/privateDnsZones/join/action",
+      "Microsoft.KeyVault/vaults/PrivateEndpointConnectionsApproval/action"
     ]) {
       expect(provisionActions?.filter((candidate) => candidate === action)).toEqual([action]);
     }
