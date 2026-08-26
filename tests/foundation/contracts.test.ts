@@ -1086,6 +1086,25 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(workflow).not.toMatch(/gh (api|secret).*ENTRA_CLIENT_SECRET/);
   });
 
+  it("grants only the missing Azure what-if action to the provision role", async () => {
+    const authority = JSON.parse(
+      await text("delivery/sd008-azure-authority-contract.json")
+    ) as {
+      roles: Array<{ id: string; actions: string[] }>;
+    };
+    const provisionActions = authority.roles.find(
+      (role) => role.id === "sd008-provision-v1"
+    )?.actions;
+
+    expect(provisionActions).toBeDefined();
+    expect(provisionActions).toHaveLength(60);
+    expect(
+      provisionActions?.filter(
+        (action) => action === "Microsoft.Resources/deployments/whatIf/action"
+      )
+    ).toEqual(["Microsoft.Resources/deployments/whatIf/action"]);
+  });
+
   it("guards rollback validation explicitly when errexit is disabled", async () => {
     const workflow = await text(".github/workflows/sd008-azure-staging.yml");
     const restoreFunction = workflow.match(
