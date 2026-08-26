@@ -550,9 +550,11 @@ jobs:
           diff --strip-trailing-cr \
             .tmp/canonical-application-payload.json \
             .tmp/published-application-payload.json
-          echo "digest=$registry_digest" >> "$GITHUB_OUTPUT"
-          echo "registry-config-digest=$registry_config_digest" >> "$GITHUB_OUTPUT"
-          echo "package-visibility=$package_visibility" >> "$GITHUB_OUTPUT"
+          {
+            echo "digest=$registry_digest"
+            echo "registry-config-digest=$registry_config_digest"
+            echo "package-visibility=$package_visibility"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Attest exact published digest
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a

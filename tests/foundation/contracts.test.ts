@@ -1216,9 +1216,10 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(publicationStep).toMatch(
       /if \[\[ "\$package_before_visibility" == "absent" \]\]; then\s+\[\[ "\$package_visibility" == "private" \]\]/
     );
-    expect(publicationStep).toContain(
-      'echo "package-visibility=$package_visibility" >> "$GITHUB_OUTPUT"'
+    expect(publicationStep).toMatch(
+      /\{\s+echo "digest=\$registry_digest"\s+echo "registry-config-digest=\$registry_config_digest"\s+echo "package-visibility=\$package_visibility"\s+\} >> "\$GITHUB_OUTPUT"/
     );
+    expect(publicationStep.match(/>> "\$GITHUB_OUTPUT"/g)).toHaveLength(1);
     expect(workflow).toContain(
       "PUBLICATION_VISIBILITY: ${{ steps.publish.outputs.package-visibility }}"
     );
