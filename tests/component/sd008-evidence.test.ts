@@ -1339,8 +1339,19 @@ exit "$status"`
     const digest = createHash("sha256").update(await readFile(output)).digest("hex");
     const provisionPacket = JSON.parse(await readFile(output, "utf8")) as {
       assignments: Array<Record<string, unknown>>;
-      roleDefinitions: Array<Record<string, unknown>>;
+      roleDefinitions: Array<
+        Record<string, unknown> & { roleName?: string; Actions?: string[] }
+      >;
     };
+    const provisionActions = provisionPacket.roleDefinitions.find(
+      (definition) => definition.roleName === "SignalDesk SD008 Provision"
+    )?.Actions;
+    expect(provisionActions).toHaveLength(60);
+    expect(
+      provisionActions?.filter(
+        (action) => action === "Microsoft.Resources/deployments/whatIf/action"
+      )
+    ).toEqual(["Microsoft.Resources/deployments/whatIf/action"]);
     const snapshots = await authoritySnapshots(directory, "provision", provisionPacket);
     const validationArguments = [
       "scripts/render-sd008-azure-authority.mjs",

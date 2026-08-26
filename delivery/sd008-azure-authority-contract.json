@@ -202,6 +202,7 @@
         "Microsoft.Resources/subscriptions/resourcegroups/deployments/read",
         "Microsoft.Resources/subscriptions/resourcegroups/deployments/write",
         "Microsoft.Resources/subscriptions/resourcegroups/deployments/operations/read",
+        "Microsoft.Resources/deployments/whatIf/action",
         "Microsoft.Network/virtualNetworks/read",
         "Microsoft.Network/virtualNetworks/write",
         "Microsoft.Network/virtualNetworks/delete",
