@@ -674,7 +674,7 @@ jobs:
             /tmp/hash-sd008-application-payload.mjs --root /app \
             > .tmp/public-application-payload.json
           diff --strip-trailing-cr \
-            .tmp/build-evidence/published-application-payload.json \
+            .tmp/build-evidence/.tmp/published-application-payload.json \
             .tmp/public-application-payload.json
           gh attestation verify "oci://ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST" \
             --repo Neel-Error404/signal-desk
