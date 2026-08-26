@@ -182,7 +182,10 @@ jobs:
           [[ "$AUTHORIZED_COMMIT" =~ ^[0-9a-f]{40}$ ]]
           [[ "$GITHUB_SHA" == "$AUTHORIZED_COMMIT" ]]
           short_sha="${AUTHORIZED_COMMIT:0:12}"
-          revision_suffix="sd008-${short_sha}-${GITHUB_RUN_ID}"
+          run_id_suffix="${GITHUB_RUN_ID: -12}"
+          [[ "$run_id_suffix" =~ ^[0-9]{1,12}$ ]]
+          revision_suffix="c-${short_sha}-${run_id_suffix}"
+          [[ ${#revision_suffix} -le 30 ]]
           source_date_epoch="$(git show -s --format=%ct "$AUTHORIZED_COMMIT")"
           publication_tag="${IMAGE_NAME}:sd008-${short_sha}-${GITHUB_RUN_ID}"
           {
@@ -923,7 +926,13 @@ jobs:
           runtime_password="$(openssl rand -hex 32)"
           printf '::add-mask::%s\n' "$admin_password" "$migration_password" "$runtime_password" "$ENTRA_CLIENT_SECRET"
           image_reference="ghcr.io/neel-error404/signaldesk@$IMAGE_DIGEST"
-          baseline_suffix="baseline-${AUTHORIZED_COMMIT:0:12}-${GITHUB_RUN_ID}"
+          baseline_suffix="b-${AUTHORIZED_COMMIT:0:12}-${GITHUB_RUN_ID: -12}"
+          revision_name_limit=54
+          for revision_suffix in "$baseline_suffix" "$REVISION_SUFFIX"; do
+            revision_name="${APP_NAME}--${revision_suffix}"
+            [[ "$revision_name" =~ ^[a-z][a-z0-9-]*[a-z0-9]$ ]]
+            [[ ${#revision_name} -le "$revision_name_limit" ]]
+          done
           [[ "$(az group exists --name "$RESOURCE_GROUP")" == "true" ]]
           [[ "$(az group show --name "$RESOURCE_GROUP" --query location -o tsv)" == "$LOCATION" ]]
           [[ "$(az group show --name "$RESOURCE_GROUP" --query tags.environment -o tsv)" == "staging" ]]

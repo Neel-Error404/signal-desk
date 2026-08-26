@@ -1997,6 +1997,12 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     ) as { status: string; roles: Array<Record<string, unknown>>; sessionOrder: string[] };
     expect(apps).toContain("latestRevision: false");
     expect(apps).toContain("revisionName: '${resourcePrefix}-app--${revisionSuffix}'");
+    expect(workflow).toContain('run_id_suffix="${GITHUB_RUN_ID: -12}"');
+    expect(workflow).toContain('revision_suffix="c-${short_sha}-${run_id_suffix}"');
+    expect(workflow).toContain('baseline_suffix="b-${AUTHORIZED_COMMIT:0:12}-${GITHUB_RUN_ID: -12}"');
+    expect(workflow).toContain("revision_name_limit=54");
+    expect(workflow).toContain('revision_name="${APP_NAME}--${revision_suffix}"');
+    expect(workflow).toContain('[[ ${#revision_name} -le "$revision_name_limit" ]]');
     expect(authority.status).toBe("ratified-local-implementation");
     expect(authority.roles.map((role) => role.name)).toEqual([
       "SignalDesk SD008 Provision",
