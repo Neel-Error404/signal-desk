@@ -1352,9 +1352,12 @@ exit "$status"`
     const contractedProvisionActions = authorityContract.roles.find(
       (role) => role.id === "sd008-provision-v1"
     )?.actions;
-    expect(provisionActions).toHaveLength(68);
+    expect(provisionActions).toHaveLength(71);
     expect(provisionActions).toEqual(contractedProvisionActions);
     for (const action of [
+      "Microsoft.Resources/deployments/write",
+      "Microsoft.Resources/deployments/read",
+      "Microsoft.Resources/deployments/operations/read",
       "Microsoft.Resources/deployments/whatIf/action",
       "Microsoft.Resources/deployments/validate/action",
       "Microsoft.Resources/deployments/operationstatuses/read",
@@ -1371,6 +1374,7 @@ exit "$status"`
       "Microsoft.Resources/deployments/delete",
       "Microsoft.Resources/deployments/cancel/action",
       "Microsoft.Resources/deployments/exportTemplate/action",
+      "Microsoft.Resources/deployments/*",
       "Microsoft.Resources/locations/moboOperationStatuses/read",
       "Microsoft.App/jobs/execution/read"
     ]) {

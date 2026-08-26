@@ -1099,8 +1099,11 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
 
     expect(provisionActions).toBeDefined();
     expect(provisionRole).not.toHaveProperty("dataActions");
-    expect(provisionActions).toHaveLength(68);
+    expect(provisionActions).toHaveLength(71);
     for (const action of [
+      "Microsoft.Resources/deployments/write",
+      "Microsoft.Resources/deployments/read",
+      "Microsoft.Resources/deployments/operations/read",
       "Microsoft.Resources/deployments/whatIf/action",
       "Microsoft.Resources/deployments/validate/action",
       "Microsoft.Resources/deployments/operationstatuses/read",
@@ -1117,12 +1120,48 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       "Microsoft.Resources/deployments/delete",
       "Microsoft.Resources/deployments/cancel/action",
       "Microsoft.Resources/deployments/exportTemplate/action",
+      "Microsoft.Resources/deployments/*",
       "Microsoft.Resources/locations/moboOperationStatuses/read",
       "Microsoft.App/jobs/execution/read"
     ]) {
       expect(provisionActions).not.toContain(action);
     }
   });
+
+  it("covers the root deployment operations emitted by compiled Bicep modules", async () => {
+    const authority = JSON.parse(
+      await text("delivery/sd008-azure-authority-contract.json")
+    ) as { roles: Array<{ id: string; actions: string[] }> };
+    const provisionActions = authority.roles.find(
+      (role) => role.id === "sd008-provision-v1"
+    )?.actions;
+    const bicepArguments = [
+      "bicep", "build", "--file", "infra/staging/main.bicep", "--stdout"
+    ];
+    const { stdout } = await execFileAsync(
+      process.platform === "win32" ? (process.env.ComSpec ?? "cmd.exe") : "az",
+      process.platform === "win32"
+        ? ["/d", "/s", "/c", "az", ...bicepArguments]
+        : bicepArguments,
+      { maxBuffer: 10 * 1024 * 1024 }
+    );
+    const compiledTemplate = JSON.parse(stdout) as {
+      resources?: Array<{ type?: string }>;
+    };
+    const hasRootDeployments = compiledTemplate.resources?.some(
+      (resource) => resource.type?.toLowerCase() === "microsoft.resources/deployments"
+    );
+
+    expect(hasRootDeployments).toBe(true);
+    for (const action of [
+      "Microsoft.Resources/deployments/write",
+      "Microsoft.Resources/deployments/read",
+      "Microsoft.Resources/deployments/operations/read",
+      "Microsoft.Resources/deployments/operationstatuses/read"
+    ]) {
+      expect(provisionActions?.filter((candidate) => candidate === action)).toEqual([action]);
+    }
+  }, 30_000);
 
   it("guards rollback validation explicitly when errexit is disabled", async () => {
     const workflow = await text(".github/workflows/sd008-azure-staging.yml");
