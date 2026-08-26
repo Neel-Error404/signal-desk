@@ -1174,6 +1174,22 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(workflow).toContain(
       "IMAGE_DIGEST: ${{ needs.build-and-attest.outputs.image-digest }}"
     );
+    const stagingPublicationStep = workflow.match(
+      /      - name: Prove anonymous digest pull and application-tree identity[\s\S]*?(?=\n      - name:|\n  staging-provision:)/
+    )?.[0];
+    if (stagingPublicationStep === undefined) {
+      throw new Error("Staging publication workflow step is missing.");
+    }
+    const publicationPayloadDiff = stagingPublicationStep.match(
+      /diff --strip-trailing-cr \\\r?\n\s*(\S+) \\\r?\n\s*(\S+)/
+    );
+    expect(publicationPayloadDiff).not.toBeNull();
+    expect(publicationPayloadDiff?.[1]).toBe(
+      ".tmp/build-evidence/.tmp/published-application-payload.json"
+    );
+    expect(publicationPayloadDiff?.[1]).not.toBe(
+      ".tmp/build-evidence/published-application-payload.json"
+    );
   });
 
   it("hashes only the SignalDesk-owned executable application payload", async () => {
