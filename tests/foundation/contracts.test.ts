@@ -1086,23 +1086,42 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(workflow).not.toMatch(/gh (api|secret).*ENTRA_CLIENT_SECRET/);
   });
 
-  it("grants only the missing Azure what-if action to the provision role", async () => {
+  it("grants the exact Azure deployment operation contract to the provision role", async () => {
     const authority = JSON.parse(
       await text("delivery/sd008-azure-authority-contract.json")
     ) as {
-      roles: Array<{ id: string; actions: string[] }>;
+      roles: Array<{ id: string; actions: string[]; dataActions?: string[] }>;
     };
-    const provisionActions = authority.roles.find(
+    const provisionRole = authority.roles.find(
       (role) => role.id === "sd008-provision-v1"
-    )?.actions;
+    );
+    const provisionActions = provisionRole?.actions;
 
     expect(provisionActions).toBeDefined();
-    expect(provisionActions).toHaveLength(60);
-    expect(
-      provisionActions?.filter(
-        (action) => action === "Microsoft.Resources/deployments/whatIf/action"
-      )
-    ).toEqual(["Microsoft.Resources/deployments/whatIf/action"]);
+    expect(provisionRole).not.toHaveProperty("dataActions");
+    expect(provisionActions).toHaveLength(68);
+    for (const action of [
+      "Microsoft.Resources/deployments/whatIf/action",
+      "Microsoft.Resources/deployments/validate/action",
+      "Microsoft.Resources/deployments/operationstatuses/read",
+      "Microsoft.Resources/subscriptions/resourcegroups/deployments/operationstatuses/read",
+      "Microsoft.ManagedIdentity/userAssignedIdentities/assign/action",
+      "Microsoft.App/managedEnvironments/join/action",
+      "Microsoft.Network/virtualNetworks/subnets/join/action",
+      "Microsoft.Network/virtualNetworks/join/action",
+      "Microsoft.Network/privateDnsZones/join/action"
+    ]) {
+      expect(provisionActions?.filter((candidate) => candidate === action)).toEqual([action]);
+    }
+    for (const action of [
+      "Microsoft.Resources/deployments/delete",
+      "Microsoft.Resources/deployments/cancel/action",
+      "Microsoft.Resources/deployments/exportTemplate/action",
+      "Microsoft.Resources/locations/moboOperationStatuses/read",
+      "Microsoft.App/jobs/execution/read"
+    ]) {
+      expect(provisionActions).not.toContain(action);
+    }
   });
 
   it("guards rollback validation explicitly when errexit is disabled", async () => {

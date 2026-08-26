@@ -1346,12 +1346,41 @@ exit "$status"`
     const provisionActions = provisionPacket.roleDefinitions.find(
       (definition) => definition.roleName === "SignalDesk SD008 Provision"
     )?.Actions;
-    expect(provisionActions).toHaveLength(60);
+    const authorityContract = JSON.parse(
+      await readFile("delivery/sd008-azure-authority-contract.json", "utf8")
+    ) as { roles: Array<{ id: string; actions: string[] }> };
+    const contractedProvisionActions = authorityContract.roles.find(
+      (role) => role.id === "sd008-provision-v1"
+    )?.actions;
+    expect(provisionActions).toHaveLength(68);
+    expect(provisionActions).toEqual(contractedProvisionActions);
+    for (const action of [
+      "Microsoft.Resources/deployments/whatIf/action",
+      "Microsoft.Resources/deployments/validate/action",
+      "Microsoft.Resources/deployments/operationstatuses/read",
+      "Microsoft.Resources/subscriptions/resourcegroups/deployments/operationstatuses/read",
+      "Microsoft.ManagedIdentity/userAssignedIdentities/assign/action",
+      "Microsoft.App/managedEnvironments/join/action",
+      "Microsoft.Network/virtualNetworks/subnets/join/action",
+      "Microsoft.Network/virtualNetworks/join/action",
+      "Microsoft.Network/privateDnsZones/join/action"
+    ]) {
+      expect(provisionActions?.filter((candidate) => candidate === action)).toEqual([action]);
+    }
+    for (const action of [
+      "Microsoft.Resources/deployments/delete",
+      "Microsoft.Resources/deployments/cancel/action",
+      "Microsoft.Resources/deployments/exportTemplate/action",
+      "Microsoft.Resources/locations/moboOperationStatuses/read",
+      "Microsoft.App/jobs/execution/read"
+    ]) {
+      expect(provisionActions).not.toContain(action);
+    }
     expect(
-      provisionActions?.filter(
-        (action) => action === "Microsoft.Resources/deployments/whatIf/action"
-      )
-    ).toEqual(["Microsoft.Resources/deployments/whatIf/action"]);
+      provisionPacket.roleDefinitions.find(
+        (definition) => definition.roleName === "SignalDesk SD008 Provision"
+      )?.DataActions
+    ).toEqual([]);
     const snapshots = await authoritySnapshots(directory, "provision", provisionPacket);
     const validationArguments = [
       "scripts/render-sd008-azure-authority.mjs",
