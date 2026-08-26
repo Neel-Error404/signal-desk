@@ -1989,7 +1989,7 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     expect(tokenIsBound).toBe(false);
   });
 
-  it("pins baseline traffic, declares exact effective roles, and requires post-delete authority closure", async () => {
+  it("bounds commit-and-run-bound revision suffixes, pins baseline traffic, and requires post-delete authority closure", async () => {
     const apps = await text("infra/staging/container-apps.bicep");
     const workflow = await text(".github/workflows/sd008-azure-staging.yml");
     const authority = JSON.parse(
@@ -1997,9 +1997,19 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     ) as { status: string; roles: Array<Record<string, unknown>>; sessionOrder: string[] };
     expect(apps).toContain("latestRevision: false");
     expect(apps).toContain("revisionName: '${resourcePrefix}-app--${revisionSuffix}'");
+    const observedShortRunId = "33006648536";
+    const futureLongRunId = "1234567890123";
+    expect(observedShortRunId).toHaveLength(11);
+    expect(observedShortRunId.slice(-12)).toBe(observedShortRunId);
+    expect(futureLongRunId).toHaveLength(13);
+    expect(futureLongRunId.slice(-12)).toBe("234567890123");
+    expect(workflow).toContain('if [[ ${#GITHUB_RUN_ID} -gt 12 ]]; then');
     expect(workflow).toContain('run_id_suffix="${GITHUB_RUN_ID: -12}"');
+    expect(workflow).toContain('run_id_suffix="$GITHUB_RUN_ID"');
     expect(workflow).toContain('revision_suffix="c-${short_sha}-${run_id_suffix}"');
-    expect(workflow).toContain('baseline_suffix="b-${AUTHORIZED_COMMIT:0:12}-${GITHUB_RUN_ID: -12}"');
+    expect(workflow).toContain('baseline_run_id_suffix="${GITHUB_RUN_ID: -12}"');
+    expect(workflow).toContain('baseline_run_id_suffix="$GITHUB_RUN_ID"');
+    expect(workflow).toContain('baseline_suffix="b-${AUTHORIZED_COMMIT:0:12}-${baseline_run_id_suffix}"');
     expect(workflow).toContain("revision_name_limit=54");
     expect(workflow).toContain('revision_name="${APP_NAME}--${revision_suffix}"');
     expect(workflow).toContain('[[ ${#revision_name} -le "$revision_name_limit" ]]');
