@@ -147,7 +147,7 @@ jobs:
     uses: ./.github/workflows/hosted-review-gate.yml
 
   build-and-attest:
-    name: Build, diagnose, privately publish, and attest exact image
+    name: Build, diagnose, publish, and attest exact image
     needs: ordered-review-gate
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -504,7 +504,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Publish exact canonical artifact privately and verify registry identity
+      - name: Publish exact canonical artifact and verify registry identity
         id: publish
         shell: bash
         env:
@@ -515,15 +515,22 @@ jobs:
           set -euo pipefail
           canonical_config_digest="$(docker image inspect --format '{{.Id}}' "$CANONICAL_IMAGE")"
           [[ "$canonical_config_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          package_before_visibility="absent"
           if gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/container/signaldesk" > .tmp/package-before.json 2> .tmp/package-before-error.txt; then
-            [[ "$(jq -r '.visibility' .tmp/package-before.json)" == "private" ]]
+            package_before_visibility="$(jq -er '.visibility | select(. == "private" or . == "public")' .tmp/package-before.json)"
+            [[ "$package_before_visibility" == "private" || "$package_before_visibility" == "public" ]]
           else
             grep -F "HTTP 404" .tmp/package-before-error.txt >/dev/null
           fi
           docker tag "$CANONICAL_IMAGE" "$PUBLICATION_TAG"
           docker push "$PUBLICATION_TAG"
           package_visibility="$(gh api "/users/${GITHUB_REPOSITORY_OWNER}/packages/container/signaldesk" --jq '.visibility')"
-          [[ "$package_visibility" == "private" ]]
+          [[ "$package_visibility" == "private" || "$package_visibility" == "public" ]]
+          if [[ "$package_before_visibility" == "absent" ]]; then
+            [[ "$package_visibility" == "private" ]]
+          else
+            [[ "$package_visibility" == "$package_before_visibility" ]]
+          fi
 
           docker buildx imagetools inspect "$PUBLICATION_TAG" > .tmp/registry-descriptor.txt
           registry_digest="$(awk '$1 == "Digest:" { print $2; exit }' .tmp/registry-descriptor.txt)"
@@ -545,8 +552,9 @@ jobs:
             .tmp/published-application-payload.json
           echo "digest=$registry_digest" >> "$GITHUB_OUTPUT"
           echo "registry-config-digest=$registry_config_digest" >> "$GITHUB_OUTPUT"
+          echo "package-visibility=$package_visibility" >> "$GITHUB_OUTPUT"
 
-      - name: Attest exact privately published digest
+      - name: Attest exact published digest
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a
         with:
           subject-name: ghcr.io/neel-error404/signaldesk
@@ -577,6 +585,7 @@ jobs:
         shell: bash
         env:
           IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
+          PUBLICATION_VISIBILITY: ${{ steps.publish.outputs.package-visibility }}
           AUTHORIZED_COMMIT: ${{ inputs.source_commit }}
         run: |
           set -euo pipefail
@@ -588,6 +597,7 @@ jobs:
              --arg applicationTreeSha256 "$(node -p "require('./.tmp/published-application-payload.json').sha256")" \
              --arg sbomSha256 "$(sha256sum .tmp/signaldesk.spdx.json | cut -d' ' -f1)" \
              --arg vulnerabilityReportSha256 "$(sha256sum .tmp/signaldesk-grype.sarif | cut -d' ' -f1)" \
+             --arg publicationVisibility "$PUBLICATION_VISIBILITY" \
              --slurpfile reproducibility .tmp/reproducibility-diagnostics.json \
              '{
               schemaVersion:1,
@@ -602,7 +612,7 @@ jobs:
                vulnerabilityReportSha256:$vulnerabilityReportSha256,
                canonicalDeployableBuilds:1,
                independentAdvisoryBuilds:1,
-               publicationVisibility:"private",
+               publicationVisibility:$publicationVisibility,
                reproducibility:$reproducibility[0],
                secretScan:"passed"
             }' > .tmp-sd008-build-public.json

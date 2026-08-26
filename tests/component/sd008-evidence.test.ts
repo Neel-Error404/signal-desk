@@ -508,6 +508,13 @@ describe("SD-008 hosted trace assembly", () => {
           conclusion: "success",
           started_at: "2026-08-20T12:00:10.000Z",
           completed_at: "2026-08-20T12:01:00.000Z"
+        },
+        {
+          name: "Verify separately approved public GHCR visibility",
+          status: "completed",
+          conclusion: "success",
+          started_at: "2026-08-20T12:03:10.000Z",
+          completed_at: "2026-08-20T12:03:30.000Z"
         }
       ]
     });
@@ -584,6 +591,44 @@ describe("SD-008 hosted trace assembly", () => {
       type: "post-delete-verifier-removed"
     });
     expect(trace.learning).toMatchObject({ candidateCreated: false, targetMutation: false });
+
+    const publicBuildProof = {
+      ...structuredClone(buildProof),
+      publicationVisibility: "public"
+    };
+    await writeFile(build, JSON.stringify(publicBuildProof));
+    const publicVisibilityTrace = assemble(path.join(directory, "public-visibility-trace.json"));
+    expect(publicVisibilityTrace.status, publicVisibilityTrace.stderr).toBe(0);
+
+    const githubProof = JSON.parse(await readFile(github, "utf8")) as Record<string, unknown> & {
+      jobs: Array<Record<string, unknown>>;
+    };
+    const invalidPublicationJobs = [
+      {
+        name: "missing-publication-job",
+        jobs: githubProof.jobs.filter(
+          (job) => job.name !== "Verify separately approved public GHCR visibility"
+        ),
+        expected: "GitHub proof must contain exactly one staging publication verification job."
+      },
+      {
+        name: "failed-publication-job",
+        jobs: githubProof.jobs.map((job) =>
+          job.name === "Verify separately approved public GHCR visibility"
+            ? { ...job, conclusion: "failure" }
+            : job
+        ),
+        expected: "Staging publication verification did not succeed."
+      }
+    ];
+    for (const testCase of invalidPublicationJobs) {
+      await writeFile(github, JSON.stringify({ ...githubProof, jobs: testCase.jobs }));
+      const rejected = assemble(path.join(directory, `${testCase.name}-trace.json`));
+      expect(rejected.status).not.toBe(0);
+      expect(rejected.stderr).toContain(testCase.expected);
+    }
+    await writeFile(github, JSON.stringify(githubProof));
+    await writeFile(build, JSON.stringify(buildProof));
 
     const invalidClosures = [
       {
@@ -692,6 +737,14 @@ describe("SD-008 hosted trace assembly", () => {
           vulnerabilityReportSha256: "not-a-sha256"
         },
         expected: "Build proof vulnerability report digest is invalid."
+      },
+      {
+        name: "invalid-publication-visibility",
+        proof: {
+          ...structuredClone(buildProof),
+          publicationVisibility: "internal"
+        },
+        expected: "Build proof publication visibility is invalid."
       },
       {
         name: "blocking-tree-mismatch",
