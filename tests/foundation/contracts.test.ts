@@ -1086,7 +1086,7 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(workflow).not.toMatch(/gh (api|secret).*ENTRA_CLIENT_SECRET/);
   });
 
-  it("grants the exact Azure deployment operation contract to the provision role", async () => {
+  it("grants the exact Azure deployment and Key Vault private-endpoint approval contract to the provision role", async () => {
     const authority = JSON.parse(
       await text("delivery/sd008-azure-authority-contract.json")
     ) as {
@@ -1099,7 +1099,7 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
 
     expect(provisionActions).toBeDefined();
     expect(provisionRole).not.toHaveProperty("dataActions");
-    expect(provisionActions).toHaveLength(71);
+    expect(provisionActions).toHaveLength(72);
     for (const action of [
       "Microsoft.Resources/deployments/write",
       "Microsoft.Resources/deployments/read",
@@ -1112,7 +1112,8 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       "Microsoft.App/managedEnvironments/join/action",
       "Microsoft.Network/virtualNetworks/subnets/join/action",
       "Microsoft.Network/virtualNetworks/join/action",
-      "Microsoft.Network/privateDnsZones/join/action"
+      "Microsoft.Network/privateDnsZones/join/action",
+      "Microsoft.KeyVault/vaults/PrivateEndpointConnectionsApproval/action"
     ]) {
       expect(provisionActions?.filter((candidate) => candidate === action)).toEqual([action]);
     }
