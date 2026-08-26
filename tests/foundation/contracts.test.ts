@@ -1153,19 +1153,21 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     );
     expect(workflow).toContain("image: signaldesk:sd008-canonical");
     expect(workflow).toContain('docker push "$PUBLICATION_TAG"');
-    expect(workflow).toContain('[[ "$package_visibility" == "private" ]]');
+    expect(workflow).toContain(
+      '[[ "$package_visibility" == "private" || "$package_visibility" == "public" ]]'
+    );
     expect(workflow).toContain('docker buildx imagetools inspect "$PUBLICATION_TAG" --raw');
     expect(workflow).toContain('[[ "$canonical_config_digest" == "$registry_config_digest" ]]');
-    const privatePublicationStep = workflow.match(
-      /      - name: Publish exact canonical artifact privately and verify registry identity[\s\S]*?(?=\n      - name: Attest exact privately published digest)/
+    const publicationStep = workflow.match(
+      /      - name: Publish exact canonical artifact and verify registry identity[\s\S]*?(?=\n      - name: Attest exact published digest)/
     )?.[0];
-    if (privatePublicationStep === undefined) {
-      throw new Error("Private artifact publication workflow step is missing.");
+    if (publicationStep === undefined) {
+      throw new Error("Artifact publication workflow step is missing.");
     }
-    expect(privatePublicationStep).toMatch(
+    expect(publicationStep).toMatch(
       /payload_script="\$\(pwd\)\/scripts\/hash-sd008-application-payload\.mjs"\s+\[\[ -f "\$payload_script" \]\][\s\S]*?--mount "type=bind,src=\$\{payload_script\},dst=\/tmp\/hash-sd008-application-payload\.mjs,readonly"/
     );
-    expect(workflow).toContain("Attest exact privately published digest");
+    expect(workflow).toContain("Attest exact published digest");
     expect(workflow).not.toContain("docker/build-push-action@");
     expect(workflow.indexOf("environment: staging-publication")).toBeLessThan(
       workflow.indexOf("environment: staging-provision")
@@ -1190,6 +1192,40 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(publicationPayloadDiff?.[1]).not.toBe(
       ".tmp/build-evidence/published-application-payload.json"
     );
+  });
+
+  it("preserves verified existing GHCR visibility and records the actual state", async () => {
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+    const publicationStep = workflow.match(
+      /      - name: Publish exact canonical artifact[^\n]*[\s\S]*?(?=\n      - name: Attest exact)/
+    )?.[0];
+    if (publicationStep === undefined) {
+      throw new Error("Artifact publication workflow step is missing.");
+    }
+
+    expect(publicationStep).toContain('package_before_visibility="absent"');
+    expect(publicationStep).toContain(
+      '[[ "$package_before_visibility" == "private" || "$package_before_visibility" == "public" ]]'
+    );
+    expect(publicationStep).toContain(
+      '[[ "$package_visibility" == "private" || "$package_visibility" == "public" ]]'
+    );
+    expect(publicationStep).toContain(
+      '[[ "$package_visibility" == "$package_before_visibility" ]]'
+    );
+    expect(publicationStep).toMatch(
+      /if \[\[ "\$package_before_visibility" == "absent" \]\]; then\s+\[\[ "\$package_visibility" == "private" \]\]/
+    );
+    expect(publicationStep).toMatch(
+      /\{\s+echo "digest=\$registry_digest"\s+echo "registry-config-digest=\$registry_config_digest"\s+echo "package-visibility=\$package_visibility"\s+\} >> "\$GITHUB_OUTPUT"/
+    );
+    expect(publicationStep.match(/>> "\$GITHUB_OUTPUT"/g)).toHaveLength(1);
+    expect(workflow).toContain(
+      "PUBLICATION_VISIBILITY: ${{ steps.publish.outputs.package-visibility }}"
+    );
+    expect(workflow).toContain('--arg publicationVisibility "$PUBLICATION_VISIBILITY"');
+    expect(workflow).toContain("publicationVisibility:$publicationVisibility");
+    expect(workflow).not.toContain('publicationVisibility:"private"');
   });
 
   it("hashes only the SignalDesk-owned executable application payload", async () => {

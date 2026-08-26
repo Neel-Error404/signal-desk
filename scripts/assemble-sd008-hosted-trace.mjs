@@ -111,7 +111,10 @@ const assertBuildProof = (build) => {
     SHA256.test(build.vulnerabilityReportSha256),
     "Build proof vulnerability report digest is invalid."
   );
-  assert(build.publicationVisibility === "private", "Build proof publication visibility is invalid.");
+  assert(
+    build.publicationVisibility === "private" || build.publicationVisibility === "public",
+    "Build proof publication visibility is invalid."
+  );
 
   const reproducibility = build.reproducibility;
   const applicationTree = reproducibility.applicationTree;
@@ -245,6 +248,19 @@ export const assembleHostedTrace = ({ source, build, provision, traffic, teardow
   const gate = gateJobs[0];
   assert(gate.status === "completed" && gate.conclusion === "success", "Ordered review gate did not succeed.");
   exactTime(gate.completedAt, "Ordered review gate completion time");
+  const publicationJobs = github.value.jobs.filter(
+    (job) => job.name.split(" / ").at(-1) === "Verify separately approved public GHCR visibility"
+  );
+  assert(
+    publicationJobs.length === 1,
+    "GitHub proof must contain exactly one staging publication verification job."
+  );
+  const publication = publicationJobs[0];
+  assert(
+    publication.status === "completed" && publication.conclusion === "success",
+    "Staging publication verification did not succeed."
+  );
+  exactTime(publication.completedAt, "Staging publication verification completion time");
 
   assert(closure.value.schemaVersion === 1 && closure.value.classification === "public-redacted", "Authority closure contract is invalid.");
   assert(closure.value.workItem === "SD-008" && closure.value.repository === REPOSITORY, "Authority closure identity is invalid.");
