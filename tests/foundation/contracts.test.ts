@@ -1059,8 +1059,8 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     }
     expect(
       workflow.match(/printf 'Authorization: Bearer %s\\n' "\$(?:arm_)?access_token"/g)
-    ).toHaveLength(5);
-    expect(workflow.match(/--header @-/g)).toHaveLength(5);
+    ).toHaveLength(4);
+    expect(workflow.match(/--header @-/g)).toHaveLength(4);
     expect(workflow).not.toContain("--config -");
     for (const scopeCase of [
       '"provision-deployment")',
@@ -1183,6 +1183,52 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     );
     expect(restoreFunction.indexOf("traffic_restored=true")).toBeGreaterThan(
       restoreFunction.indexOf('[[ "$baseline_weight" != "100" ]]')
+    );
+  });
+
+  it("bounds candidate ingress propagation before failing the provision smoke checks", async () => {
+    const workflow = await text(".github/workflows/sd008-azure-staging.yml");
+    const provisionStep = workflow.match(
+      /      - name: Provision private staging baseline[\s\S]*?(?=\n      - name:|\n  staging-traffic:)/
+    )?.[0];
+    if (provisionStep === undefined) {
+      throw new Error("Staging provision workflow step is missing.");
+    }
+
+    expect(provisionStep).toContain("smoke_max_attempts=18");
+    expect(provisionStep).toContain("smoke_request_timeout_seconds=10");
+    expect(provisionStep).toContain("smoke_retry_delay_seconds=10");
+    expect(provisionStep).toContain("wait_for_anonymous_denial() {");
+    expect(provisionStep).toContain("wait_for_authenticated_health() {");
+    expect(provisionStep).toContain('[[ "$anonymous_status" == "401" ]]');
+    expect(provisionStep).toContain('[[ "$anonymous_status" =~ ^2[0-9]{2}$ ]]');
+    expect(provisionStep).toContain(
+      "::error::Candidate anonymous smoke returned unsafe HTTP ${anonymous_status}; expected HTTP 401."
+    );
+    const zeroTrafficAssertion = '[[ -z "$candidate_weight" || "$candidate_weight" == "0" ]]';
+    expect(provisionStep.split(zeroTrafficAssertion)).toHaveLength(3);
+    expect(provisionStep).toContain(
+      'wait_for_anonymous_denial "https://${candidate_fqdn}/api/v1/health/live"'
+    );
+    expect(provisionStep).toContain(
+      'wait_for_authenticated_health "https://${candidate_fqdn}/api/v1/health/live" .tmp-sd008-live.json live'
+    );
+    expect(provisionStep).toContain(
+      'wait_for_authenticated_health "https://${candidate_fqdn}/api/v1/health/ready" .tmp-sd008-ready.json ready'
+    );
+    expect(provisionStep.lastIndexOf(zeroTrafficAssertion)).toBeGreaterThan(
+      provisionStep.indexOf(
+        'wait_for_authenticated_health "https://${candidate_fqdn}/api/v1/health/ready" .tmp-sd008-ready.json ready'
+      )
+    );
+    expect(provisionStep).toContain(
+      "::error::Candidate anonymous smoke did not return HTTP 401 within the bounded ingress propagation window"
+    );
+    expect(provisionStep).toContain(
+      "::error::Candidate authenticated smoke did not succeed within the bounded ingress propagation window"
+    );
+    expect(provisionStep).not.toContain(
+      'anonymous_status="$(curl --silent --output /dev/null --write-out \'%{http_code}\' --max-time 15'
     );
   });
 
