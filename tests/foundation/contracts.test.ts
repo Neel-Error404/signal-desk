@@ -991,6 +991,9 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(workflow).toContain('validate_authority "$mutation"');
     expect(workflow).toContain('wait_for_job "$bootstrap_job" provision-bootstrap-job-start');
     expect(workflow).toContain('wait_for_job "$migration_job" provision-migration-job-start');
+    expect(workflow).toContain(
+      "jq -cn --arg job \"$job_name\" --arg execution \"$execution_name\" --arg status \"$status\""
+    );
     for (const binding of [
       '--source-commit "$AUTHORIZED_COMMIT"',
       '--image-digest "$IMAGE_DIGEST"',
