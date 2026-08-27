@@ -1448,49 +1448,30 @@ jobs:
             exit "$primary_status"
           }
           trap rollback_on_failure EXIT
-          log_analytics_preflight_ready=false
-          for attempt in $(seq 1 12); do
-            if ! az monitor log-analytics query --workspace "$WORKSPACE_CUSTOMER_ID" \
-              --analytics-query "ContainerAppConsoleLogs_CL | where TimeGenerated > ago(60m) | where ContainerAppName_s == '$APP_NAME' | project TimeGenerated | take 1" \
-              -o json > .tmp-sd008-log-analytics-preflight.json; then
-              echo "::error::Log Analytics preflight query was rejected for ContainerAppConsoleLogs_CL; verify the evidence-reader table permission and workspace assignment before retrying." >&2
-              exit 1
-            fi
-            if ! jq -e '
-              ([.. | objects | select(has("error"))] | length == 0) and
-              (
-                if type == "array" then
-                  all(.[]; type == "object")
-                elif type == "object" then
-                  (.tables | type == "array") and
-                  (.tables | length > 0) and
-                  all(.tables[]; type == "object" and (.rows | type == "array"))
-                else
-                  false
-                end
-              )
-            ' .tmp-sd008-log-analytics-preflight.json >/dev/null; then
-              echo "::error::Unexpected Log Analytics preflight response shape; traffic was not changed." >&2
-              exit 1
-            fi
-            if jq -e '
-              if type == "array" then
-                length > 0
-              else
-                any(.tables[]; (.rows | length) > 0)
-              end
-            ' .tmp-sd008-log-analytics-preflight.json >/dev/null; then
-              log_analytics_preflight_ready=true
-              break
-            fi
-            if [[ "$attempt" -lt 12 ]]; then
-              sleep 15
-            fi
-          done
-          if [[ "$log_analytics_preflight_ready" != "true" ]]; then
-            echo "::error::Log Analytics preflight returned no rows before traffic mutation after 12 attempts; traffic was not changed." >&2
+          if ! az monitor log-analytics query --workspace "$WORKSPACE_CUSTOMER_ID" \
+            --analytics-query "ContainerAppConsoleLogs_CL | where TimeGenerated > ago(60m) | where ContainerAppName_s == '$APP_NAME' | project TimeGenerated | take 1" \
+            -o json > .tmp-sd008-log-analytics-preflight.json; then
+            echo "::error::Log Analytics preflight query was rejected for ContainerAppConsoleLogs_CL; verify the evidence-reader table permission and workspace assignment before retrying." >&2
             exit 1
           fi
+          if ! jq -e '
+            ([.. | objects | select(has("error"))] | length == 0) and
+            (
+              if type == "array" then
+                all(.[]; type == "object")
+              elif type == "object" then
+                (.tables | type == "array") and
+                (.tables | length > 0) and
+                all(.tables[]; type == "object" and (.rows | type == "array"))
+              else
+                false
+              end
+            )
+          ' .tmp-sd008-log-analytics-preflight.json >/dev/null; then
+            echo "::error::Unexpected Log Analytics preflight response shape; traffic was not changed." >&2
+            exit 1
+          fi
+          echo "Log Analytics preflight admission passed; row availability is evaluated after traffic generates evidence."
           validate_authority traffic-promotion
           traffic_shifted=true
           az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
