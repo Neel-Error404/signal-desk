@@ -324,6 +324,7 @@
         "Microsoft.Insights/eventtypes/values/read",
         "Microsoft.OperationalInsights/workspaces/read",
         "Microsoft.OperationalInsights/workspaces/query/read",
+        "Microsoft.OperationalInsights/workspaces/query/ContainerAppConsoleLogs/read",
         "Microsoft.OperationalInsights/workspaces/tables/query/read",
         "Microsoft.Authorization/roleDefinitions/read",
         "Microsoft.Authorization/roleAssignments/read"

@@ -1448,6 +1448,49 @@ jobs:
             exit "$primary_status"
           }
           trap rollback_on_failure EXIT
+          log_analytics_preflight_ready=false
+          for attempt in $(seq 1 12); do
+            if ! az monitor log-analytics query --workspace "$WORKSPACE_CUSTOMER_ID" \
+              --analytics-query "ContainerAppConsoleLogs_CL | where TimeGenerated > ago(60m) | where ContainerAppName_s == '$APP_NAME' | project TimeGenerated | take 1" \
+              -o json > .tmp-sd008-log-analytics-preflight.json; then
+              echo "::error::Log Analytics preflight query was rejected for ContainerAppConsoleLogs_CL; verify the evidence-reader table permission and workspace assignment before retrying." >&2
+              exit 1
+            fi
+            if ! jq -e '
+              ([.. | objects | select(has("error"))] | length == 0) and
+              (
+                if type == "array" then
+                  all(.[]; type == "object")
+                elif type == "object" then
+                  (.tables | type == "array") and
+                  (.tables | length > 0) and
+                  all(.tables[]; type == "object" and (.rows | type == "array"))
+                else
+                  false
+                end
+              )
+            ' .tmp-sd008-log-analytics-preflight.json >/dev/null; then
+              echo "::error::Unexpected Log Analytics preflight response shape; traffic was not changed." >&2
+              exit 1
+            fi
+            if jq -e '
+              if type == "array" then
+                length > 0
+              else
+                any(.tables[]; (.rows | length) > 0)
+              end
+            ' .tmp-sd008-log-analytics-preflight.json >/dev/null; then
+              log_analytics_preflight_ready=true
+              break
+            fi
+            if [[ "$attempt" -lt 12 ]]; then
+              sleep 15
+            fi
+          done
+          if [[ "$log_analytics_preflight_ready" != "true" ]]; then
+            echo "::error::Log Analytics preflight returned no rows before traffic mutation after 12 attempts; traffic was not changed." >&2
+            exit 1
+          fi
           validate_authority traffic-promotion
           traffic_shifted=true
           az containerapp ingress traffic set --resource-group "$RESOURCE_GROUP" --name "$APP_NAME" \
@@ -1816,26 +1859,34 @@ jobs:
           else
             printf '[]\n' > .tmp-sd008-active-vaults-before-delete.json
           fi
-          for _ in $(seq 1 80); do
-            if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "false" ]]; then
-              break
+          if [[ "$(az group exists --name "$RESOURCE_GROUP")" == "true" ]]; then
+            if ! az group wait --deleted --name "$RESOURCE_GROUP" --interval 15 --timeout 1500; then
+              echo "::error::Azure did not report the SD-008 resource group deleted within the bounded 25-minute wait." >&2
+              exit 1
             fi
-            sleep 15
-          done
-          [[ "$(az group exists --name "$RESOURCE_GROUP")" == "false" ]]
+          fi
+          if [[ "$(az group exists --name "$RESOURCE_GROUP")" != "false" ]]; then
+            echo "::error::The SD-008 resource group still exists after Azure reported deletion complete." >&2
+            exit 1
+          fi
           validate_authority teardown-closure
           active_resource_count="$(az resource list --query "[?resourceGroup=='$RESOURCE_GROUP'] | length(@)" -o tsv)"
           [[ "$active_resource_count" == "0" ]]
           if [[ -n "$APP_FQDN" ]]; then
             endpoint_status=""
-            for _ in $(seq 1 40); do
-              endpoint_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 "https://${APP_FQDN}" || true)"
+            for endpoint_attempt in $(seq 1 20); do
+              endpoint_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 5 "https://${APP_FQDN}" || true)"
               if [[ "$endpoint_status" == "000" ]]; then
                 break
               fi
-              sleep 15
+              if [[ "$endpoint_attempt" -lt 20 ]]; then
+                sleep 10
+              fi
             done
-            [[ "$endpoint_status" == "000" ]]
+            if [[ "$endpoint_status" != "000" ]]; then
+              echo "::error::The deleted SD-008 endpoint remained reachable after the bounded endpoint-absence wait." >&2
+              exit 1
+            fi
           fi
           az keyvault list-deleted --query "[?tags.workItem=='SD-008' && tags.deploymentRunId=='$GITHUB_RUN_ID'].{name:name,deletionDate:properties.deletionDate,scheduledPurgeDate:properties.scheduledPurgeDate}" -o json > .tmp-sd008-vault-tombstones.json
           [[ "$(jq 'length' .tmp-sd008-vault-tombstones.json)" == "$expected_vault_count" ]]
