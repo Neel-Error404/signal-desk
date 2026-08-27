@@ -1045,7 +1045,7 @@ jobs:
             for _ in $(seq 1 80); do
               status="$(az containerapp job execution show --resource-group "$RESOURCE_GROUP" --name "$job_name" --job-execution-name "$execution_name" --query properties.status -o tsv)"
               if [[ "$status" == "Succeeded" ]]; then
-                jq -n --arg job "$job_name" --arg execution "$execution_name" --arg status "$status" \
+                jq -cn --arg job "$job_name" --arg execution "$execution_name" --arg status "$status" \
                   '{job:$job,execution:$execution,status:$status}' >> .tmp-sd008-job-executions.jsonl
                 return 0
               fi
