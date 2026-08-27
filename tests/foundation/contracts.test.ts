@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 const execFileAsync = promisify(execFile);
 
 async function text(path: string): Promise<string> {
-  return readFile(path, "utf8");
+  return (await readFile(path, "utf8")).replace(/\r\n/g, "\n");
 }
 
 describe("SD-001 ratified static contracts", () => {
@@ -893,6 +893,7 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
         ingressCredential: Record<string, unknown>;
         partialBootstrapCompensation: Record<string, unknown>;
       };
+      roles: Array<{ id: string; actions: string[] }>;
       sessionOrder: string[];
     };
     const workItem = JSON.parse(await text("docs/work-items/SD-008.json")) as {
@@ -954,6 +955,13 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       automaticAuthorityRenewal: false,
       maximumCleanupMinutes: 15
     });
+    const evidenceReaderRole = authority.roles.find(
+      (role) => role.id === "sd008-evidence-reader-v1"
+    );
+    expect(evidenceReaderRole?.actions).toContain(
+      "Microsoft.OperationalInsights/workspaces/query/ContainerAppConsoleLogs/read"
+    );
+    expect(evidenceReaderRole?.actions).not.toContain("Microsoft.OperationalInsights/*");
     expect(authority.sessionOrder).not.toContain(
       "owner-assigns-provision-teardown-and-post-delete-roles"
     );
@@ -1003,6 +1011,34 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
       expect(workflow).toContain(binding);
     }
     expect(workflow).toContain("Authority revalidation failed immediately before Azure mutation");
+    const trafficStepStart = workflow.indexOf(
+      "- name: Shift staging traffic and restore prior healthy revision"
+    );
+    const trafficStepEnd = workflow.indexOf("\n      - name:", trafficStepStart + 1);
+    const trafficStep = workflow.slice(trafficStepStart, trafficStepEnd);
+    const logPreflightStart = trafficStep.indexOf("log_analytics_preflight_ready=false");
+    const trafficAuthorityCheck = trafficStep.indexOf("validate_authority traffic-promotion");
+    const trafficShiftMarker = trafficStep.indexOf("traffic_shifted=true");
+    const logPreflight = trafficStep.slice(logPreflightStart, trafficAuthorityCheck);
+    expect(logPreflightStart).toBeGreaterThanOrEqual(0);
+    expect(logPreflight).toContain("for attempt in $(seq 1 12)");
+    expect(logPreflight).toContain(
+      'az monitor log-analytics query --workspace "$WORKSPACE_CUSTOMER_ID"'
+    );
+    expect(logPreflight).toContain("ContainerAppConsoleLogs_CL");
+    expect(logPreflight).toContain("project TimeGenerated | take 1");
+    expect(logPreflight).not.toContain("Log_s");
+    expect(logPreflight).toContain("Log Analytics preflight query was rejected");
+    expect(logPreflight).toContain('if ! jq -e \'');
+    expect(logPreflight).toContain('[.. | objects | select(has("error"))]');
+    expect(logPreflight).toContain('.tables | type == "array"');
+    expect(logPreflight).toContain("Unexpected Log Analytics preflight response shape");
+    expect(logPreflight).toContain("Log Analytics preflight returned no rows before traffic mutation");
+    expect(logPreflight.indexOf("Unexpected Log Analytics preflight response shape")).toBeLessThan(
+      logPreflight.indexOf("log_analytics_preflight_ready=true")
+    );
+    expect(logPreflightStart).toBeLessThan(trafficAuthorityCheck);
+    expect(trafficAuthorityCheck).toBeLessThan(trafficShiftMarker);
     expect(workflow).toContain("app-name: ${{ steps.staging-names.outputs.app-name }}");
     expect(workflow.indexOf("id: staging-names")).toBeLessThan(
       workflow.indexOf("id: provision")
@@ -1012,6 +1048,9 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(workflow).toContain('[[ "$migration_job" == "$MIGRATION_JOB_NAME" ]]');
     const teardownPrecheckStart = workflow.indexOf("- name: Prove mutation leases are separated before teardown");
     const teardownDeleteStart = workflow.indexOf("- name: Delete exact SD-008 resource group and verify absence");
+    const teardownJobStart = workflow.indexOf("\n  staging-teardown:");
+    const teardownJobEnd = workflow.indexOf("\n  hosted-trace-inputs:", teardownJobStart);
+    const teardownJob = workflow.slice(teardownJobStart, teardownJobEnd);
     const teardownPrecheck = workflow.slice(teardownPrecheckStart, teardownDeleteStart);
     expect(teardownPrecheck).toContain('app_exists=false');
     expect(teardownPrecheck).toContain(
@@ -1028,6 +1067,38 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(teardownDelete).toContain("Resource group identity or required cleanup tags do not match this SD-008 run");
     expect(teardownDelete).toContain("validate_authority teardown-delete");
     expect(teardownDelete).toContain('az group delete --name "$RESOURCE_GROUP" --yes --no-wait');
+    expect(teardownDelete).toContain(
+      'az group wait --deleted --name "$RESOURCE_GROUP" --interval 15 --timeout 1500'
+    );
+    expect(teardownDelete).not.toContain("for _ in $(seq 1 80)");
+    expect(teardownDelete.indexOf("az group wait --deleted")).toBeLessThan(
+      teardownDelete.indexOf('if [[ "$(az group exists --name "$RESOURCE_GROUP")" != "false" ]]')
+    );
+    expect(teardownDelete).toContain(
+      "Azure did not report the SD-008 resource group deleted within the bounded 25-minute wait"
+    );
+    expect(teardownDelete).toContain(
+      "The SD-008 resource group still exists after Azure reported deletion complete"
+    );
+    const resourceGroupWaitTimeout = Number(
+      teardownDelete.match(/az group wait --deleted[^\n]+--timeout (\d+)/)?.[1]
+    );
+    const endpointLoop = teardownDelete.match(
+      /for endpoint_attempt in \$\(seq 1 (\d+)\); do[\s\S]*?--max-time (\d+)[\s\S]*?if \[\[ "\$endpoint_attempt" -lt \d+ \]\]; then\s+sleep (\d+)/
+    );
+    expect(endpointLoop).not.toBeNull();
+    const endpointAttempts = Number(endpointLoop?.[1]);
+    const endpointCurlTimeout = Number(endpointLoop?.[2]);
+    const endpointSleepSeconds = Number(endpointLoop?.[3]);
+    const teardownJobTimeoutMinutes = Number(
+      teardownJob.match(/timeout-minutes: (\d+)/)?.[1]
+    );
+    const boundedWaitSeconds =
+      resourceGroupWaitTimeout +
+      endpointAttempts * endpointCurlTimeout +
+      (endpointAttempts - 1) * endpointSleepSeconds;
+    expect(boundedWaitSeconds).toBeLessThanOrEqual(30 * 60);
+    expect(teardownJobTimeoutMinutes * 60 - boundedWaitSeconds).toBeGreaterThanOrEqual(15 * 60);
     expect(teardownDelete).toContain("validate_authority teardown-closure");
     expect(workflow.match(/refresh_scoped_authority\(\)/g)).toHaveLength(3);
     expect(workflow.match(/if ! refresh_scoped_authority "\$mutation"; then[\s\S]*?return 1[\s\S]*?fi\s+if ! node scripts\/render-sd008-azure-authority\.mjs/g)).toHaveLength(3);
