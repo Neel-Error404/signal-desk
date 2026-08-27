@@ -1016,12 +1016,13 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     );
     const trafficStepEnd = workflow.indexOf("\n      - name:", trafficStepStart + 1);
     const trafficStep = workflow.slice(trafficStepStart, trafficStepEnd);
-    const logPreflightStart = trafficStep.indexOf("log_analytics_preflight_ready=false");
+    const logPreflightStart = trafficStep.indexOf(
+      'if ! az monitor log-analytics query --workspace "$WORKSPACE_CUSTOMER_ID"'
+    );
     const trafficAuthorityCheck = trafficStep.indexOf("validate_authority traffic-promotion");
     const trafficShiftMarker = trafficStep.indexOf("traffic_shifted=true");
     const logPreflight = trafficStep.slice(logPreflightStart, trafficAuthorityCheck);
     expect(logPreflightStart).toBeGreaterThanOrEqual(0);
-    expect(logPreflight).toContain("for attempt in $(seq 1 12)");
     expect(logPreflight).toContain(
       'az monitor log-analytics query --workspace "$WORKSPACE_CUSTOMER_ID"'
     );
@@ -1032,10 +1033,13 @@ describe("SD-008 ADR 0012 rescue artifact contract", () => {
     expect(logPreflight).toContain('if ! jq -e \'');
     expect(logPreflight).toContain('[.. | objects | select(has("error"))]');
     expect(logPreflight).toContain('.tables | type == "array"');
+    expect(logPreflight).toContain('.tables | length > 0');
     expect(logPreflight).toContain("Unexpected Log Analytics preflight response shape");
-    expect(logPreflight).toContain("Log Analytics preflight returned no rows before traffic mutation");
+    expect(logPreflight).toContain("Log Analytics preflight admission passed");
+    expect(logPreflight).not.toContain("returned no rows");
+    expect(logPreflight).not.toContain("sleep 15");
     expect(logPreflight.indexOf("Unexpected Log Analytics preflight response shape")).toBeLessThan(
-      logPreflight.indexOf("log_analytics_preflight_ready=true")
+      logPreflight.indexOf("Log Analytics preflight admission passed")
     );
     expect(logPreflightStart).toBeLessThan(trafficAuthorityCheck);
     expect(trafficAuthorityCheck).toBeLessThan(trafficShiftMarker);
