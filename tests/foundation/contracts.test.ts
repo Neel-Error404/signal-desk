@@ -1773,7 +1773,11 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     expect(correction.smokeIdentity).toMatchObject({
       application: "signaldesk-sd008-smoke",
       separateFromDeploymentPrincipals: true,
-      clientSecret: false
+      clientSecret: false,
+      federatedSubjects: [
+        "repo:Neel-Error404@70140302/signal-desk@1336038815:environment:staging-provision",
+        "repo:Neel-Error404@70140302/signal-desk@1336038815:environment:staging-traffic"
+      ]
     });
     expect(correction.authority).toMatchObject({
       localCorrectionImplementation: "owner-authorized",
@@ -1939,7 +1943,14 @@ describe("SD-008 ratified local bootstrap and learning corrections", () => {
     expect(apps).not.toContain("authorizedTrafficClientId");
     expect(smoke).toContain("client_assertion_type");
     expect(smoke).toContain("client_assertion: githubResponse.value");
-    expect(smoke).toContain("repo:Neel-Error404/signal-desk:environment:${environment}");
+    expect(smoke).toContain('requiredEnvironment("GITHUB_REPOSITORY")');
+    expect(smoke).toContain('requiredEnvironment("GITHUB_REPOSITORY_OWNER_ID")');
+    expect(smoke).toContain('requiredEnvironment("GITHUB_REPOSITORY_ID")');
+    expect(smoke).toContain(
+      "`repo:Neel-Error404@${githubRepositoryOwnerId}/signal-desk@${githubRepositoryId}`"
+    );
+    expect(smoke).toContain("`:environment:${environment}`");
+    expect(smoke).not.toContain("repo:Neel-Error404/signal-desk:environment:${environment}");
     expect(smoke).toContain(
       "/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/"
     );

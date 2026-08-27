@@ -2,6 +2,7 @@ import { pathToFileURL } from "node:url";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const JWT = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
+const DECIMAL_ID = /^[1-9][0-9]*$/;
 const ENVIRONMENTS = new Set(["staging-provision", "staging-traffic"]);
 
 const requiredEnvironment = (name) => {
@@ -83,6 +84,9 @@ const main = async () => {
     "STAGING_SMOKE_PRINCIPAL_OBJECT_ID"
   ).toLowerCase();
   const environment = requiredEnvironment("SD008_ENVIRONMENT");
+  const githubRepository = requiredEnvironment("GITHUB_REPOSITORY");
+  const githubRepositoryOwnerId = requiredEnvironment("GITHUB_REPOSITORY_OWNER_ID");
+  const githubRepositoryId = requiredEnvironment("GITHUB_REPOSITORY_ID");
   for (const [name, value] of Object.entries({
     AZURE_TENANT_ID: tenantId,
     ENTRA_CLIENT_ID: ingressClientId,
@@ -96,7 +100,20 @@ const main = async () => {
   if (!ENVIRONMENTS.has(environment)) {
     throw new Error("SD008_ENVIRONMENT must be staging-provision or staging-traffic.");
   }
-  const expectedSubject = `repo:Neel-Error404/signal-desk:environment:${environment}`;
+  if (githubRepository !== "Neel-Error404/signal-desk") {
+    throw new Error("GITHUB_REPOSITORY must be the exact SignalDesk repository slug.");
+  }
+  for (const [name, value] of Object.entries({
+    GITHUB_REPOSITORY_OWNER_ID: githubRepositoryOwnerId,
+    GITHUB_REPOSITORY_ID: githubRepositoryId
+  })) {
+    if (!DECIMAL_ID.test(value)) {
+      throw new Error(`${name} must be an exact positive decimal identifier.`);
+    }
+  }
+  const expectedSubject =
+    `repo:Neel-Error404@${githubRepositoryOwnerId}/signal-desk@${githubRepositoryId}` +
+    `:environment:${environment}`;
   githubRequestUrl.searchParams.set("audience", "api://AzureADTokenExchange");
   const githubResponse = await requestJson(
     githubRequestUrl,

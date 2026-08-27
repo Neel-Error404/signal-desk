@@ -74,8 +74,8 @@
     "separateFromDeploymentPrincipals": true,
     "clientSecret": false,
     "federatedSubjects": [
-      "repo:Neel-Error404/signal-desk:environment:staging-provision",
-      "repo:Neel-Error404/signal-desk:environment:staging-traffic"
+      "repo:Neel-Error404@70140302/signal-desk@1336038815:environment:staging-provision",
+      "repo:Neel-Error404@70140302/signal-desk@1336038815:environment:staging-traffic"
     ],
     "tokenExchange": "github-oidc-client-assertion",
     "ingressApplicationPermissionRequired": true

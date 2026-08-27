@@ -1858,7 +1858,7 @@ describe("SD-008 secret scan exit contract", () => {
 });
 
 describe("SD-008 dedicated smoke identity", () => {
-  it("exchanges an environment-bound GitHub assertion for the exact ingress audience", async () => {
+  it("accepts both immutable environment subjects and rejects the obsolete name-only subject", async () => {
     const directory = await workspace();
     const githubEnvironment = path.join(directory, "github-env.txt");
     const tenantId = "11111111-2222-4333-8444-555555555555";
@@ -1870,11 +1870,7 @@ describe("SD-008 dedicated smoke identity", () => {
         JSON.stringify(payload)
       ).toString("base64url")}.test-signature`;
     const now = Math.floor(Date.now() / 1000);
-    const githubToken = jwt({
-      iss: "https://token.actions.githubusercontent.com",
-      aud: "api://AzureADTokenExchange",
-      sub: "repo:Neel-Error404/signal-desk:environment:staging-provision"
-    });
+    let githubToken = "";
     const accessToken = jwt({
       aud: `api://${ingressClientId}`,
       tid: tenantId,
@@ -1883,26 +1879,29 @@ describe("SD-008 dedicated smoke identity", () => {
       nbf: now - 10,
       exp: now + 3600
     });
-    let exchangeBody = "";
-    const returnedAccessToken = accessToken;
+    const exchangeBodies: string[] = [];
+    const oidcAuthorizationHeaders: Array<string | undefined> = [];
+    const oidcAudiences: Array<string | null> = [];
+    let entraRequests = 0;
     const server = createServer((request, response) => {
       if (request.method === "GET" && request.url?.startsWith("/oidc?")) {
-        expect(request.headers.authorization).toBe("Bearer synthetic-request-token");
-        expect(new URL(request.url, "http://127.0.0.1").searchParams.get("audience")).toBe(
-          "api://AzureADTokenExchange"
-        );
+        oidcAuthorizationHeaders.push(request.headers.authorization);
+        oidcAudiences.push(new URL(request.url, "http://127.0.0.1").searchParams.get("audience"));
         response.writeHead(200, { "content-type": "application/json" });
         response.end(JSON.stringify({ value: githubToken }));
         return;
       }
       if (request.method === "POST" && request.url === "/entra") {
+        entraRequests += 1;
+        let exchangeBody = "";
         request.setEncoding("utf8");
         request.on("data", (chunk) => {
           exchangeBody += chunk;
         });
         request.on("end", () => {
+          exchangeBodies.push(exchangeBody);
           response.writeHead(200, { "content-type": "application/json" });
-          response.end(JSON.stringify({ token_type: "Bearer", access_token: returnedAccessToken }));
+          response.end(JSON.stringify({ token_type: "Bearer", access_token: accessToken }));
         });
         return;
       }
@@ -1913,7 +1912,7 @@ describe("SD-008 dedicated smoke identity", () => {
       server.listen(0, "127.0.0.1", resolve);
     });
     const port = (server.address() as AddressInfo).port;
-    const exchange = async () => {
+    const exchange = async (environment: string) => {
       const child = spawn(process.execPath, ["scripts/get-entra-smoke-token.mjs"], {
         cwd: process.cwd(),
         windowsHide: true,
@@ -1927,7 +1926,10 @@ describe("SD-008 dedicated smoke identity", () => {
           ENTRA_CLIENT_ID: ingressClientId,
           STAGING_SMOKE_CLIENT_ID: smokeClientId,
           STAGING_SMOKE_PRINCIPAL_OBJECT_ID: smokePrincipalId,
-          SD008_ENVIRONMENT: "staging-provision",
+          SD008_ENVIRONMENT: environment,
+          GITHUB_REPOSITORY: "Neel-Error404/signal-desk",
+          GITHUB_REPOSITORY_OWNER_ID: "70140302",
+          GITHUB_REPOSITORY_ID: "1336038815",
           GITHUB_ENV: githubEnvironment
         },
         stdio: ["ignore", "pipe", "pipe"]
@@ -1943,16 +1945,48 @@ describe("SD-008 dedicated smoke identity", () => {
       const exitCode = await new Promise<number | null>((resolve) => child.once("exit", resolve));
       return { exitCode, stdout, stderr };
     };
-    const validExchange = await exchange();
-    expect(validExchange.exitCode, validExchange.stderr).toBe(0);
-    expect(validExchange.stdout).toBe(`${accessToken}\n`);
-    expect(validExchange.stderr).toBe("");
-    await expect(readFile(githubEnvironment, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
-    await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
-    const request = new URLSearchParams(exchangeBody);
-    expect(request.get("client_id")).toBe(smokeClientId);
-    expect(request.get("scope")).toBe(`api://${ingressClientId}/.default`);
-    expect(request.get("client_assertion")).toBe(githubToken);
+    try {
+      const immutableGithubTokens: string[] = [];
+      for (const environment of ["staging-provision", "staging-traffic"]) {
+        githubToken = jwt({
+          iss: "https://token.actions.githubusercontent.com",
+          aud: "api://AzureADTokenExchange",
+          sub: `repo:Neel-Error404@70140302/signal-desk@1336038815:environment:${environment}`
+        });
+        immutableGithubTokens.push(githubToken);
+        const validExchange = await exchange(environment);
+        expect(validExchange.exitCode, validExchange.stderr).toBe(0);
+        expect(validExchange.stdout).toBe(`${accessToken}\n`);
+        expect(validExchange.stderr).toBe("");
+      }
+      await expect(readFile(githubEnvironment, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+      expect(exchangeBodies).toHaveLength(2);
+      for (const [index, exchangeBody] of exchangeBodies.entries()) {
+        const request = new URLSearchParams(exchangeBody);
+        expect(request.get("client_id")).toBe(smokeClientId);
+        expect(request.get("scope")).toBe(`api://${ingressClientId}/.default`);
+        expect(request.get("client_assertion")).toBe(immutableGithubTokens[index]);
+      }
+
+      githubToken = jwt({
+        iss: "https://token.actions.githubusercontent.com",
+        aud: "api://AzureADTokenExchange",
+        sub: "repo:Neel-Error404/signal-desk:environment:staging-provision"
+      });
+      const obsoleteExchange = await exchange("staging-provision");
+      expect(obsoleteExchange.exitCode).not.toBe(0);
+      expect(obsoleteExchange.stdout).toBe("");
+      expect(obsoleteExchange.stderr).toContain(
+        "GitHub OIDC token issuer, audience, or subject does not match SD-008"
+      );
+      expect(entraRequests).toBe(2);
+      expect(oidcAuthorizationHeaders).toEqual(Array(3).fill("Bearer synthetic-request-token"));
+      expect(oidcAudiences).toEqual(Array(3).fill("api://AzureADTokenExchange"));
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve()))
+      );
+    }
   });
 
   it("rejects newline and curl-config injection in an exchanged access token", async () => {
@@ -1968,7 +2002,7 @@ describe("SD-008 dedicated smoke identity", () => {
     const githubToken = jwt({
       iss: "https://token.actions.githubusercontent.com",
       aud: "api://AzureADTokenExchange",
-      sub: "repo:Neel-Error404/signal-desk:environment:staging-provision"
+      sub: "repo:Neel-Error404@70140302/signal-desk@1336038815:environment:staging-provision"
     });
     const maliciousToken = `${jwt({
       aud: `api://${ingressClientId}`,
@@ -1991,35 +2025,43 @@ describe("SD-008 dedicated smoke identity", () => {
       server.listen(0, "127.0.0.1", resolve);
     });
     const port = (server.address() as AddressInfo).port;
-    const child = spawn(process.execPath, ["scripts/get-entra-smoke-token.mjs"], {
-      cwd: process.cwd(),
-      windowsHide: true,
-      env: {
-        ...process.env,
-        NODE_ENV: "test",
-        ACTIONS_ID_TOKEN_REQUEST_URL: `http://127.0.0.1:${port}/oidc`,
-        ACTIONS_ID_TOKEN_REQUEST_TOKEN: "synthetic-request-token",
-        SD008_TEST_ENTRA_TOKEN_ENDPOINT: `http://127.0.0.1:${port}/entra`,
-        AZURE_TENANT_ID: tenantId,
-        ENTRA_CLIENT_ID: ingressClientId,
-        STAGING_SMOKE_CLIENT_ID: smokeClientId,
-        STAGING_SMOKE_PRINCIPAL_OBJECT_ID: smokePrincipalId,
-        SD008_ENVIRONMENT: "staging-provision"
-      },
-      stdio: ["ignore", "pipe", "pipe"]
-    });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-    const exitCode = await new Promise<number | null>((resolve) => child.once("exit", resolve));
-    await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
-    expect(exitCode).not.toBe(0);
-    expect(stdout).toBe("");
-    expect(stderr).toContain("Entra access token must contain exactly three nonempty base64url segments");
+    try {
+      const child = spawn(process.execPath, ["scripts/get-entra-smoke-token.mjs"], {
+        cwd: process.cwd(),
+        windowsHide: true,
+        env: {
+          ...process.env,
+          NODE_ENV: "test",
+          ACTIONS_ID_TOKEN_REQUEST_URL: `http://127.0.0.1:${port}/oidc`,
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: "synthetic-request-token",
+          SD008_TEST_ENTRA_TOKEN_ENDPOINT: `http://127.0.0.1:${port}/entra`,
+          AZURE_TENANT_ID: tenantId,
+          ENTRA_CLIENT_ID: ingressClientId,
+          STAGING_SMOKE_CLIENT_ID: smokeClientId,
+          STAGING_SMOKE_PRINCIPAL_OBJECT_ID: smokePrincipalId,
+          SD008_ENVIRONMENT: "staging-provision",
+          GITHUB_REPOSITORY: "Neel-Error404/signal-desk",
+          GITHUB_REPOSITORY_OWNER_ID: "70140302",
+          GITHUB_REPOSITORY_ID: "1336038815"
+        },
+        stdio: ["ignore", "pipe", "pipe"]
+      });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk.toString();
+      });
+      child.stderr.on("data", (chunk) => {
+        stderr += chunk.toString();
+      });
+      const exitCode = await new Promise<number | null>((resolve) => child.once("exit", resolve));
+      expect(exitCode).not.toBe(0);
+      expect(stdout).toBe("");
+      expect(stderr).toContain("Entra access token must contain exactly three nonempty base64url segments");
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve()))
+      );
+    }
   });
 });
